@@ -359,6 +359,10 @@
                 
                 const { ThirdwebProvider, ConnectButton } = reactModule;
                 
+                if (!ThirdwebProvider || !ConnectButton) {
+                    throw new Error('ThirdwebProvider or ConnectButton not found');
+                }
+                
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
                 });
@@ -390,10 +394,11 @@
                     )
                 );
                 
-                console.log('Wallet connect button ready');
+                console.log('Wallet connect button rendered');
             } catch (error) {
                 console.error('Failed to load Thirdweb:', error);
-                container.innerHTML = '<button style="padding: 12px 24px; background: rgba(79, 214, 165, 0.2); border: 2px solid rgba(79, 214, 165, 0.5); border-radius: 20px; color: #4FD6A5; font-size: 16px; cursor: pointer;">Connect Wallet (Error)</button>';
+                // Show a fallback button that's always visible
+                container.innerHTML = '<button style="padding: 12px 24px; background: rgba(79, 214, 165, 0.2); border: 2px solid rgba(79, 214, 165, 0.5); border-radius: 20px; color: #4FD6A5; font-size: 16px; cursor: pointer; width: 100%;">Connect Wallet (Error)</button>';
             }
         }
 
