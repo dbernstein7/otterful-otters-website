@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
     <link rel="icon" type="image/png" href="fishy-log.png.png">
     <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
     <title>Otterful Otters Dashboard</title>
@@ -350,9 +350,9 @@
             }
 
             Promise.all([
-                import('https://esm.sh/thirdweb@latest'),
-                import('https://esm.sh/thirdweb@latest/wallets'),
-                import('https://esm.sh/thirdweb@latest/react')
+                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/index.esm.js'),
+                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/wallets.esm.js'),
+                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/react.esm.js')
             ]).then(([thirdweb, walletsModule, reactModule]) => {
                 const { createThirdwebClient } = thirdweb;
                 const { inAppWallet, createWallet } = walletsModule;
