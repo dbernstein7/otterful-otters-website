@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';">
+    <link rel="icon" type="image/png" href="fishy-log.png.png">
+    <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
+    <title>Otterful Otters Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="preload" as="image" href="apechain.png" fetchpriority="high">
+    <link rel="preload" as="image" href="otterre.png" fetchpriority="high">
+    <link rel="preload" as="image" href="me icon.png" fetchpriority="high">
+    <link rel="preload" as="image" href="os icon.png" fetchpriority="high">
+    <link rel="preload" as="image" href="x icon.png" fetchpriority="high">
+    <link rel="preload" as="image" href="discord icon.png" fetchpriority="high">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="ElectricBorder.css">
+</head>
+<body>
+    <div class="stars"></div>
+    
+    <nav class="top-nav">
+        <div class="nav-pill active">Home</div>
+        <div class="nav-pill">Analytics</div>
+        <div class="nav-pill">Collection</div>
+        <div class="nav-pill">Explore</div>
+        <a href="Avatar Builder/index.html" class="nav-pill">3D Builder</a>
+        <div class="nav-pill">Team</div>
+    </nav>
+    
+    <div class="top-right-icons">
+        <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
+            <img src="me icon.png" alt="Magic Eden" class="me-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+        </header>
+
+        <div class="otherside-gallery-section">
+            <div class="otherside-gallery-container" id="othersideGallery">
+                <button class="carousel-arrow carousel-arrow-left" id="othersideArrowLeft" aria-label="Scroll left">‹</button>
+                <button class="carousel-arrow carousel-arrow-right" id="othersideArrowRight" aria-label="Scroll right">›</button>
+                <!-- Images will be loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Modal for viewing full-size Otherside images -->
+        <div id="othersideModal" class="otherside-modal">
+            <span class="otherside-modal-close">&times;</span>
+            <button class="otherside-modal-nav otherside-modal-prev" aria-label="Previous image">‹</button>
+            <img id="othersideModalImage" src="" alt="Otherside Otter">
+            <button class="otherside-modal-nav otherside-modal-next" aria-label="Next image">›</button>
+        </div>
+
+        <div class="quick-actions">
+            <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="action-btn primary">
+                <img src="OpenSea-Emblem.png" alt="OpenSea" class="icon">
+                OpenSea
+            </a>
+            <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="action-btn primary">
+                <img src="Magic-Eden-Emblem.png" alt="Magic Eden" class="icon">
+                Magic Eden
+            </a>
+            <button class="action-btn secondary">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                    <path d="M21 3v5h-5"/>
+                    <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+                    <path d="M3 21v-5h5"/>
+                </svg>
+                Refresh Data
+            </button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Floor Price</div>
+                <div class="stat-value">19.293 <span class="stat-unit">APE</span></div>
+                <div class="stat-change positive">0% (1d)</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Top Offer</div>
+                <div class="stat-value">9.73 <span class="stat-unit">WAPE</span></div>
+                <div class="stat-change">Current best</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">Total Volume</div>
+                <div class="stat-value">31.3K <span class="stat-unit">APE</span></div>
+                <div class="stat-change">All time</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-label">24h Volume</div>
+                <div class="stat-value">0.00 <span class="stat-unit">APE</span></div>
+                <div class="stat-change">Today</div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+        <div class="info-card" id="collectionOverview">
+            <h2>Collection Overview</h2>
+                <div class="info-item">
+                    <span class="info-label">Total Items</span>
+                    <span class="info-value">2,221</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Owners</span>
+                    <span class="info-value">639 <span class="info-sub">(28.8%)</span></span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Listed</span>
+                    <span class="info-value">0.7%</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Launched</span>
+                    <span class="info-value">March 2025</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Network</span>
+                    <span class="info-value badge">ApeChain</span>
+                </div>
+            </div>
+
+            <div class="info-card">
+                <h2>Trait Categories</h2>
+                <div class="trait-list">
+                    <div class="trait-item">
+                        <span class="trait-name">Trait Count</span>
+                        <span class="trait-count">4</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Shirt</span>
+                        <span class="trait-count">78</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Mouth</span>
+                        <span class="trait-count">14</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Hats</span>
+                        <span class="trait-count">85</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Fur</span>
+                        <span class="trait-count">18</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Eyes</span>
+                        <span class="trait-count">48</span>
+                    </div>
+                    <div class="trait-item">
+                        <span class="trait-name">Base</span>
+                        <span class="trait-count">12</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="analytics-card" id="marketAnalytics">
+            <h2>Market Analytics</h2>
+            <div class="analytics-content">
+                <div class="analytics-item">
+                    <div class="analytics-label">Price Range</div>
+                    <div class="analytics-bar">
+                        <div class="bar-fill" style="width: 60%"></div>
+                    </div>
+                    <div class="analytics-values">
+                        <span>Floor: 19.29 APE</span>
+                        <span>High: 69.00 APE</span>
+                    </div>
+                </div>
+                <div class="analytics-item">
+                    <div class="analytics-label">Ownership Distribution</div>
+                    <div class="analytics-bar">
+                        <div class="bar-fill" style="width: 28.8%"></div>
+                    </div>
+                    <div class="analytics-values">
+                        <span>Unique Owners: 28.8%</span>
+                        <span>Average: 3.48 per owner</span>
+                    </div>
+                </div>
+                <div class="analytics-item">
+                    <div class="analytics-label">Listing Activity</div>
+                    <div class="analytics-bar">
+                        <div class="bar-fill" style="width: 0.7%"></div>
+                    </div>
+                    <div class="analytics-values">
+                        <span>Listed: 0.7%</span>
+                        <span>Available: 99.3%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="links-grid">
+            <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="link-card">
+                <div class="link-icon">
+                    <img src="OpenSea-Emblem.png" alt="OpenSea" class="link-icon-img">
+                </div>
+                <div class="link-content">
+                    <h3>OpenSea</h3>
+                    <p>View on OpenSea marketplace</p>
+                </div>
+                <div class="link-arrow">→</div>
+            </a>
+
+            <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="link-card">
+                <div class="link-icon">
+                    <img src="Magic-Eden-Emblem.png" alt="Magic Eden" class="link-icon-img">
+                </div>
+                <div class="link-content">
+                    <h3>Magic Eden</h3>
+                    <p>Browse on Magic Eden</p>
+                </div>
+                <div class="link-arrow">→</div>
+            </a>
+        </div>
+
+        <div class="gallery-section">
+            <div class="gallery-header">
+                <h2>Collection Gallery</h2>
+                <div class="gallery-controls">
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="m21 21-4.35-4.35"/>
+                        </svg>
+                        <input type="text" id="otterSearch" placeholder="Search by number (e.g., 1-2221)" class="search-input">
+                    </div>
+                    <div class="gallery-stats">
+                        <span id="galleryCount">Showing 0 / 2,221</span>
+                    </div>
+                </div>
+            </div>
+            <div class="gallery-grid" id="otterGallery">
+                <!-- Otters will be loaded here dynamically -->
+            </div>
+            <div class="load-more-container">
+                <button id="loadMoreBtn" class="action-btn secondary">Load More Otters</button>
+            </div>
+        </div>
+
+        <div class="nifty-gallery-section" id="exploreSection">
+            <h2 class="section-title">Explore</h2>
+            <div class="nifty-gallery-container" id="niftyGallery">
+                <button class="carousel-arrow carousel-arrow-left" id="niftyArrowLeft" aria-label="Scroll left">‹</button>
+                <button class="carousel-arrow carousel-arrow-right" id="niftyArrowRight" aria-label="Scroll right">›</button>
+                <!-- Images will be loaded dynamically -->
+            </div>
+        </div>
+
+        <div class="avatar-link-text">
+            <p>3D Otter Avatars can be found here:</p>
+        </div>
+
+        <div class="banners-section">
+            <div class="banner-container">
+                <a href="https://www.niftyisland.com/" target="_blank" rel="noopener noreferrer">
+                    <img src="niftybanner.png" alt="Nifty Banner" class="banner-image">
+                </a>
+            </div>
+            <div class="banner-container">
+                <a href="https://www.otherside.xyz/" target="_blank" rel="noopener noreferrer">
+                    <img src="othersidebanner.jpg" alt="Otherside Banner" class="banner-image">
+                </a>
+            </div>
+        </div>
+
+        <!-- Modal for viewing full-size Nifty images -->
+        <div id="niftyModal" class="nifty-modal">
+            <span class="nifty-modal-close">&times;</span>
+            <button class="nifty-modal-nav nifty-modal-prev" aria-label="Previous image">‹</button>
+            <img id="niftyModalImage" src="" alt="Nifty Photo">
+            <button class="nifty-modal-nav nifty-modal-next" aria-label="Next image">›</button>
+        </div>
+
+        <div class="team-section" id="teamSection">
+            <h2 class="section-title">Team</h2>
+            <div class="team-card">
+                <div class="team-image-container" id="teamImageContainer">
+                    <img src="OtterPFP.png" alt="Otter" class="team-image">
+                </div>
+                <div class="team-name">Otter</div>
+                <div class="team-roles">
+                    <div class="team-role">Founder</div>
+                    <div class="team-role">Artist</div>
+                    <div class="team-role">Developer</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="team-footer-image">
+            <img src="otereaSdSAA.png" alt="Otterful" class="team-footer-img">
+        </div>
+
+        <!-- Modal for viewing otter in full size -->
+        <div id="otterModal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <img id="modalImage" src="" alt="Otter">
+                <div class="modal-info">
+                    <h3 id="modalTitle">Otterful Otter #<span id="modalNumber"></span></h3>
+                    <div id="modalTraits" class="modal-traits">
+                        <div class="modal-traits-loading">Loading traits...</div>
+                    </div>
+                    <div class="modal-actions">
+                        <a id="modalOpenSea" href="#" target="_blank" class="action-btn primary">View on OpenSea</a>
+                        <a id="modalMagicEden" href="#" target="_blank" class="action-btn primary">View on Magic Eden</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="ElectricBorder.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+

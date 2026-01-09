@@ -1,0 +1,13 @@
+node_modules
+.git
+.env
+*.log
+create_thumbnails.py
+create-thumbnails.bat
+optimize_images.py
+optimize-images.bat
+start-server.bat
+server.py
+requirements.txt
+test.html
+

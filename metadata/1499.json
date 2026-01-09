@@ -1,0 +1,32 @@
+{
+  "name": "Otterful Otters #1499",
+  "description": "otters...",
+  "attributes": [
+    {
+      "trait_type": "Base",
+      "value": "Trippy Orange"
+    },
+    {
+      "trait_type": "Fur",
+      "value": "OG"
+    },
+    {
+      "trait_type": "Shirt",
+      "value": "Sheep"
+    },
+    {
+      "trait_type": "Eyes",
+      "value": "3D"
+    },
+    {
+      "trait_type": "Hats",
+      "value": "Crown"
+    },
+    {
+      "trait_type": "Trait Count",
+      "value": "5"
+    }
+  ],
+  "compiler": "nfts2me.com",
+  "image": "ipfs://bafybeib2tobjxdxbxbm23otr67esftoxvwwkoudfsgsrlou2hxup7yezty/1499.webp"
+}
