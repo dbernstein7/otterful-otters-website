@@ -387,10 +387,43 @@
 
             async function loadThirdweb() {
                 try {
-                    // Import Thirdweb React components
-                    const reactModule = await import('https://esm.sh/thirdweb@5/react');
-                    const { createThirdwebClient } = await import('https://esm.sh/thirdweb@5');
-                    const { inAppWallet, createWallet } = await import('https://esm.sh/thirdweb@5/wallets');
+                    // Try multiple CDN sources for Thirdweb modules
+                    const cdnSources = [
+                        () => Promise.all([
+                            import('https://esm.sh/thirdweb@5/react'),
+                            import('https://esm.sh/thirdweb@5'),
+                            import('https://esm.sh/thirdweb@5/wallets')
+                        ]),
+                        () => Promise.all([
+                            import('https://cdn.jsdelivr.net/npm/thirdweb@5/react/+esm'),
+                            import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm'),
+                            import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm')
+                        ]),
+                        () => Promise.all([
+                            import('https://unpkg.com/thirdweb@5/react?module'),
+                            import('https://unpkg.com/thirdweb@5?module'),
+                            import('https://unpkg.com/thirdweb@5/wallets?module')
+                        ])
+                    ];
+                    
+                    let reactModule, thirdweb, walletsModule;
+                    let loaded = false;
+                    
+                    for (const source of cdnSources) {
+                        try {
+                            [reactModule, thirdweb, walletsModule] = await source();
+                            loaded = true;
+                            console.log('Thirdweb loaded from CDN');
+                            break;
+                        } catch (e) {
+                            console.log('CDN source failed, trying next...', e.message);
+                            continue;
+                        }
+                    }
+                    
+                    if (!loaded) {
+                        throw new Error('All CDN sources failed to load Thirdweb');
+                    }
                     
                     const { ThirdwebProvider, ConnectButton } = reactModule;
                     
