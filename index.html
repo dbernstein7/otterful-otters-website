@@ -450,58 +450,24 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
-                        console.log('Available wallets:', wallets);
-                        console.log('Wallets module exports:', Object.keys(walletsModule));
+                        // Use in-app wallet first to show the nice SIGN IN modal
+                        const inAppWallet = wallets[0]; // First wallet is always in-app wallet
                         
-                        // Try to use wallet.connect() method directly on wallet instances
-                        // Start with in-app wallet (most reliable)
-                        let connectedWallet = null;
-                        let connectionError = null;
+                        console.log('Connecting with in-app wallet to show SIGN IN modal...');
                         
-                        // Try in-app wallet first
-                        try {
-                            const inApp = wallets[0];
-                            console.log('Attempting to connect in-app wallet:', inApp);
-                            const account = await inApp.connect({ client });
-                            connectedWallet = inApp;
-                            console.log('In-app wallet connected:', account);
-                        } catch (e) {
-                            connectionError = e;
-                            console.log('In-app wallet failed, trying MetaMask...', e);
-                            
-                            // Try MetaMask if available
-                            try {
-                                const metamask = wallets.find(w => {
-                                    const id = w.id || w.walletId || '';
-                                    return id.includes('metamask') || id.includes('io.metamask');
-                                });
-                                
-                                if (metamask) {
-                                    console.log('Attempting to connect MetaMask:', metamask);
-                                    const account = await metamask.connect({ client });
-                                    connectedWallet = metamask;
-                                    console.log('MetaMask connected:', account);
-                                } else {
-                                    throw new Error('MetaMask wallet not found');
-                                }
-                            } catch (e2) {
-                                connectionError = e2;
-                                throw new Error(`Both wallets failed. In-app: ${e.message}, MetaMask: ${e2.message}`);
-                            }
-                        }
+                        // Connect using in-app wallet - this will show the SIGN IN modal
+                        const account = await inAppWallet.connect({ 
+                            client,
+                            strategy: "auth",
+                        });
                         
-                        if (!connectedWallet) {
-                            throw connectionError || new Error('No wallet could be connected');
-                        }
-                        
-                        const account = await connectedWallet.getAccount();
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
                         }
                         
                         button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
                         button.disabled = true;
-                        console.log('Wallet connected successfully:', connectedWallet);
+                        console.log('Wallet connected successfully:', inAppWallet);
                         console.log('Account:', account);
                     } catch (error) {
                         console.error('Connection error:', error);
