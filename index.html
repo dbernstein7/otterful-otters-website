@@ -420,7 +420,25 @@
                 }
 
                 const { createThirdwebClient } = thirdweb;
-                const { connect, inAppWallet, createWallet } = walletsModule;
+                const { inAppWallet, createWallet } = walletsModule;
+                
+                // Import connect from the correct module
+                let connect;
+                try {
+                    const connectModule = await import('https://esm.sh/thirdweb@5/wallets');
+                    connect = connectModule.connect;
+                    if (!connect) {
+                        // Try alternative import path
+                        const altConnect = await import('https://esm.sh/thirdweb@5');
+                        connect = altConnect.connect;
+                    }
+                } catch (e) {
+                    console.error('Failed to import connect:', e);
+                }
+                
+                if (!connect) {
+                    throw new Error('connect function not found');
+                }
                 
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
@@ -447,7 +465,9 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
-                        // Use the connect function with connectModal for wallet selection
+                        console.log('connect function:', typeof connect, connect);
+                        
+                        // Use the connect function
                         const wallet = await connect({
                             client,
                             wallets,
