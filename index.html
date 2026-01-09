@@ -426,8 +426,7 @@
                     clientId: "9ddee100223dbfa94ab567941db6f708",
                 });
 
-                console.log('Client created:', client);
-                console.log('Client ID:', client?.clientId || 'NOT FOUND');
+                // Client created successfully
 
                 // Create in-app wallet with auth options and client
                 // The client needs to be passed during wallet creation for proper configuration
@@ -463,11 +462,6 @@
                         }
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
-                        console.log('Client:', client);
-                        console.log('Client type:', typeof client);
-                        console.log('In-app wallet instance:', inAppWalletInstance);
-                        console.log('Connect method:', inAppWalletInstance.connect);
-                        console.log('Connect method type:', typeof inAppWalletInstance.connect);
                         
                         // Since client is passed during wallet creation, connect() should work without parameters
                         // or with minimal options
