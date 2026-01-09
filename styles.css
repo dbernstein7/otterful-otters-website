@@ -258,6 +258,26 @@ body::before {
     position: relative;
 }
 
+.otherside-gallery-container::before,
+.otherside-gallery-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.otherside-gallery-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--bg-base) 0%, rgba(10, 26, 15, 0.8) 50%, transparent 100%);
+}
+
+.otherside-gallery-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--bg-base) 0%, rgba(10, 26, 15, 0.8) 50%, transparent 100%);
+}
 
 .otherside-gallery-scroll {
     display: flex;
@@ -1079,6 +1099,26 @@ body::before {
     position: relative;
 }
 
+.nifty-gallery-container::before,
+.nifty-gallery-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 100px;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.nifty-gallery-container::before {
+    left: 0;
+    background: linear-gradient(to right, var(--bg-base) 0%, rgba(10, 26, 15, 0.8) 50%, transparent 100%);
+}
+
+.nifty-gallery-container::after {
+    right: 0;
+    background: linear-gradient(to left, var(--bg-base) 0%, rgba(10, 26, 15, 0.8) 50%, transparent 100%);
+}
 
 .nifty-gallery-scroll {
     display: flex;
@@ -1910,6 +1950,11 @@ body::before {
 
     .otherside-gallery-section {
         margin: 30px 0 40px;
+    }
+
+    .otherside-gallery-container::before,
+    .otherside-gallery-container::after {
+        width: 30px;
     }
 
     .otherside-image-item {
