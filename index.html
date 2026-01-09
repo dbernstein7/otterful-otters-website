@@ -349,24 +349,40 @@
                 return;
             }
 
-            // Try jsdelivr first, fallback to esm.sh
+            // Try different CDN sources for Thirdweb
             const importThirdweb = async () => {
-                try {
-                    const [thirdweb, walletsModule, reactModule] = await Promise.all([
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/index.esm.js'),
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/wallets.esm.js'),
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/react.esm.js')
-                    ]);
-                    return { thirdweb, walletsModule, reactModule };
-                } catch (e) {
-                    console.log('jsdelivr failed, trying esm.sh...', e);
-                    const [thirdweb, walletsModule, reactModule] = await Promise.all([
-                        import('https://esm.sh/thirdweb@5'),
-                        import('https://esm.sh/thirdweb@5/wallets'),
-                        import('https://esm.sh/thirdweb@5/react')
-                    ]);
-                    return { thirdweb, walletsModule, reactModule };
+                const sources = [
+                    // Try jsdelivr with package exports
+                    () => Promise.all([
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm'),
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm'),
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/react/+esm')
+                    ]),
+                    // Try unpkg
+                    () => Promise.all([
+                        import('https://unpkg.com/thirdweb@5?module'),
+                        import('https://unpkg.com/thirdweb@5/wallets?module'),
+                        import('https://unpkg.com/thirdweb@5/react?module')
+                    ]),
+                    // Try esm.sh with explicit version
+                    () => Promise.all([
+                        import('https://esm.sh/thirdweb@5.0.0'),
+                        import('https://esm.sh/thirdweb@5.0.0/wallets'),
+                        import('https://esm.sh/thirdweb@5.0.0/react')
+                    ])
+                ];
+
+                for (const source of sources) {
+                    try {
+                        const [thirdweb, walletsModule, reactModule] = await source();
+                        console.log('Thirdweb loaded successfully');
+                        return { thirdweb, walletsModule, reactModule };
+                    } catch (e) {
+                        console.log('CDN source failed, trying next...', e.message);
+                        continue;
+                    }
                 }
+                throw new Error('All CDN sources failed');
             };
 
             importThirdweb().then(({ thirdweb, walletsModule, reactModule }) => {
