@@ -429,12 +429,15 @@
                 console.log('Client created:', client);
                 console.log('Client ID:', client?.clientId || 'NOT FOUND');
 
+                // Create in-app wallet with auth options
+                const inAppWalletInstance = inAppWallet({
+                    auth: {
+                        options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
+                    },
+                });
+
                 const wallets = [
-                    inAppWallet({
-                        auth: {
-                            options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
-                        },
-                    }),
+                    inAppWalletInstance,
                     createWallet("io.metamask"),
                     createWallet("com.coinbase.wallet"),
                     createWallet("me.rainbow"),
@@ -457,15 +460,13 @@
                             throw new Error('Client is not initialized');
                         }
                         
-                        // Use in-app wallet to show the nice SIGN IN modal
-                        const inAppWalletInstance = wallets[0]; // First wallet is always in-app wallet
-                        
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
                         console.log('Client:', client);
                         console.log('In-app wallet instance:', inAppWalletInstance);
                         
-                        // Connect using in-app wallet - pass client in options object
-                        const account = await inAppWalletInstance.connect({ client });
+                        // According to Thirdweb docs, connect() takes the client as first parameter
+                        // For in-app wallet, it will show the SIGN IN modal automatically
+                        const account = await inAppWalletInstance.connect(client);
                         
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
