@@ -1423,8 +1423,6 @@ async function initNiftyGallery() {
         }
     });
 
-    // Setup carousel arrow controls
-    setupCarouselArrows('nifty', scrollWrapper);
 
     // Setup modal close handler and navigation buttons
     const modal = document.getElementById('niftyModal');
