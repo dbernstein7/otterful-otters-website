@@ -1684,8 +1684,15 @@ body::before {
 
 /* Responsive */
 @media (max-width: 768px) {
+    html, body {
+        height: auto;
+        min-height: 100vh;
+    }
+    
     body {
         padding: 10px;
+        padding-bottom: 40px;
+        background-attachment: scroll;
     }
 
     .top-nav {
