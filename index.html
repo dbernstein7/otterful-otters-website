@@ -336,7 +336,7 @@
         </div>
     </div>
 
-    <!-- Thirdweb Wallet Connection - Using Vanilla JS -->
+    <!-- Thirdweb Wallet Connection - Using React ConnectButton -->
     <script type="module">
         async function initWalletConnect() {
             const container = document.getElementById('wallet-connect-container');
@@ -345,100 +345,30 @@
                 return;
             }
 
-            // Create button immediately so it's visible
-            const button = document.createElement('button');
-            button.textContent = 'Connect Wallet';
-            button.className = 'wallet-connect-btn';
-            button.style.cssText = `
-                padding: 12px 24px;
-                background: rgba(79, 214, 165, 0.2);
-                border: 2px solid rgba(79, 214, 165, 0.5);
-                border-radius: 20px;
-                color: #4FD6A5;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                font-family: inherit;
-                width: 100%;
-            `;
-            
-            button.onmouseenter = () => {
-                button.style.background = 'rgba(79, 214, 165, 0.4)';
-                button.style.borderColor = 'rgba(79, 214, 165, 0.8)';
-                button.style.transform = 'scale(1.05)';
-            };
-            
-            button.onmouseleave = () => {
-                button.style.background = 'rgba(79, 214, 165, 0.2)';
-                button.style.borderColor = 'rgba(79, 214, 165, 0.5)';
-                button.style.transform = 'scale(1)';
-            };
-
-            container.appendChild(button);
-            console.log('Wallet button created, loading Thirdweb...');
+            // Wait for React to be available
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                setTimeout(initWalletConnect, 100);
+                return;
+            }
 
             try {
-                // Try multiple CDN sources - prioritize ones with better CORS support
-                const sources = [
-                    // Try esm.sh first (better CORS support)
-                    async () => {
-                        const thirdweb = await import('https://esm.sh/thirdweb@5');
-                        const walletsModule = await import('https://esm.sh/thirdweb@5/wallets');
-                        return { thirdweb, walletsModule };
-                    },
-                    // Try jsdelivr
-                    async () => {
-                        const thirdweb = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm');
-                        const walletsModule = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm');
-                        return { thirdweb, walletsModule };
-                    },
-                    // Try skypack as fallback
-                    async () => {
-                        const thirdweb = await import('https://cdn.skypack.dev/thirdweb@5');
-                        const walletsModule = await import('https://cdn.skypack.dev/thirdweb@5/wallets');
-                        return { thirdweb, walletsModule };
-                    },
-                ];
-
-                let thirdweb, walletsModule;
-                for (const source of sources) {
-                    try {
-                        const result = await source();
-                        thirdweb = result.thirdweb;
-                        walletsModule = result.walletsModule;
-                        console.log('Thirdweb loaded successfully');
-                        break;
-                    } catch (e) {
-                        console.log('CDN failed, trying next...', e.message);
-                        continue;
-                    }
-                }
-
-                if (!thirdweb || !walletsModule) {
-                    throw new Error('All CDN sources failed');
-                }
-
-                const { createThirdwebClient } = thirdweb;
-                const { inAppWallet, createWallet } = walletsModule;
+                // Import Thirdweb React components
+                const reactModule = await import('https://esm.sh/thirdweb@5/react');
+                const { createThirdwebClient } = await import('https://esm.sh/thirdweb@5');
+                const { inAppWallet, createWallet } = await import('https://esm.sh/thirdweb@5/wallets');
+                
+                const { ThirdwebProvider, ConnectButton } = reactModule;
                 
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
                 });
 
-                // Client created successfully
-
-                // Create in-app wallet with auth options and client
-                // The client needs to be passed during wallet creation for proper configuration
-                const inAppWalletInstance = inAppWallet({
-                    client,
-                    auth: {
-                        options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
-                    },
-                });
-
                 const wallets = [
-                    inAppWalletInstance,
+                    inAppWallet({
+                        auth: {
+                            options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
+                        },
+                    }),
                     createWallet("io.metamask"),
                     createWallet("com.coinbase.wallet"),
                     createWallet("me.rainbow"),
@@ -449,55 +379,21 @@
                     createWallet("app.phantom"),
                 ];
 
-                console.log('Wallets created:', wallets.length);
-
-                button.onclick = async () => {
-                    try {
-                        button.disabled = true;
-                        button.textContent = 'Connecting...';
-                        
-                        // Verify client exists
-                        if (!client) {
-                            throw new Error('Client is not initialized');
-                        }
-                        
-                        console.log('Connecting with in-app wallet to show SIGN IN modal...');
-                        
-                        // The in-app wallet's connect method should be called with the client
-                        // Since client was passed during wallet creation, we might not need it again
-                        // But let's try with client parameter
-                        const account = await inAppWalletInstance.connect(client);
-                        
-                        if (!account || !account.address) {
-                            throw new Error('Failed to get account from connected wallet');
-                        }
-                        
-                        button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
-                        button.disabled = true;
-                        console.log('Wallet connected successfully:', inAppWalletInstance);
-                        console.log('Account:', account);
-                    } catch (error) {
-                        console.error('Connection error:', error);
-                        button.disabled = false;
-                        button.textContent = 'Connect Wallet';
-                        // Show detailed error
-                        const errorMsg = error.message || error.toString() || 'Failed to connect wallet. Please try again.';
-                        console.error('Full error details:', {
-                            message: error.message,
-                            stack: error.stack,
-                            error: error,
-                            client: client,
-                            clientExists: !!client
-                        });
-                        alert(`Connection failed: ${errorMsg}`);
-                    }
-                };
-
+                // Render React component
+                const root = ReactDOM.createRoot(container);
+                root.render(
+                    React.createElement(ThirdwebProvider, { client },
+                        React.createElement(ConnectButton, {
+                            connectModal: { size: "compact" },
+                            wallets: wallets,
+                        })
+                    )
+                );
+                
                 console.log('Wallet connect button ready');
             } catch (error) {
                 console.error('Failed to load Thirdweb:', error);
-                button.textContent = 'Connect Wallet (Error)';
-                button.disabled = true;
+                container.innerHTML = '<button style="padding: 12px 24px; background: rgba(79, 214, 165, 0.2); border: 2px solid rgba(79, 214, 165, 0.5); border-radius: 20px; color: #4FD6A5; font-size: 16px; cursor: pointer;">Connect Wallet (Error)</button>';
             }
         }
 
