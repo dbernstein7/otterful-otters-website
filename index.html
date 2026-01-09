@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
     <link rel="icon" type="image/png" href="fishy-log.png.png">
     <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
     <title>Otterful Otters Dashboard</title>
@@ -336,60 +336,76 @@
         </div>
     </div>
 
-    <!-- React and ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Thirdweb Wallet Connection -->
+    <!-- Thirdweb Wallet Connection - Using Vanilla JS -->
     <script type="module">
-        // Wait for React to be available
-        function initWalletConnect() {
-            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-                setTimeout(initWalletConnect, 100);
+        async function initWalletConnect() {
+            const container = document.getElementById('wallet-connect-container');
+            if (!container) {
+                console.error('Wallet container not found');
                 return;
             }
 
-            // Try different CDN sources for Thirdweb
-            const importThirdweb = async () => {
+            // Create button immediately so it's visible
+            const button = document.createElement('button');
+            button.textContent = 'Connect Wallet';
+            button.className = 'wallet-connect-btn';
+            button.style.cssText = `
+                padding: 12px 24px;
+                background: rgba(79, 214, 165, 0.2);
+                border: 2px solid rgba(79, 214, 165, 0.5);
+                border-radius: 20px;
+                color: #4FD6A5;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-family: inherit;
+                width: 100%;
+            `;
+            
+            button.onmouseenter = () => {
+                button.style.background = 'rgba(79, 214, 165, 0.4)';
+                button.style.borderColor = 'rgba(79, 214, 165, 0.8)';
+                button.style.transform = 'scale(1.05)';
+            };
+            
+            button.onmouseleave = () => {
+                button.style.background = 'rgba(79, 214, 165, 0.2)';
+                button.style.borderColor = 'rgba(79, 214, 165, 0.5)';
+                button.style.transform = 'scale(1)';
+            };
+
+            container.appendChild(button);
+            console.log('Wallet button created, loading Thirdweb...');
+
+            try {
+                // Try multiple CDN sources
                 const sources = [
-                    // Try jsdelivr with package exports
-                    () => Promise.all([
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm'),
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm'),
-                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/react/+esm')
-                    ]),
-                    // Try unpkg
-                    () => Promise.all([
-                        import('https://unpkg.com/thirdweb@5?module'),
-                        import('https://unpkg.com/thirdweb@5/wallets?module'),
-                        import('https://unpkg.com/thirdweb@5/react?module')
-                    ]),
-                    // Try esm.sh with explicit version
-                    () => Promise.all([
-                        import('https://esm.sh/thirdweb@5.0.0'),
-                        import('https://esm.sh/thirdweb@5.0.0/wallets'),
-                        import('https://esm.sh/thirdweb@5.0.0/react')
-                    ])
+                    () => import('https://cdn.skypack.dev/thirdweb@5'),
+                    () => import('https://esm.sh/thirdweb@5'),
+                    () => import('https://unpkg.com/thirdweb@5?module'),
                 ];
 
+                let thirdweb, walletsModule;
                 for (const source of sources) {
                     try {
-                        const [thirdweb, walletsModule, reactModule] = await source();
+                        thirdweb = await source();
+                        walletsModule = await import('https://cdn.skypack.dev/thirdweb@5/wallets');
                         console.log('Thirdweb loaded successfully');
-                        return { thirdweb, walletsModule, reactModule };
+                        break;
                     } catch (e) {
-                        console.log('CDN source failed, trying next...', e.message);
+                        console.log('CDN failed, trying next...', e.message);
                         continue;
                     }
                 }
-                throw new Error('All CDN sources failed');
-            };
 
-            importThirdweb().then(({ thirdweb, walletsModule, reactModule }) => {
+                if (!thirdweb || !walletsModule) {
+                    throw new Error('All CDN sources failed');
+                }
+
                 const { createThirdwebClient } = thirdweb;
-                const { inAppWallet, createWallet } = walletsModule;
-                const { ConnectButton, darkTheme, ThirdwebProvider } = reactModule;
-
+                const { connect, inAppWallet, createWallet } = walletsModule;
+                
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
                 });
@@ -397,15 +413,7 @@
                 const wallets = [
                     inAppWallet({
                         auth: {
-                            options: [
-                                "google",
-                                "discord",
-                                "telegram",
-                                "farcaster",
-                                "email",
-                                "passkey",
-                                "phone",
-                            ],
+                            options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
                         },
                     }),
                     createWallet("io.metamask"),
@@ -418,27 +426,32 @@
                     createWallet("app.phantom"),
                 ];
 
-                const container = document.getElementById('wallet-connect-container');
-                if (container) {
-                    const root = ReactDOM.createRoot(container);
-                    root.render(
-                        React.createElement(ThirdwebProvider, { client: client },
-                            React.createElement(ConnectButton, {
-                                connectModal: { size: "compact" },
-                                theme: darkTheme({
-                                    colors: {
-                                        accentText: "hsl(144, 100%, 67%)",
-                                        borderColor: "hsl(153, 100%, 18%)",
-                                    },
-                                }),
-                                wallets: wallets,
-                            })
-                        )
-                    );
-                }
-            }).catch(err => {
-                console.error('Error loading Thirdweb:', err);
-            });
+                button.onclick = async () => {
+                    try {
+                        button.disabled = true;
+                        button.textContent = 'Connecting...';
+                        
+                        const wallet = await connect({
+                            client,
+                            wallets,
+                        });
+                        
+                        button.textContent = `Connected: ${wallet.getAccount().address.slice(0, 6)}...`;
+                        console.log('Wallet connected:', wallet);
+                    } catch (error) {
+                        console.error('Connection error:', error);
+                        button.disabled = false;
+                        button.textContent = 'Connect Wallet';
+                        alert('Failed to connect wallet. Please try again.');
+                    }
+                };
+
+                console.log('Wallet connect button ready');
+            } catch (error) {
+                console.error('Failed to load Thirdweb:', error);
+                button.textContent = 'Connect Wallet (Error)';
+                button.disabled = true;
+            }
         }
 
         if (document.readyState === 'loading') {
