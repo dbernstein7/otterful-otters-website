@@ -420,7 +420,7 @@
                 }
 
                 const { createThirdwebClient } = thirdweb;
-                const { inAppWallet, createWallet, connect } = walletsModule;
+                const { inAppWallet, createWallet } = walletsModule;
                 
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
@@ -463,15 +463,10 @@
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
                         
-                        // Use the connect function from wallets module with the wallet instance
-                        // This is the recommended way per Thirdweb v5 docs
-                        const connectedWallet = await connect({
-                            client,
-                            wallet: inAppWalletInstance,
-                        });
-                        
-                        // Get account from the connected wallet
-                        const account = await connectedWallet.getAccount();
+                        // The in-app wallet's connect method should be called with the client
+                        // Since client was passed during wallet creation, we might not need it again
+                        // But let's try with client parameter
+                        const account = await inAppWalletInstance.connect(client);
                         
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
