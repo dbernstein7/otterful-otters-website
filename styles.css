@@ -1421,6 +1421,40 @@ body::before {
     transform: translateX(4px);
 }
 
+.team-role-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.team-x-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(79, 214, 165, 0.2);
+    border: 2px solid var(--border-glow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease-out;
+    text-decoration: none;
+}
+
+.team-x-icon:hover {
+    background: rgba(79, 214, 165, 0.4);
+    border-color: var(--panel-blue-alt);
+    box-shadow: 0 0 30px rgba(79, 214, 165, 0.6);
+    transform: scale(1.1);
+}
+
+.team-x-icon-img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    display: block;
+}
+
 /* Team Footer Image */
 .team-footer-image {
     margin-top: 60px;
@@ -1722,6 +1756,16 @@ body::before {
         font-size: 16px;
         padding: 6px 16px;
         min-width: 120px;
+    }
+
+    .team-x-icon {
+        width: 40px;
+        height: 40px;
+    }
+
+    .team-x-icon-img {
+        width: 24px;
+        height: 24px;
     }
 
     .team-section .section-title {
