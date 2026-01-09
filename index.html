@@ -450,34 +450,58 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
-                        // Import connect function from wallets module (not react!)
-                        const { connect } = await import('https://esm.sh/thirdweb@5/wallets');
+                        console.log('Available wallets:', wallets);
+                        console.log('Wallets module exports:', Object.keys(walletsModule));
                         
-                        if (!connect || typeof connect !== 'function') {
-                            throw new Error('connect function not found in wallets module');
+                        // Try to use wallet.connect() method directly on wallet instances
+                        // Start with in-app wallet (most reliable)
+                        let connectedWallet = null;
+                        let connectionError = null;
+                        
+                        // Try in-app wallet first
+                        try {
+                            const inApp = wallets[0];
+                            console.log('Attempting to connect in-app wallet:', inApp);
+                            const account = await inApp.connect({ client });
+                            connectedWallet = inApp;
+                            console.log('In-app wallet connected:', account);
+                        } catch (e) {
+                            connectionError = e;
+                            console.log('In-app wallet failed, trying MetaMask...', e);
+                            
+                            // Try MetaMask if available
+                            try {
+                                const metamask = wallets.find(w => {
+                                    const id = w.id || w.walletId || '';
+                                    return id.includes('metamask') || id.includes('io.metamask');
+                                });
+                                
+                                if (metamask) {
+                                    console.log('Attempting to connect MetaMask:', metamask);
+                                    const account = await metamask.connect({ client });
+                                    connectedWallet = metamask;
+                                    console.log('MetaMask connected:', account);
+                                } else {
+                                    throw new Error('MetaMask wallet not found');
+                                }
+                            } catch (e2) {
+                                connectionError = e2;
+                                throw new Error(`Both wallets failed. In-app: ${e.message}, MetaMask: ${e2.message}`);
+                            }
                         }
                         
-                        console.log('Using connect function:', connect);
-                        
-                        // Use the connect function with client and wallets
-                        const wallet = await connect({
-                            client,
-                            wallets,
-                            strategy: "auto",
-                        });
-                        
-                        if (!wallet) {
-                            throw new Error('Wallet connection returned null');
+                        if (!connectedWallet) {
+                            throw connectionError || new Error('No wallet could be connected');
                         }
                         
-                        const account = await wallet.getAccount();
+                        const account = await connectedWallet.getAccount();
                         if (!account || !account.address) {
-                            throw new Error('Failed to get account from wallet');
+                            throw new Error('Failed to get account from connected wallet');
                         }
                         
                         button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
                         button.disabled = true;
-                        console.log('Wallet connected successfully:', wallet);
+                        console.log('Wallet connected successfully:', connectedWallet);
                         console.log('Account:', account);
                     } catch (error) {
                         console.error('Connection error:', error);
