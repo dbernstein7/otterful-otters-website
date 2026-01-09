@@ -143,12 +143,6 @@ body::before {
     align-items: flex-end;
 }
 
-#wallet-connect-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .magic-eden-icon,
 .opensea-icon,
 .x-icon,
