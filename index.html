@@ -451,15 +451,14 @@
                         button.textContent = 'Connecting...';
                         
                         // Use in-app wallet to show the nice SIGN IN modal
-                        const inAppWallet = wallets[0]; // First wallet is always in-app wallet
+                        const inAppWalletInstance = wallets[0]; // First wallet is always in-app wallet
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
+                        console.log('In-app wallet instance:', inAppWalletInstance);
                         
-                        // Connect using in-app wallet - this will automatically show the SIGN IN modal
-                        // The in-app wallet is configured with auth options, so it will show the modal
-                        const account = await inAppWallet.connect({ 
-                            client
-                        });
+                        // Connect using in-app wallet - pass client as first parameter
+                        // The connect method signature is: connect(client, options)
+                        const account = await inAppWalletInstance.connect(client);
                         
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
@@ -467,7 +466,7 @@
                         
                         button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
                         button.disabled = true;
-                        console.log('Wallet connected successfully:', inAppWallet);
+                        console.log('Wallet connected successfully:', inAppWalletInstance);
                         console.log('Account:', account);
                     } catch (error) {
                         console.error('Connection error:', error);
