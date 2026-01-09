@@ -450,47 +450,34 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
-                        // Import connectModal from react package for wallet selection UI
-                        const reactModule = await import('https://esm.sh/thirdweb@5/react');
-                        const { ConnectModal } = reactModule;
+                        // Import connect function from wallets module (not react!)
+                        const { connect } = await import('https://esm.sh/thirdweb@5/wallets');
                         
-                        if (!ConnectModal) {
-                            throw new Error('ConnectModal not available');
+                        if (!connect || typeof connect !== 'function') {
+                            throw new Error('connect function not found in wallets module');
                         }
                         
-                        // For vanilla JS, try connecting to the first available wallet
-                        // Start with MetaMask if available, otherwise use in-app wallet
-                        let connectedWallet = null;
-                        let lastError = null;
+                        console.log('Using connect function:', connect);
                         
-                        // Try MetaMask first
-                        try {
-                            const metamaskWallet = wallets.find(w => w.id === 'io.metamask' || w.id === 'io.metamask');
-                            if (metamaskWallet) {
-                                await metamaskWallet.connect({ client });
-                                connectedWallet = metamaskWallet;
-                            }
-                        } catch (e) {
-                            lastError = e;
-                            console.log('MetaMask connection failed, trying in-app wallet...');
+                        // Use the connect function with client and wallets
+                        const wallet = await connect({
+                            client,
+                            wallets,
+                            strategy: "auto",
+                        });
+                        
+                        if (!wallet) {
+                            throw new Error('Wallet connection returned null');
                         }
                         
-                        // If MetaMask failed, try in-app wallet
-                        if (!connectedWallet) {
-                            try {
-                                const inApp = wallets[0]; // First wallet is in-app
-                                await inApp.connect({ client });
-                                connectedWallet = inApp;
-                            } catch (e) {
-                                lastError = e;
-                                throw new Error('Failed to connect to any wallet: ' + (e.message || e.toString()));
-                            }
+                        const account = await wallet.getAccount();
+                        if (!account || !account.address) {
+                            throw new Error('Failed to get account from wallet');
                         }
                         
-                        const account = await connectedWallet.getAccount();
                         button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
                         button.disabled = true;
-                        console.log('Wallet connected:', connectedWallet);
+                        console.log('Wallet connected successfully:', wallet);
                         console.log('Account:', account);
                     } catch (error) {
                         console.error('Connection error:', error);
