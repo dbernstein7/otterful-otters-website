@@ -45,5 +45,5 @@ ENV/
 *.temp
 
 # Avatar Builder (handled separately)
-Avatar Builder/.git
+AvatarBuilder/.git
 

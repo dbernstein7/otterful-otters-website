@@ -1,0 +1,24 @@
+{
+  "name": "avatar-builder",
+  "version": "1.0.0",
+  "description": "A web-based tool for viewing and customizing GLB avatar files",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve .",
+    "dev": "npx serve . -l 3000"
+  },
+  "keywords": [
+    "glb",
+    "avatar",
+    "3d",
+    "three.js",
+    "customization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
+
+
+

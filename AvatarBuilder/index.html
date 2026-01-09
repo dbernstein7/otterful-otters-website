@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ottvatar Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo-title">
+                    <img src="fishy-log.png.png" alt="Ottvatar Logo" class="logo">
+                    <h1>Ottvatar Viewer</h1>
+                </div>
+                <div class="header-controls" style="display: flex; gap: 0.75rem; align-items: center;">
+                    <div class="nft-search-group" style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input 
+                            type="number" 
+                            id="nft-search-input" 
+                            class="nft-search-input"
+                            placeholder="NFT # (1-2222)" 
+                            min="1" 
+                            max="2222"
+                        />
+                        <button 
+                            id="nft-search-btn" 
+                            class="btn btn-primary nft-search-btn"
+                            title="Load NFT traits"
+                        >
+                            🔍 Load
+                        </button>
+                    </div>
+            </div>
+            <div id="nft-search-error" style="margin-top: 0.5rem; color: var(--warning); display: none; font-size: 0.875rem; text-align: center;"></div>
+        </header>
+
+        <div class="main-content">
+            <div class="viewer-container">
+                <button id="inventory-toggle" class="inventory-toggle-overlay" title="Open Inventory" aria-label="Open Inventory">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(180deg);">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+                <div id="canvas-container">
+                    <div class="loading" id="loading" style="display: none;">
+                        <img src="ottspin.png" alt="Loading" class="spinner-image" onerror="console.error('Failed to load ottspin.png:', this.src); this.style.border='2px solid red';">
+                        <p>Loading model...</p>
+                    </div>
+                    <div class="placeholder" id="placeholder">
+                        <div class="placeholder-content">
+                            <div class="icon">📦</div>
+                            <h3>No Model Loaded</h3>
+                            <p>Upload a GLB file to get started</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="randomize-btn" class="randomize-btn" title="Randomize fur and hat">
+                    🎲 Randomize
+                </button>
+                
+                <div class="sidebar">
+                    <div class="panel">
+                        <h2>Fur Gallery</h2>
+                        <p>Click any fur to view the 3D avatar</p>
+                        <div id="fur-gallery" class="fur-gallery"></div>
+                    </div>
+
+                    <div class="panel" id="hat-panel" style="display: none;">
+                        <h2>Hat Gallery</h2>
+                        <p>Click any hat to add it to your otter</p>
+                        <div id="hat-gallery" class="fur-gallery"></div>
+                        <button id="remove-hat-btn" class="btn btn-secondary" style="margin-top: 1rem;" disabled>
+                            🗑️ Remove Hat
+                        </button>
+                    </div>
+
+                    <div class="panel" id="shirt-panel" style="display: none;">
+                        <h2>Shirt Gallery</h2>
+                        <p>Click any shirt to add it to your otter</p>
+                        <div id="shirt-gallery" class="fur-gallery"></div>
+                        <button id="remove-shirt-btn" class="btn btn-secondary" style="margin-top: 1rem;" disabled>
+                            🗑️ Remove Shirt
+                        </button>
+                    </div>
+
+                    <div class="panel" id="eyes-panel" style="display: none;">
+                        <h2>Eyes Gallery</h2>
+                        <p>Click any eyes to add them to your otter</p>
+                        <div id="eyes-gallery" class="fur-gallery"></div>
+                        <button id="remove-eyes-btn" class="btn btn-secondary" style="margin-top: 1rem;" disabled>
+                            🗑️ Remove Eyes
+                        </button>
+                    </div>
+
+                    <div class="panel" id="scene-panel" style="display: none;">
+                        <h2>Scene Controls</h2>
+                        <div class="control-group">
+                            <label>Background</label>
+                            <select id="bg-preset" class="bg-select">
+                                <option value="dark">Dark Studio</option>
+                                <option value="light">Light Studio</option>
+                                <option value="gradient-dark">Dark Gradient</option>
+                                <option value="gradient-light">Light Gradient</option>
+                                <option value="blue-sky">Blue Sky</option>
+                                <option value="sunset">Sunset</option>
+                                <option value="custom">Custom Color</option>
+                            </select>
+                        </div>
+                        <div class="control-group" id="custom-color-group" style="display: none;">
+                            <label>Custom Color</label>
+                            <input type="color" id="bg-color" value="#1a1a1a">
+                        </div>
+                        <div class="control-group">
+                            <label>Light Intensity</label>
+                            <input type="range" id="light-intensity" min="1" max="3" step="0.1" value="3">
+                            <span id="light-value">3.0</span>
+                        </div>
+                        <div class="control-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="auto-rotate" style="width: auto; cursor: pointer;">
+                                <span>Auto Rotate</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Panel -->
+    <div id="inventory-panel" class="inventory-panel">
+        <div class="inventory-header">
+            <h2>Inventory</h2>
+            <button id="inventory-close" class="inventory-close" aria-label="Close Inventory">×</button>
+        </div>
+        <div class="inventory-content">
+            <p>Your inventory items will appear here.</p>
+        </div>
+    </div>
+    <div id="inventory-overlay" class="inventory-overlay"></div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
+
