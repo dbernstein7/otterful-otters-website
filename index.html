@@ -349,10 +349,27 @@
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        // Import Thirdweb
-        const { ConnectButton } = await import('https://esm.sh/thirdweb@5/react');
-        const { createThirdwebClient } = await import('https://esm.sh/thirdweb@5');
-        const { inAppWallet, createWallet } = await import('https://esm.sh/thirdweb@5/wallets');
+        // Import Thirdweb - try jsdelivr first (more reliable than esm.sh)
+        let ConnectButton, createThirdwebClient, inAppWallet, createWallet;
+        
+        try {
+            const react = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/react/+esm');
+            const core = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm');
+            const wallets = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm');
+            ConnectButton = react.ConnectButton;
+            createThirdwebClient = core.createThirdwebClient;
+            inAppWallet = wallets.inAppWallet;
+            createWallet = wallets.createWallet;
+        } catch (e) {
+            // Fallback to esm.sh if jsdelivr fails
+            const react = await import('https://esm.sh/thirdweb@5/react');
+            const core = await import('https://esm.sh/thirdweb@5');
+            const wallets = await import('https://esm.sh/thirdweb@5/wallets');
+            ConnectButton = react.ConnectButton;
+            createThirdwebClient = core.createThirdwebClient;
+            inAppWallet = wallets.inAppWallet;
+            createWallet = wallets.createWallet;
+        }
         
         // Create client
         const client = createThirdwebClient({
