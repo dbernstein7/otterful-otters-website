@@ -12,6 +12,15 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+html, body {
+    height: 100%;
+}
+
 :root {
     --bg-base: #0a1a0f;
     --bg-gradient-to: #0f2a1a;
@@ -31,8 +40,12 @@ body {
     font-family: 'Porkys', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: var(--bg-base);
     background: linear-gradient(135deg, var(--bg-base) 0%, var(--bg-gradient-to) 100%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    background-size: cover;
     color: var(--text-primary);
     min-height: 100vh;
+    min-height: 100%;
     position: relative;
     overflow-x: hidden;
     padding: 50px;
@@ -1723,6 +1736,7 @@ body::before {
 
     .container {
         padding: 100px 15px 40px;
+        min-height: calc(100vh - 120px);
     }
 
     .header-logo {
