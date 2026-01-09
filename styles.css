@@ -271,12 +271,12 @@ body::before {
 
 .otherside-gallery-container::before {
     left: 0;
-    background: linear-gradient(to right, var(--bg-base), transparent);
+    background: linear-gradient(to right, rgba(10, 26, 15, 1), rgba(10, 26, 15, 0));
 }
 
 .otherside-gallery-container::after {
     right: 0;
-    background: linear-gradient(to left, var(--bg-base), transparent);
+    background: linear-gradient(to left, rgba(10, 26, 15, 1), rgba(10, 26, 15, 0));
 }
 
 .otherside-gallery-scroll {
@@ -1112,12 +1112,12 @@ body::before {
 
 .nifty-gallery-container::before {
     left: 0;
-    background: linear-gradient(to right, var(--bg-base), transparent);
+    background: linear-gradient(to right, rgba(10, 26, 15, 1), rgba(10, 26, 15, 0));
 }
 
 .nifty-gallery-container::after {
     right: 0;
-    background: linear-gradient(to left, var(--bg-base), transparent);
+    background: linear-gradient(to left, rgba(10, 26, 15, 1), rgba(10, 26, 15, 0));
 }
 
 .nifty-gallery-scroll {
