@@ -127,6 +127,13 @@ body::before {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    align-items: flex-end;
+}
+
+#wallet-connect-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .magic-eden-icon,

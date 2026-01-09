@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
     <link rel="icon" type="image/png" href="fishy-log.png.png">
     <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
     <title>Otterful Otters Dashboard</title>
@@ -32,6 +32,7 @@
     </nav>
     
     <div class="top-right-icons">
+        <div id="wallet-connect-container"></div>
         <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
             <img src="me icon.png" alt="Magic Eden" class="me-icon-img" loading="eager" fetchpriority="high">
         </a>
@@ -335,6 +336,80 @@
         </div>
     </div>
 
+    <!-- React and ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Thirdweb Wallet Connection -->
+    <script type="module">
+        // Wait for React to be available
+        function initWalletConnect() {
+            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
+                setTimeout(initWalletConnect, 100);
+                return;
+            }
+
+            import('https://esm.sh/thirdweb@5').then(({ createThirdwebClient }) => {
+                return import('https://esm.sh/thirdweb/wallets@5').then(({ inAppWallet, createWallet }) => {
+                    return import('https://esm.sh/thirdweb/react@5').then(({ ConnectButton, darkTheme }) => {
+                        const client = createThirdwebClient({
+                            clientId: "YOUR_CLIENT_ID_HERE", // Replace with your actual Thirdweb client ID
+                        });
+
+                        const wallets = [
+                            inAppWallet({
+                                auth: {
+                                    options: [
+                                        "google",
+                                        "discord",
+                                        "telegram",
+                                        "farcaster",
+                                        "email",
+                                        "passkey",
+                                        "phone",
+                                    ],
+                                },
+                            }),
+                            createWallet("io.metamask"),
+                            createWallet("com.coinbase.wallet"),
+                            createWallet("me.rainbow"),
+                            createWallet("io.rabby"),
+                            createWallet("io.zerion.wallet"),
+                            createWallet("walletConnect"),
+                            createWallet("io.useglyph"),
+                            createWallet("app.phantom"),
+                        ];
+
+                        const container = document.getElementById('wallet-connect-container');
+                        if (container) {
+                            const root = ReactDOM.createRoot(container);
+                            root.render(
+                                React.createElement(ConnectButton, {
+                                    client: client,
+                                    connectModal: { size: "compact" },
+                                    theme: darkTheme({
+                                        colors: {
+                                            accentText: "hsl(144, 100%, 67%)",
+                                            borderColor: "hsl(153, 100%, 18%)",
+                                        },
+                                    }),
+                                    wallets: wallets,
+                                })
+                            );
+                        }
+                    });
+                });
+            }).catch(err => {
+                console.error('Error loading Thirdweb:', err);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initWalletConnect);
+        } else {
+            initWalletConnect();
+        }
+    </script>
     <script src="ElectricBorder.js"></script>
     <script src="script.js"></script>
 </body>
