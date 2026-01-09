@@ -1708,17 +1708,6 @@ body::before {
         gap: 8px;
     }
 
-    #wallet-connect-container {
-        width: 100%;
-        max-width: 120px;
-    }
-
-    #wallet-connect-container button {
-        padding: 8px 12px !important;
-        font-size: 12px !important;
-        border-radius: 16px !important;
-    }
-
     .magic-eden-icon,
     .opensea-icon,
     .x-icon,
