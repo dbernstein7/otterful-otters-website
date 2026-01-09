@@ -450,15 +450,15 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
-                        // Use in-app wallet first to show the nice SIGN IN modal
+                        // Use in-app wallet to show the nice SIGN IN modal
                         const inAppWallet = wallets[0]; // First wallet is always in-app wallet
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
                         
-                        // Connect using in-app wallet - this will show the SIGN IN modal
+                        // Connect using in-app wallet - this will automatically show the SIGN IN modal
+                        // The in-app wallet is configured with auth options, so it will show the modal
                         const account = await inAppWallet.connect({ 
-                            client,
-                            strategy: "auth",
+                            client
                         });
                         
                         if (!account || !account.address) {
