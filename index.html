@@ -420,7 +420,7 @@
                 }
 
                 const { createThirdwebClient } = thirdweb;
-                const { inAppWallet, createWallet } = walletsModule;
+                const { inAppWallet, createWallet, connect } = walletsModule;
                 
                 const client = createThirdwebClient({
                     clientId: "9ddee100223dbfa94ab567941db6f708",
@@ -463,23 +463,15 @@
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
                         
-                        // Since client is passed during wallet creation, connect() should work without parameters
-                        // or with minimal options
-                        let account;
-                        try {
-                            // First try: no parameters (client is already in wallet instance)
-                            account = await inAppWalletInstance.connect();
-                        } catch (e1) {
-                            console.log('No params failed, trying with client...', e1);
-                            try {
-                                // Second try: pass client (in case it's needed)
-                                account = await inAppWalletInstance.connect(client);
-                            } catch (e2) {
-                                console.log('Direct client failed, trying options object...', e2);
-                                // Third try: options object
-                                account = await inAppWalletInstance.connect({ client });
-                            }
-                        }
+                        // Use the connect function from wallets module with the wallet instance
+                        // This is the recommended way per Thirdweb v5 docs
+                        const connectedWallet = await connect({
+                            client,
+                            wallet: inAppWalletInstance,
+                        });
+                        
+                        // Get account from the connected wallet
+                        const account = await connectedWallet.getAccount();
                         
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
