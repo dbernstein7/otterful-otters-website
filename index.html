@@ -431,18 +431,30 @@
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
+                        // Use the connect function with connectModal for wallet selection
                         const wallet = await connect({
                             client,
                             wallets,
+                            strategy: "auto",
                         });
                         
-                        button.textContent = `Connected: ${wallet.getAccount().address.slice(0, 6)}...`;
+                        const account = await wallet.getAccount();
+                        button.textContent = `Connected: ${account.address.slice(0, 6)}...${account.address.slice(-4)}`;
+                        button.disabled = true;
                         console.log('Wallet connected:', wallet);
+                        console.log('Account:', account);
                     } catch (error) {
                         console.error('Connection error:', error);
                         button.disabled = false;
                         button.textContent = 'Connect Wallet';
-                        alert('Failed to connect wallet. Please try again.');
+                        // Show detailed error
+                        const errorMsg = error.message || error.toString() || 'Failed to connect wallet. Please try again.';
+                        console.error('Full error details:', {
+                            message: error.message,
+                            stack: error.stack,
+                            error: error
+                        });
+                        alert(`Connection failed: ${errorMsg}`);
                     }
                 };
 
