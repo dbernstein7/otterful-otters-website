@@ -349,11 +349,27 @@
                 return;
             }
 
-            Promise.all([
-                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/index.esm.js'),
-                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/wallets.esm.js'),
-                import('https://cdn.jsdelivr.net/npm/thirdweb@latest/dist/react.esm.js')
-            ]).then(([thirdweb, walletsModule, reactModule]) => {
+            // Try jsdelivr first, fallback to esm.sh
+            const importThirdweb = async () => {
+                try {
+                    const [thirdweb, walletsModule, reactModule] = await Promise.all([
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/index.esm.js'),
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/wallets.esm.js'),
+                        import('https://cdn.jsdelivr.net/npm/thirdweb@5/dist/react.esm.js')
+                    ]);
+                    return { thirdweb, walletsModule, reactModule };
+                } catch (e) {
+                    console.log('jsdelivr failed, trying esm.sh...', e);
+                    const [thirdweb, walletsModule, reactModule] = await Promise.all([
+                        import('https://esm.sh/thirdweb@5'),
+                        import('https://esm.sh/thirdweb@5/wallets'),
+                        import('https://esm.sh/thirdweb@5/react')
+                    ]);
+                    return { thirdweb, walletsModule, reactModule };
+                }
+            };
+
+            importThirdweb().then(({ thirdweb, walletsModule, reactModule }) => {
                 const { createThirdwebClient } = thirdweb;
                 const { inAppWallet, createWallet } = walletsModule;
                 const { ConnectButton, darkTheme, ThirdwebProvider } = reactModule;
