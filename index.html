@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
     <link rel="icon" type="image/png" href="fishy-log.png.png">
     <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
     <title>Otterful Otters Dashboard</title>
@@ -379,18 +379,34 @@
             console.log('Wallet button created, loading Thirdweb...');
 
             try {
-                // Try multiple CDN sources
+                // Try multiple CDN sources - prioritize ones with better CORS support
                 const sources = [
-                    () => import('https://cdn.skypack.dev/thirdweb@5'),
-                    () => import('https://esm.sh/thirdweb@5'),
-                    () => import('https://unpkg.com/thirdweb@5?module'),
+                    // Try esm.sh first (better CORS support)
+                    async () => {
+                        const thirdweb = await import('https://esm.sh/thirdweb@5');
+                        const walletsModule = await import('https://esm.sh/thirdweb@5/wallets');
+                        return { thirdweb, walletsModule };
+                    },
+                    // Try jsdelivr
+                    async () => {
+                        const thirdweb = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/+esm');
+                        const walletsModule = await import('https://cdn.jsdelivr.net/npm/thirdweb@5/wallets/+esm');
+                        return { thirdweb, walletsModule };
+                    },
+                    // Try skypack as fallback
+                    async () => {
+                        const thirdweb = await import('https://cdn.skypack.dev/thirdweb@5');
+                        const walletsModule = await import('https://cdn.skypack.dev/thirdweb@5/wallets');
+                        return { thirdweb, walletsModule };
+                    },
                 ];
 
                 let thirdweb, walletsModule;
                 for (const source of sources) {
                     try {
-                        thirdweb = await source();
-                        walletsModule = await import('https://cdn.skypack.dev/thirdweb@5/wallets');
+                        const result = await source();
+                        thirdweb = result.thirdweb;
+                        walletsModule = result.walletsModule;
                         console.log('Thirdweb loaded successfully');
                         break;
                     } catch (e) {
