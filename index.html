@@ -345,61 +345,97 @@
                 return;
             }
 
+            // Show a button immediately so it's always visible
+            container.innerHTML = '<button id="wallet-btn" style="padding: 12px 24px; background: rgba(79, 214, 165, 0.2); border: 2px solid rgba(79, 214, 165, 0.5); border-radius: 20px; color: #4FD6A5; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.3s ease;">Connect Wallet</button>';
+            
+            const fallbackButton = document.getElementById('wallet-btn');
+            if (fallbackButton) {
+                fallbackButton.onmouseenter = () => {
+                    fallbackButton.style.background = 'rgba(79, 214, 165, 0.4)';
+                    fallbackButton.style.borderColor = 'rgba(79, 214, 165, 0.8)';
+                    fallbackButton.style.transform = 'scale(1.05)';
+                };
+                fallbackButton.onmouseleave = () => {
+                    fallbackButton.style.background = 'rgba(79, 214, 165, 0.2)';
+                    fallbackButton.style.borderColor = 'rgba(79, 214, 165, 0.5)';
+                    fallbackButton.style.transform = 'scale(1)';
+                };
+            }
+
             // Wait for React to be available
-            if (typeof React === 'undefined' || typeof ReactDOM === 'undefined') {
-                setTimeout(initWalletConnect, 100);
-                return;
-            }
-
-            try {
-                // Import Thirdweb React components
-                const reactModule = await import('https://esm.sh/thirdweb@5/react');
-                const { createThirdwebClient } = await import('https://esm.sh/thirdweb@5');
-                const { inAppWallet, createWallet } = await import('https://esm.sh/thirdweb@5/wallets');
-                
-                const { ThirdwebProvider, ConnectButton } = reactModule;
-                
-                if (!ThirdwebProvider || !ConnectButton) {
-                    throw new Error('ThirdwebProvider or ConnectButton not found');
+            let retries = 0;
+            const maxRetries = 50; // 5 seconds max wait
+            
+            function waitForReact() {
+                if (typeof React !== 'undefined' && typeof ReactDOM !== 'undefined') {
+                    loadThirdweb();
+                } else if (retries < maxRetries) {
+                    retries++;
+                    setTimeout(waitForReact, 100);
+                } else {
+                    console.error('React not available after waiting');
+                    if (fallbackButton) {
+                        fallbackButton.textContent = 'Connect Wallet (React not loaded)';
+                        fallbackButton.disabled = true;
+                    }
                 }
-                
-                const client = createThirdwebClient({
-                    clientId: "9ddee100223dbfa94ab567941db6f708",
-                });
-
-                const wallets = [
-                    inAppWallet({
-                        auth: {
-                            options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
-                        },
-                    }),
-                    createWallet("io.metamask"),
-                    createWallet("com.coinbase.wallet"),
-                    createWallet("me.rainbow"),
-                    createWallet("io.rabby"),
-                    createWallet("io.zerion.wallet"),
-                    createWallet("walletConnect"),
-                    createWallet("io.useglyph"),
-                    createWallet("app.phantom"),
-                ];
-
-                // Render React component
-                const root = ReactDOM.createRoot(container);
-                root.render(
-                    React.createElement(ThirdwebProvider, { client },
-                        React.createElement(ConnectButton, {
-                            connectModal: { size: "compact" },
-                            wallets: wallets,
-                        })
-                    )
-                );
-                
-                console.log('Wallet connect button rendered');
-            } catch (error) {
-                console.error('Failed to load Thirdweb:', error);
-                // Show a fallback button that's always visible
-                container.innerHTML = '<button style="padding: 12px 24px; background: rgba(79, 214, 165, 0.2); border: 2px solid rgba(79, 214, 165, 0.5); border-radius: 20px; color: #4FD6A5; font-size: 16px; cursor: pointer; width: 100%;">Connect Wallet (Error)</button>';
             }
+
+            async function loadThirdweb() {
+                try {
+                    // Import Thirdweb React components
+                    const reactModule = await import('https://esm.sh/thirdweb@5/react');
+                    const { createThirdwebClient } = await import('https://esm.sh/thirdweb@5');
+                    const { inAppWallet, createWallet } = await import('https://esm.sh/thirdweb@5/wallets');
+                    
+                    const { ThirdwebProvider, ConnectButton } = reactModule;
+                    
+                    if (!ThirdwebProvider || !ConnectButton) {
+                        throw new Error('ThirdwebProvider or ConnectButton not found');
+                    }
+                    
+                    const client = createThirdwebClient({
+                        clientId: "9ddee100223dbfa94ab567941db6f708",
+                    });
+
+                    const wallets = [
+                        inAppWallet({
+                            auth: {
+                                options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
+                            },
+                        }),
+                        createWallet("io.metamask"),
+                        createWallet("com.coinbase.wallet"),
+                        createWallet("me.rainbow"),
+                        createWallet("io.rabby"),
+                        createWallet("io.zerion.wallet"),
+                        createWallet("walletConnect"),
+                        createWallet("io.useglyph"),
+                        createWallet("app.phantom"),
+                    ];
+
+                    // Render React component - this will replace the fallback button
+                    const root = ReactDOM.createRoot(container);
+                    root.render(
+                        React.createElement(ThirdwebProvider, { client },
+                            React.createElement(ConnectButton, {
+                                connectModal: { size: "compact" },
+                                wallets: wallets,
+                            })
+                        )
+                    );
+                    
+                    console.log('Wallet connect button rendered');
+                } catch (error) {
+                    console.error('Failed to load Thirdweb:', error);
+                    if (fallbackButton) {
+                        fallbackButton.textContent = 'Connect Wallet (Error)';
+                        fallbackButton.disabled = true;
+                    }
+                }
+            }
+
+            waitForReact();
         }
 
         if (document.readyState === 'loading') {
