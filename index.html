@@ -429,8 +429,10 @@
                 console.log('Client created:', client);
                 console.log('Client ID:', client?.clientId || 'NOT FOUND');
 
-                // Create in-app wallet with auth options
+                // Create in-app wallet with auth options and client
+                // The client needs to be passed during wallet creation for proper configuration
                 const inAppWalletInstance = inAppWallet({
+                    client,
                     auth: {
                         options: ["google", "discord", "telegram", "farcaster", "email", "passkey", "phone"],
                     },
@@ -467,24 +469,21 @@
                         console.log('Connect method:', inAppWalletInstance.connect);
                         console.log('Connect method type:', typeof inAppWalletInstance.connect);
                         
-                        // Try different connect signatures based on Thirdweb v5 API
-                        // The connect method might need options object with client
+                        // Since client is passed during wallet creation, connect() should work without parameters
+                        // or with minimal options
                         let account;
                         try {
-                            // First try: pass client directly
-                            account = await inAppWalletInstance.connect(client);
+                            // First try: no parameters (client is already in wallet instance)
+                            account = await inAppWalletInstance.connect();
                         } catch (e1) {
-                            console.log('Direct client failed, trying options object...', e1);
+                            console.log('No params failed, trying with client...', e1);
                             try {
-                                // Second try: pass in options object
-                                account = await inAppWalletInstance.connect({ client });
+                                // Second try: pass client (in case it's needed)
+                                account = await inAppWalletInstance.connect(client);
                             } catch (e2) {
-                                console.log('Options object failed, trying with strategy...', e2);
-                                // Third try: with strategy
-                                account = await inAppWalletInstance.connect({ 
-                                    client,
-                                    strategy: "email" // Default strategy
-                                });
+                                console.log('Direct client failed, trying options object...', e2);
+                                // Third try: options object
+                                account = await inAppWalletInstance.connect({ client });
                             }
                         }
                         
