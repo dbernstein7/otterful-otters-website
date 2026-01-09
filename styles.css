@@ -22,7 +22,7 @@
     --success-green: #2ed573;
     --text-primary: #ffffff;
     --text-secondary: #c8ffd8;
-    --text-muted: #000000;
+    --text-muted: #8fd8a8;
     --border-glow: rgba(90, 255, 180, 0.65);
     --border-soft: rgba(255, 255, 255, 0.15);
 }
@@ -799,7 +799,7 @@ body::before {
 
 .link-content p {
     font-size: 14px;
-    color: var(--text-muted);
+    color: #000000;
 }
 
 .link-arrow {
