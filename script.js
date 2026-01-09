@@ -1036,8 +1036,6 @@ async function initOthersideGallery() {
         }
     });
 
-    // Setup carousel arrow controls
-    setupCarouselArrows('otherside', scrollWrapper);
 
     // Setup modal close handler and navigation buttons
     const modal = document.getElementById('othersideModal');
