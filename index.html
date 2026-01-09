@@ -426,6 +426,9 @@
                     clientId: "9ddee100223dbfa94ab567941db6f708",
                 });
 
+                console.log('Client created:', client);
+                console.log('Client ID:', client?.clientId || 'NOT FOUND');
+
                 const wallets = [
                     inAppWallet({
                         auth: {
@@ -442,23 +445,27 @@
                     createWallet("app.phantom"),
                 ];
 
-                // Store wallets and client for button click
-                window.walletConnectConfig = { client, wallets };
+                console.log('Wallets created:', wallets.length);
 
                 button.onclick = async () => {
                     try {
                         button.disabled = true;
                         button.textContent = 'Connecting...';
                         
+                        // Verify client exists
+                        if (!client) {
+                            throw new Error('Client is not initialized');
+                        }
+                        
                         // Use in-app wallet to show the nice SIGN IN modal
                         const inAppWalletInstance = wallets[0]; // First wallet is always in-app wallet
                         
                         console.log('Connecting with in-app wallet to show SIGN IN modal...');
+                        console.log('Client:', client);
                         console.log('In-app wallet instance:', inAppWalletInstance);
                         
-                        // Connect using in-app wallet - pass client as first parameter
-                        // The connect method signature is: connect(client, options)
-                        const account = await inAppWalletInstance.connect(client);
+                        // Connect using in-app wallet - pass client in options object
+                        const account = await inAppWalletInstance.connect({ client });
                         
                         if (!account || !account.address) {
                             throw new Error('Failed to get account from connected wallet');
@@ -477,7 +484,9 @@
                         console.error('Full error details:', {
                             message: error.message,
                             stack: error.stack,
-                            error: error
+                            error: error,
+                            client: client,
+                            clientExists: !!client
                         });
                         alert(`Connection failed: ${errorMsg}`);
                     }
