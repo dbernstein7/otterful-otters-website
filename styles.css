@@ -1692,14 +1692,14 @@ body::before {
     .top-nav {
         top: 10px;
         left: 10px;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
     }
 
     .nav-pill {
-        padding: 10px 16px;
-        font-size: 14px;
-        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 11px;
+        border-radius: 16px;
     }
 
     .top-right-icons {
