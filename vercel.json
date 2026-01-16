@@ -2,10 +2,14 @@
   "version": 2,
   "buildCommand": null,
   "outputDirectory": ".",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/Otter Bros/(.*)",
+      "dest": "/Otter Bros/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
