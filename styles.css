@@ -1676,7 +1676,48 @@ body::before {
     100% { background-position: -200% 0; }
 }
 
-/* Responsive */
+/* Responsive - Tablet (iPad) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .top-nav {
+        top: 20px;
+        left: 20px;
+        gap: 12px;
+    }
+
+    .nav-pill {
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: 20px;
+    }
+
+    .top-right-icons {
+        top: 20px;
+        right: 20px;
+        gap: 10px;
+    }
+
+    .magic-eden-icon,
+    .opensea-icon,
+    .x-icon,
+    .discord-icon {
+        width: 50px;
+        height: 50px;
+    }
+
+    .me-icon-img,
+    .os-icon-img,
+    .x-icon-img,
+    .discord-icon-img {
+        width: 35px;
+        height: 35px;
+    }
+
+    .container {
+        padding: 120px 30px 60px;
+    }
+}
+
+/* Responsive - Mobile */
 @media (max-width: 768px) {
     html, body {
         height: auto;
