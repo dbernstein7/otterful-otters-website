@@ -1676,49 +1676,8 @@ body::before {
     100% { background-position: -200% 0; }
 }
 
-/* Responsive - Tablet (iPad) */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .top-nav {
-        top: 20px;
-        left: 20px;
-        gap: 12px;
-    }
-
-    .nav-pill {
-        padding: 12px 20px;
-        font-size: 14px;
-        border-radius: 20px;
-    }
-
-    .top-right-icons {
-        top: 20px;
-        right: 20px;
-        gap: 10px;
-    }
-
-    .magic-eden-icon,
-    .opensea-icon,
-    .x-icon,
-    .discord-icon {
-        width: 50px;
-        height: 50px;
-    }
-
-    .me-icon-img,
-    .os-icon-img,
-    .x-icon-img,
-    .discord-icon-img {
-        width: 35px;
-        height: 35px;
-    }
-
-    .container {
-        padding: 120px 30px 60px;
-    }
-}
-
-/* Responsive - Mobile */
-@media (max-width: 768px) {
+/* Responsive - Mobile and Tablet (all mobile devices) */
+@media (max-width: 1024px) {
     html, body {
         height: auto;
         min-height: 100vh;
@@ -1738,9 +1697,11 @@ body::before {
     }
 
     .nav-pill {
-        padding: 6px 12px;
-        font-size: 11px;
-        border-radius: 16px;
+        padding: 5px 10px !important;
+        font-size: 10px !important;
+        border-radius: 14px !important;
+        letter-spacing: 0.2px;
+        font-weight: 500;
     }
 
     .top-right-icons {
@@ -2069,6 +2030,41 @@ body::before {
 
     .team-footer-img {
         max-width: 250px;
+    }
+}
+
+/* Tablet-specific adjustments (keep small tabs but adjust container) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        padding: 120px 30px 60px;
+    }
+
+    .top-nav {
+        top: 15px;
+        left: 15px;
+        gap: 8px;
+    }
+
+    .top-right-icons {
+        top: 15px;
+        right: 15px;
+        gap: 10px;
+    }
+
+    .magic-eden-icon,
+    .opensea-icon,
+    .x-icon,
+    .discord-icon {
+        width: 45px;
+        height: 45px;
+    }
+
+    .me-icon-img,
+    .os-icon-img,
+    .x-icon-img,
+    .discord-icon-img {
+        width: 32px;
+        height: 32px;
     }
 }
 
