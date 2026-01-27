@@ -202,19 +202,32 @@ async function fetchCollectionStats() {
         // This avoids CORS issues by fetching server-side
         const apiUrl = '/api/opensea-stats';
         
+        console.log('Fetching stats from:', apiUrl);
+        
         const response = await fetch(apiUrl);
         
+        console.log('Response status:', response.status, response.statusText);
+        
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('API Error Response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
         
         const data = await response.json();
         
         console.log('OpenSea API response:', data); // Debug log
         
+        // Check if there's an error in the response
+        if (data.error) {
+            throw new Error(`API Error: ${data.error}`);
+        }
+        
         // OpenSea v1 API structure
         if (data && data.stats) {
             const stats = data.stats;
+            
+            console.log('Parsing stats:', stats);
             
             // Update floor price
             if (stats.floor_price !== undefined && stats.floor_price !== null) {
@@ -239,6 +252,7 @@ async function fetchCollectionStats() {
             
             // Get best offer from collection data
             if (data.collection) {
+                console.log('Collection data:', data.collection);
                 // Try different possible fields for best offer
                 let bestOffer = null;
                 if (data.collection.best_offer !== undefined && data.collection.best_offer !== null) {
@@ -257,10 +271,15 @@ async function fetchCollectionStats() {
             console.log('Collection stats updated successfully from OpenSea');
             return true;
         } else {
-            throw new Error('Invalid response format from OpenSea API');
+            console.error('Invalid response format - no stats found:', data);
+            throw new Error('Invalid response format from OpenSea API - no stats found');
         }
     } catch (error) {
         console.error('Error fetching collection stats from OpenSea:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
         console.warn('Using cached/fallback values');
         return false;
     }
