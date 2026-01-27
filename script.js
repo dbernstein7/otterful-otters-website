@@ -85,8 +85,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Simulate data updates (in real app, this would fetch from API)
+        // Fetch initial statistics
         try {
+            fetchCollectionStats();
             setupDataUpdates();
         } catch (err) {
             console.error('Error setting up data updates:', err);
@@ -195,18 +196,181 @@ function setupRefreshButton() {
     }
 }
 
-function updateStats() {
-    // Animate stat updates
-    const statValues = document.querySelectorAll('.stat-value');
+async function fetchCollectionStats() {
+    const contractAddress = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
     
-    statValues.forEach(stat => {
-        stat.style.transform = 'scale(1.1)';
-        stat.style.transition = 'transform 0.3s ease-out';
+    try {
+        // Fetch collection stats from Reservoir API
+        const response = await fetch(
+            `https://api.reservoir.tools/collections/v7?id=${contractAddress}&chain=apechain`,
+            {
+                headers: {
+                    'Accept': 'application/json',
+                }
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.collections || data.collections.length === 0) {
+            throw new Error('No collection data found');
+        }
+        
+        const collection = data.collections[0];
+        
+        // Update floor price - handle different possible response structures
+        let floorPrice = null;
+        if (collection.floorAsk?.price?.amount?.native !== undefined) {
+            floorPrice = collection.floorAsk.price.amount.native;
+        } else if (collection.floorAskPrice?.amount?.native !== undefined) {
+            floorPrice = collection.floorAskPrice.amount.native;
+        } else if (collection.floorAsk?.price?.amount?.decimal !== undefined) {
+            floorPrice = parseFloat(collection.floorAsk.price.amount.decimal) * 1e18;
+        } else if (collection.floorAskPrice?.amount?.decimal !== undefined) {
+            floorPrice = parseFloat(collection.floorAskPrice.amount.decimal) * 1e18;
+        }
+        
+        if (floorPrice !== null && floorPrice !== undefined) {
+            updateStatValue('stat-floor-price', formatNumber(floorPrice / 1e18), 'APE');
+        }
+        
+        // Update top offer (top bid)
+        let topBid = null;
+        if (collection.topBid?.price?.amount?.native !== undefined) {
+            topBid = collection.topBid.price.amount.native;
+        } else if (collection.topBidValue?.amount?.native !== undefined) {
+            topBid = collection.topBidValue.amount.native;
+        } else if (collection.topBid?.price?.amount?.decimal !== undefined) {
+            topBid = parseFloat(collection.topBid.price.amount.decimal) * 1e18;
+        }
+        
+        if (topBid !== null && topBid !== undefined) {
+            updateStatValue('stat-top-offer', formatNumber(topBid / 1e18), 'WAPE');
+        }
+        
+        // Update total volume
+        let totalVolume = null;
+        if (collection.volume?.allTime !== undefined) {
+            totalVolume = collection.volume.allTime;
+        } else if (collection.volumeAllTime !== undefined) {
+            totalVolume = collection.volumeAllTime;
+        }
+        
+        if (totalVolume !== null && totalVolume !== undefined) {
+            updateStatValue('stat-total-volume', formatLargeNumber(totalVolume / 1e18), 'APE');
+        }
+        
+        // Update 24h volume
+        let volume24h = null;
+        if (collection.volume?.day1 !== undefined) {
+            volume24h = collection.volume.day1;
+        } else if (collection.volume1day !== undefined) {
+            volume24h = collection.volume1day;
+        } else if (collection.volume?.['1day'] !== undefined) {
+            volume24h = collection.volume['1day'];
+        }
+        
+        if (volume24h !== null && volume24h !== undefined) {
+            updateStatValue('stat-24h-volume', formatNumber(volume24h / 1e18), 'APE');
+        }
+        
+        // Update floor price change (1 day)
+        if (floorPrice !== null && floorPrice !== undefined) {
+            let floorChange = null;
+            if (collection.floorAsk?.price?.change?.day1 !== undefined) {
+                floorChange = collection.floorAsk.price.change.day1;
+            } else if (collection.floorPriceChange1day !== undefined) {
+                floorChange = collection.floorPriceChange1day;
+            }
+            
+            if (floorChange !== null && floorChange !== undefined) {
+                const currentPrice = floorPrice / 1e18;
+                const previousPrice = (floorPrice - floorChange) / 1e18;
+                if (previousPrice > 0) {
+                    const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
+                    updateStatChange('stat-floor-change', changePercent);
+                }
+            }
+        }
+        
+        console.log('Collection stats updated successfully');
+        return true;
+    } catch (error) {
+        console.error('Error fetching collection stats:', error);
+        console.warn('Using cached/fallback values');
+        return false;
+    }
+}
+
+function formatNumber(num) {
+    if (num === undefined || num === null || isNaN(num)) return '0.00';
+    return num.toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 3 
+    });
+}
+
+function formatLargeNumber(num) {
+    if (num === undefined || num === null || isNaN(num)) return '0';
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(1) + 'K';
+    }
+    return formatNumber(num);
+}
+
+function updateStatValue(elementId, value, unit) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        // Animate the update
+        element.style.transform = 'scale(1.1)';
+        element.style.transition = 'transform 0.3s ease-out';
+        
+        // Update the value
+        const unitSpan = element.querySelector('.stat-unit');
+        if (unitSpan) {
+            element.innerHTML = `${value} <span class="stat-unit">${unit}</span>`;
+        } else {
+            element.innerHTML = `${value} <span class="stat-unit">${unit}</span>`;
+        }
         
         setTimeout(() => {
-            stat.style.transform = 'scale(1)';
+            element.style.transform = 'scale(1)';
         }, 300);
-    });
+    }
+}
+
+function updateStatChange(elementId, changePercent) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const isPositive = changePercent >= 0;
+        element.textContent = `${isPositive ? '+' : ''}${changePercent.toFixed(1)}% (1d)`;
+        element.className = `stat-change ${isPositive ? 'positive' : 'negative'}`;
+    }
+}
+
+async function updateStats() {
+    // Fetch real data from API
+    const success = await fetchCollectionStats();
+    
+    if (success) {
+        // Animate stat updates
+        const statValues = document.querySelectorAll('.stat-value');
+        
+        statValues.forEach(stat => {
+            stat.style.transform = 'scale(1.1)';
+            stat.style.transition = 'transform 0.3s ease-out';
+            
+            setTimeout(() => {
+                stat.style.transform = 'scale(1)';
+            }, 300);
+        });
+    }
     
     // Update bar animations
     const barFills = document.querySelectorAll('.bar-fill');
@@ -220,11 +384,10 @@ function updateStats() {
 }
 
 function setupDataUpdates() {
-    // Simulate real-time updates every 30 seconds
-    // In production, this would connect to WebSocket or polling API
+    // Update statistics every 30 seconds
     setInterval(() => {
-        // Could update prices, volumes, etc.
         console.log('Checking for data updates...');
+        fetchCollectionStats();
     }, 30000);
 }
 
