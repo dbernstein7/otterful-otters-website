@@ -1,61 +1,35 @@
 // Vercel serverless function to proxy OpenSea API calls
-// Using Web Standard Request/Response API
-export default async function handler(request) {
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-        return new Response(null, {
-            status: 200,
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
-            },
-        });
+// Using legacy format for maximum compatibility
+const https = require('https');
+const http = require('http');
+
+module.exports = async (req, res) => {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
     }
 
-    if (request.method !== 'GET') {
-        return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-            status: 405,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
-        });
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
         const collectionSlug = 'otterful-otters';
         
-        // Fetch collection stats
+        // Fetch collection stats using Node.js https module
         const statsUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
-        const statsResponse = await fetch(statsUrl, {
-            headers: {
-                'Accept': 'application/json',
-                'User-Agent': 'Mozilla/5.0',
-            },
-        });
-
-        if (!statsResponse.ok) {
-            const errorText = await statsResponse.text();
-            throw new Error(`OpenSea API error: ${statsResponse.status} ${statsResponse.statusText} - ${errorText}`);
-        }
-
-        const statsData = await statsResponse.json();
+        const statsData = await fetchUrl(statsUrl);
 
         // Fetch collection data for best offer
         let collectionData = {};
         try {
             const collectionUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}`;
-            const collectionResponse = await fetch(collectionUrl, {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0',
-                },
-            });
-
-            if (collectionResponse.ok) {
-                collectionData = await collectionResponse.json();
-            }
+            collectionData = await fetchUrl(collectionUrl);
         } catch (collectionError) {
             console.warn('Could not fetch collection data:', collectionError);
         }
@@ -66,25 +40,44 @@ export default async function handler(request) {
             collection: collectionData.collection || {},
         };
 
-        return new Response(JSON.stringify(result), {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-            },
-        });
+        return res.status(200).json(result);
     } catch (error) {
         console.error('Error fetching OpenSea data:', error);
-        return new Response(JSON.stringify({ 
+        return res.status(500).json({ 
             error: error.message || 'Failed to fetch OpenSea data',
             details: error.stack
-        }), {
-            status: 500,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            },
         });
     }
+};
+
+// Helper function to fetch URL using Node.js https
+function fetchUrl(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0',
+            }
+        }, (res) => {
+            let data = '';
+            
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+            
+            res.on('end', () => {
+                if (res.statusCode >= 200 && res.statusCode < 300) {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (e) {
+                        reject(new Error(`Failed to parse JSON: ${e.message}`));
+                    }
+                } else {
+                    reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage} - ${data}`));
+                }
+            });
+        }).on('error', (error) => {
+            reject(error);
+        });
+    });
 }
