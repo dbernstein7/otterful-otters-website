@@ -197,24 +197,18 @@ function setupRefreshButton() {
 }
 
 async function fetchCollectionStats() {
-    const collectionSlug = 'otterful-otters';
-    
     try {
-        // Fetch collection stats from OpenSea API using CORS proxy
-        // OpenSea API v1 endpoint (doesn't require auth for public data)
-        const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
+        // Fetch collection stats from our backend API endpoint (which proxies OpenSea)
+        // This avoids CORS issues by fetching server-side
+        const apiUrl = '/api/opensea-stats';
         
-        // Use CORS proxy to bypass CORS restrictions
-        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-        
-        const response = await fetch(proxyUrl);
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const proxyData = await response.json();
-        const data = JSON.parse(proxyData.contents);
+        const data = await response.json();
         
         console.log('OpenSea API response:', data); // Debug log
         
@@ -226,9 +220,6 @@ async function fetchCollectionStats() {
             if (stats.floor_price !== undefined && stats.floor_price !== null) {
                 updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
             }
-            
-            // Update top offer (best offer) - OpenSea doesn't provide this in stats, try to get from collection data
-            // We'll need to fetch collection data separately for best offer
             
             // Update total volume
             if (stats.total_volume !== undefined && stats.total_volume !== null) {
@@ -246,25 +237,21 @@ async function fetchCollectionStats() {
                 updateStatChange('stat-floor-change', changePercent);
             }
             
-            // Fetch collection data for best offer
-            try {
-                const collectionUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}`;
-                const collectionProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(collectionUrl)}`;
-                const collectionResponse = await fetch(collectionProxyUrl);
-                
-                if (collectionResponse.ok) {
-                    const collectionProxyData = await collectionResponse.json();
-                    const collectionData = JSON.parse(collectionProxyData.contents);
-                    
-                    // Try to get best offer from collection data
-                    if (collectionData.collection && collectionData.collection.best_offer) {
-                        updateStatValue('stat-top-offer', formatNumber(collectionData.collection.best_offer), 'WAPE');
-                    } else if (collectionData.collection && collectionData.collection.top_bid) {
-                        updateStatValue('stat-top-offer', formatNumber(collectionData.collection.top_bid), 'WAPE');
-                    }
+            // Get best offer from collection data
+            if (data.collection) {
+                // Try different possible fields for best offer
+                let bestOffer = null;
+                if (data.collection.best_offer !== undefined && data.collection.best_offer !== null) {
+                    bestOffer = data.collection.best_offer;
+                } else if (data.collection.top_bid !== undefined && data.collection.top_bid !== null) {
+                    bestOffer = data.collection.top_bid;
+                } else if (data.collection.stats && data.collection.stats.top_bid !== undefined) {
+                    bestOffer = data.collection.stats.top_bid;
                 }
-            } catch (offerError) {
-                console.warn('Could not fetch best offer:', offerError);
+                
+                if (bestOffer !== null && bestOffer !== undefined) {
+                    updateStatValue('stat-top-offer', formatNumber(bestOffer), 'WAPE');
+                }
             }
             
             console.log('Collection stats updated successfully from OpenSea');
@@ -274,50 +261,6 @@ async function fetchCollectionStats() {
         }
     } catch (error) {
         console.error('Error fetching collection stats from OpenSea:', error);
-        
-        // Fallback: Try direct fetch without proxy (might work if CORS allows)
-        try {
-            const directResponse = await fetch(
-                `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`,
-                {
-                    headers: {
-                        'Accept': 'application/json',
-                    }
-                }
-            );
-            
-            if (directResponse.ok) {
-                const directData = await directResponse.json();
-                console.log('OpenSea direct API response:', directData);
-                
-                if (directData.stats) {
-                    const stats = directData.stats;
-                    
-                    if (stats.floor_price !== undefined && stats.floor_price !== null) {
-                        updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
-                    }
-                    
-                    if (stats.total_volume !== undefined && stats.total_volume !== null) {
-                        updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
-                    }
-                    
-                    if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
-                        updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
-                    }
-                    
-                    if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
-                        const changePercent = stats.one_day_change * 100;
-                        updateStatChange('stat-floor-change', changePercent);
-                    }
-                    
-                    console.log('Collection stats updated successfully from OpenSea (direct)');
-                    return true;
-                }
-            }
-        } catch (fallbackError) {
-            console.error('Direct fetch also failed:', fallbackError);
-        }
-        
         console.warn('Using cached/fallback values');
         return false;
     }
