@@ -200,9 +200,9 @@ async function fetchCollectionStats() {
     const contractAddress = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
     
     try {
-        // Fetch collection stats from Reservoir API
+        // Fetch collection stats from Reservoir API (ApeChain-specific endpoint)
         const response = await fetch(
-            `https://api.reservoir.tools/collections/v7?id=${contractAddress}&chain=apechain`,
+            `https://api-apechain.reservoir.tools/collections/v7?id=${contractAddress}`,
             {
                 headers: {
                     'Accept': 'application/json',
@@ -215,6 +215,8 @@ async function fetchCollectionStats() {
         }
         
         const data = await response.json();
+        
+        console.log('Reservoir API response:', data); // Debug log
         
         if (!data.collections || data.collections.length === 0) {
             throw new Error('No collection data found');
@@ -232,10 +234,13 @@ async function fetchCollectionStats() {
             floorPrice = parseFloat(collection.floorAsk.price.amount.decimal) * 1e18;
         } else if (collection.floorAskPrice?.amount?.decimal !== undefined) {
             floorPrice = parseFloat(collection.floorAskPrice.amount.decimal) * 1e18;
+        } else if (collection.floorAsk?.price?.amount?.raw !== undefined) {
+            floorPrice = collection.floorAsk.price.amount.raw;
         }
         
         if (floorPrice !== null && floorPrice !== undefined) {
-            updateStatValue('stat-floor-price', formatNumber(floorPrice / 1e18), 'APE');
+            const floorPriceFormatted = floorPrice / 1e18;
+            updateStatValue('stat-floor-price', formatNumber(floorPriceFormatted), 'APE');
         }
         
         // Update top offer (top bid)
@@ -246,10 +251,13 @@ async function fetchCollectionStats() {
             topBid = collection.topBidValue.amount.native;
         } else if (collection.topBid?.price?.amount?.decimal !== undefined) {
             topBid = parseFloat(collection.topBid.price.amount.decimal) * 1e18;
+        } else if (collection.topBid?.price?.amount?.raw !== undefined) {
+            topBid = collection.topBid.price.amount.raw;
         }
         
         if (topBid !== null && topBid !== undefined) {
-            updateStatValue('stat-top-offer', formatNumber(topBid / 1e18), 'WAPE');
+            const topBidFormatted = topBid / 1e18;
+            updateStatValue('stat-top-offer', formatNumber(topBidFormatted), 'WAPE');
         }
         
         // Update total volume
@@ -258,10 +266,14 @@ async function fetchCollectionStats() {
             totalVolume = collection.volume.allTime;
         } else if (collection.volumeAllTime !== undefined) {
             totalVolume = collection.volumeAllTime;
+        } else if (typeof collection.volume === 'object' && collection.volume !== null) {
+            // Try different volume keys
+            totalVolume = collection.volume.alltime || collection.volume['all-time'] || collection.volume.total;
         }
         
         if (totalVolume !== null && totalVolume !== undefined) {
-            updateStatValue('stat-total-volume', formatLargeNumber(totalVolume / 1e18), 'APE');
+            const totalVolumeFormatted = typeof totalVolume === 'string' ? parseFloat(totalVolume) : totalVolume;
+            updateStatValue('stat-total-volume', formatLargeNumber(totalVolumeFormatted / 1e18), 'APE');
         }
         
         // Update 24h volume
@@ -272,28 +284,32 @@ async function fetchCollectionStats() {
             volume24h = collection.volume1day;
         } else if (collection.volume?.['1day'] !== undefined) {
             volume24h = collection.volume['1day'];
+        } else if (typeof collection.volume === 'object' && collection.volume !== null) {
+            volume24h = collection.volume['1day'] || collection.volume.day1 || collection.volume['24h'];
         }
         
         if (volume24h !== null && volume24h !== undefined) {
-            updateStatValue('stat-24h-volume', formatNumber(volume24h / 1e18), 'APE');
+            const volume24hFormatted = typeof volume24h === 'string' ? parseFloat(volume24h) : volume24h;
+            updateStatValue('stat-24h-volume', formatNumber(volume24hFormatted / 1e18), 'APE');
         }
         
         // Update floor price change (1 day)
         if (floorPrice !== null && floorPrice !== undefined) {
-            let floorChange = null;
+            let floorChangePercent = null;
+            // Try to get the change percentage directly
             if (collection.floorAsk?.price?.change?.day1 !== undefined) {
-                floorChange = collection.floorAsk.price.change.day1;
+                floorChangePercent = collection.floorAsk.price.change.day1;
             } else if (collection.floorPriceChange1day !== undefined) {
-                floorChange = collection.floorPriceChange1day;
+                floorChangePercent = collection.floorPriceChange1day;
+            } else if (collection.floorPriceChange?.day1 !== undefined) {
+                floorChangePercent = collection.floorPriceChange.day1;
             }
             
-            if (floorChange !== null && floorChange !== undefined) {
-                const currentPrice = floorPrice / 1e18;
-                const previousPrice = (floorPrice - floorChange) / 1e18;
-                if (previousPrice > 0) {
-                    const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
-                    updateStatChange('stat-floor-change', changePercent);
-                }
+            // If we have a percentage change, use it directly
+            if (floorChangePercent !== null && floorChangePercent !== undefined) {
+                // If it's already a percentage (0-100), use it; if it's a decimal (0-1), multiply by 100
+                const percent = Math.abs(floorChangePercent) > 1 ? floorChangePercent : floorChangePercent * 100;
+                updateStatChange('stat-floor-change', percent);
             }
         }
         
