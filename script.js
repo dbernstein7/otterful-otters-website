@@ -197,92 +197,144 @@ function setupRefreshButton() {
 }
 
 async function fetchCollectionStats() {
-    try {
-        // Fetch collection stats from our backend API endpoint (which proxies OpenSea)
-        // This avoids CORS issues by fetching server-side
-        const apiUrl = '/api/opensea-stats';
-        
-        console.log('Fetching stats from:', apiUrl);
-        
-        const response = await fetch(apiUrl);
-        
-        console.log('Response status:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('API Error Response:', errorText);
-            throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
+    const collectionSlug = 'otterful-otters';
+    
+    // Try multiple approaches in order of preference
+    const approaches = [
+        // Approach 1: Try our Vercel API endpoint
+        async () => {
+            const apiUrl = '/api/opensea-stats';
+            console.log('Trying Vercel API endpoint:', apiUrl);
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return await response.json();
+        },
+        // Approach 2: Try CORS proxy (corsproxy.io)
+        async () => {
+            const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
+            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
+            console.log('Trying CORS proxy:', proxyUrl);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const data = await response.json();
+            return { stats: data.stats || {} };
+        },
+        // Approach 3: Try another CORS proxy (api.allorigins.win)
+        async () => {
+            const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
+            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+            console.log('Trying allorigins proxy:', proxyUrl);
+            const response = await fetch(proxyUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const proxyData = await response.json();
+            return JSON.parse(proxyData.contents);
         }
-        
-        const data = await response.json();
-        
-        console.log('OpenSea API response:', data); // Debug log
-        
-        // Check if there's an error in the response
-        if (data.error) {
-            throw new Error(`API Error: ${data.error}`);
-        }
-        
-        // OpenSea v1 API structure
-        if (data && data.stats) {
-            const stats = data.stats;
+    ];
+    
+    for (let i = 0; i < approaches.length; i++) {
+        try {
+            console.log(`Attempting approach ${i + 1}...`);
+            const data = await approaches[i]();
             
-            console.log('Parsing stats:', stats);
+            console.log('OpenSea API response:', data);
             
-            // Update floor price
-            if (stats.floor_price !== undefined && stats.floor_price !== null) {
-                updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
+            // Check if there's an error in the response
+            if (data.error) {
+                throw new Error(`API Error: ${data.error}`);
             }
             
-            // Update total volume
-            if (stats.total_volume !== undefined && stats.total_volume !== null) {
-                updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
-            }
-            
-            // Update 24h volume
-            if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
-                updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
-            }
-            
-            // Update floor price change (1 day)
-            if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
-                const changePercent = stats.one_day_change * 100; // Convert to percentage
-                updateStatChange('stat-floor-change', changePercent);
-            }
-            
-            // Get best offer from collection data
-            if (data.collection) {
-                console.log('Collection data:', data.collection);
-                // Try different possible fields for best offer
-                let bestOffer = null;
-                if (data.collection.best_offer !== undefined && data.collection.best_offer !== null) {
-                    bestOffer = data.collection.best_offer;
-                } else if (data.collection.top_bid !== undefined && data.collection.top_bid !== null) {
-                    bestOffer = data.collection.top_bid;
-                } else if (data.collection.stats && data.collection.stats.top_bid !== undefined) {
-                    bestOffer = data.collection.stats.top_bid;
+            // OpenSea v1 API structure
+            if (data && data.stats) {
+                const stats = data.stats;
+                
+                console.log('Parsing stats:', stats);
+                
+                // Update floor price
+                if (stats.floor_price !== undefined && stats.floor_price !== null) {
+                    updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
                 }
                 
-                if (bestOffer !== null && bestOffer !== undefined) {
-                    updateStatValue('stat-top-offer', formatNumber(bestOffer), 'WAPE');
+                // Update total volume
+                if (stats.total_volume !== undefined && stats.total_volume !== null) {
+                    updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
                 }
+                
+                // Update 24h volume
+                if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
+                    updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
+                }
+                
+                // Update floor price change (1 day)
+                if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
+                    const changePercent = stats.one_day_change * 100; // Convert to percentage
+                    updateStatChange('stat-floor-change', changePercent);
+                }
+                
+                // Try to get best offer - fetch collection data separately
+                try {
+                    let collectionData = {};
+                    if (i === 0) {
+                        // If using our API, collection data should already be included
+                        collectionData = data.collection || {};
+                    } else {
+                        // Otherwise fetch it separately
+                        const collectionUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}`;
+                        const collectionProxyUrl = i === 1 
+                            ? `https://corsproxy.io/?${encodeURIComponent(collectionUrl)}`
+                            : `https://api.allorigins.win/get?url=${encodeURIComponent(collectionUrl)}`;
+                        
+                        const collectionResponse = await fetch(collectionProxyUrl);
+                        if (collectionResponse.ok) {
+                            if (i === 1) {
+                                collectionData = await collectionResponse.json();
+                            } else {
+                                const proxyData = await collectionResponse.json();
+                                collectionData = JSON.parse(proxyData.contents);
+                            }
+                        }
+                    }
+                    
+                    if (collectionData.collection) {
+                        const collection = collectionData.collection;
+                        let bestOffer = null;
+                        if (collection.best_offer !== undefined && collection.best_offer !== null) {
+                            bestOffer = collection.best_offer;
+                        } else if (collection.top_bid !== undefined && collection.top_bid !== null) {
+                            bestOffer = collection.top_bid;
+                        } else if (collection.stats && collection.stats.top_bid !== undefined) {
+                            bestOffer = collection.stats.top_bid;
+                        }
+                        
+                        if (bestOffer !== null && bestOffer !== undefined) {
+                            updateStatValue('stat-top-offer', formatNumber(bestOffer), 'WAPE');
+                        }
+                    }
+                } catch (offerError) {
+                    console.warn('Could not fetch best offer:', offerError);
+                }
+                
+                console.log(`Collection stats updated successfully using approach ${i + 1}`);
+                return true;
+            } else {
+                throw new Error('Invalid response format - no stats found');
             }
-            
-            console.log('Collection stats updated successfully from OpenSea');
-            return true;
-        } else {
-            console.error('Invalid response format - no stats found:', data);
-            throw new Error('Invalid response format from OpenSea API - no stats found');
+        } catch (error) {
+            console.error(`Approach ${i + 1} failed:`, error);
+            if (i === approaches.length - 1) {
+                // Last approach failed
+                console.error('All approaches failed. Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+                console.warn('Using cached/fallback values');
+                return false;
+            }
+            // Try next approach
+            continue;
         }
-    } catch (error) {
-        console.error('Error fetching collection stats from OpenSea:', error);
-        console.error('Error details:', {
-            message: error.message,
-            stack: error.stack
-        });
-        console.warn('Using cached/fallback values');
-        return false;
     }
+    
+    return false;
 }
 
 function formatNumber(num) {
