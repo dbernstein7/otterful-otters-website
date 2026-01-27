@@ -197,126 +197,127 @@ function setupRefreshButton() {
 }
 
 async function fetchCollectionStats() {
-    const contractAddress = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
+    const collectionSlug = 'otterful-otters';
     
     try {
-        // Fetch collection stats from Reservoir API (ApeChain-specific endpoint)
-        const response = await fetch(
-            `https://api-apechain.reservoir.tools/collections/v7?id=${contractAddress}`,
-            {
-                headers: {
-                    'Accept': 'application/json',
-                }
-            }
-        );
+        // Fetch collection stats from OpenSea API using CORS proxy
+        // OpenSea API v1 endpoint (doesn't require auth for public data)
+        const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
+        
+        // Use CORS proxy to bypass CORS restrictions
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+        
+        const response = await fetch(proxyUrl);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
-        const data = await response.json();
+        const proxyData = await response.json();
+        const data = JSON.parse(proxyData.contents);
         
-        console.log('Reservoir API response:', data); // Debug log
+        console.log('OpenSea API response:', data); // Debug log
         
-        if (!data.collections || data.collections.length === 0) {
-            throw new Error('No collection data found');
-        }
-        
-        const collection = data.collections[0];
-        
-        // Update floor price - handle different possible response structures
-        let floorPrice = null;
-        if (collection.floorAsk?.price?.amount?.native !== undefined) {
-            floorPrice = collection.floorAsk.price.amount.native;
-        } else if (collection.floorAskPrice?.amount?.native !== undefined) {
-            floorPrice = collection.floorAskPrice.amount.native;
-        } else if (collection.floorAsk?.price?.amount?.decimal !== undefined) {
-            floorPrice = parseFloat(collection.floorAsk.price.amount.decimal) * 1e18;
-        } else if (collection.floorAskPrice?.amount?.decimal !== undefined) {
-            floorPrice = parseFloat(collection.floorAskPrice.amount.decimal) * 1e18;
-        } else if (collection.floorAsk?.price?.amount?.raw !== undefined) {
-            floorPrice = collection.floorAsk.price.amount.raw;
-        }
-        
-        if (floorPrice !== null && floorPrice !== undefined) {
-            const floorPriceFormatted = floorPrice / 1e18;
-            updateStatValue('stat-floor-price', formatNumber(floorPriceFormatted), 'APE');
-        }
-        
-        // Update top offer (top bid)
-        let topBid = null;
-        if (collection.topBid?.price?.amount?.native !== undefined) {
-            topBid = collection.topBid.price.amount.native;
-        } else if (collection.topBidValue?.amount?.native !== undefined) {
-            topBid = collection.topBidValue.amount.native;
-        } else if (collection.topBid?.price?.amount?.decimal !== undefined) {
-            topBid = parseFloat(collection.topBid.price.amount.decimal) * 1e18;
-        } else if (collection.topBid?.price?.amount?.raw !== undefined) {
-            topBid = collection.topBid.price.amount.raw;
-        }
-        
-        if (topBid !== null && topBid !== undefined) {
-            const topBidFormatted = topBid / 1e18;
-            updateStatValue('stat-top-offer', formatNumber(topBidFormatted), 'WAPE');
-        }
-        
-        // Update total volume
-        let totalVolume = null;
-        if (collection.volume?.allTime !== undefined) {
-            totalVolume = collection.volume.allTime;
-        } else if (collection.volumeAllTime !== undefined) {
-            totalVolume = collection.volumeAllTime;
-        } else if (typeof collection.volume === 'object' && collection.volume !== null) {
-            // Try different volume keys
-            totalVolume = collection.volume.alltime || collection.volume['all-time'] || collection.volume.total;
-        }
-        
-        if (totalVolume !== null && totalVolume !== undefined) {
-            const totalVolumeFormatted = typeof totalVolume === 'string' ? parseFloat(totalVolume) : totalVolume;
-            updateStatValue('stat-total-volume', formatLargeNumber(totalVolumeFormatted / 1e18), 'APE');
-        }
-        
-        // Update 24h volume
-        let volume24h = null;
-        if (collection.volume?.day1 !== undefined) {
-            volume24h = collection.volume.day1;
-        } else if (collection.volume1day !== undefined) {
-            volume24h = collection.volume1day;
-        } else if (collection.volume?.['1day'] !== undefined) {
-            volume24h = collection.volume['1day'];
-        } else if (typeof collection.volume === 'object' && collection.volume !== null) {
-            volume24h = collection.volume['1day'] || collection.volume.day1 || collection.volume['24h'];
-        }
-        
-        if (volume24h !== null && volume24h !== undefined) {
-            const volume24hFormatted = typeof volume24h === 'string' ? parseFloat(volume24h) : volume24h;
-            updateStatValue('stat-24h-volume', formatNumber(volume24hFormatted / 1e18), 'APE');
-        }
-        
-        // Update floor price change (1 day)
-        if (floorPrice !== null && floorPrice !== undefined) {
-            let floorChangePercent = null;
-            // Try to get the change percentage directly
-            if (collection.floorAsk?.price?.change?.day1 !== undefined) {
-                floorChangePercent = collection.floorAsk.price.change.day1;
-            } else if (collection.floorPriceChange1day !== undefined) {
-                floorChangePercent = collection.floorPriceChange1day;
-            } else if (collection.floorPriceChange?.day1 !== undefined) {
-                floorChangePercent = collection.floorPriceChange.day1;
+        // OpenSea v1 API structure
+        if (data && data.stats) {
+            const stats = data.stats;
+            
+            // Update floor price
+            if (stats.floor_price !== undefined && stats.floor_price !== null) {
+                updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
             }
             
-            // If we have a percentage change, use it directly
-            if (floorChangePercent !== null && floorChangePercent !== undefined) {
-                // If it's already a percentage (0-100), use it; if it's a decimal (0-1), multiply by 100
-                const percent = Math.abs(floorChangePercent) > 1 ? floorChangePercent : floorChangePercent * 100;
-                updateStatChange('stat-floor-change', percent);
+            // Update top offer (best offer) - OpenSea doesn't provide this in stats, try to get from collection data
+            // We'll need to fetch collection data separately for best offer
+            
+            // Update total volume
+            if (stats.total_volume !== undefined && stats.total_volume !== null) {
+                updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
             }
+            
+            // Update 24h volume
+            if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
+                updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
+            }
+            
+            // Update floor price change (1 day)
+            if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
+                const changePercent = stats.one_day_change * 100; // Convert to percentage
+                updateStatChange('stat-floor-change', changePercent);
+            }
+            
+            // Fetch collection data for best offer
+            try {
+                const collectionUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}`;
+                const collectionProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(collectionUrl)}`;
+                const collectionResponse = await fetch(collectionProxyUrl);
+                
+                if (collectionResponse.ok) {
+                    const collectionProxyData = await collectionResponse.json();
+                    const collectionData = JSON.parse(collectionProxyData.contents);
+                    
+                    // Try to get best offer from collection data
+                    if (collectionData.collection && collectionData.collection.best_offer) {
+                        updateStatValue('stat-top-offer', formatNumber(collectionData.collection.best_offer), 'WAPE');
+                    } else if (collectionData.collection && collectionData.collection.top_bid) {
+                        updateStatValue('stat-top-offer', formatNumber(collectionData.collection.top_bid), 'WAPE');
+                    }
+                }
+            } catch (offerError) {
+                console.warn('Could not fetch best offer:', offerError);
+            }
+            
+            console.log('Collection stats updated successfully from OpenSea');
+            return true;
+        } else {
+            throw new Error('Invalid response format from OpenSea API');
+        }
+    } catch (error) {
+        console.error('Error fetching collection stats from OpenSea:', error);
+        
+        // Fallback: Try direct fetch without proxy (might work if CORS allows)
+        try {
+            const directResponse = await fetch(
+                `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`,
+                {
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                }
+            );
+            
+            if (directResponse.ok) {
+                const directData = await directResponse.json();
+                console.log('OpenSea direct API response:', directData);
+                
+                if (directData.stats) {
+                    const stats = directData.stats;
+                    
+                    if (stats.floor_price !== undefined && stats.floor_price !== null) {
+                        updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
+                    }
+                    
+                    if (stats.total_volume !== undefined && stats.total_volume !== null) {
+                        updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
+                    }
+                    
+                    if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
+                        updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
+                    }
+                    
+                    if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
+                        const changePercent = stats.one_day_change * 100;
+                        updateStatChange('stat-floor-change', changePercent);
+                    }
+                    
+                    console.log('Collection stats updated successfully from OpenSea (direct)');
+                    return true;
+                }
+            }
+        } catch (fallbackError) {
+            console.error('Direct fetch also failed:', fallbackError);
         }
         
-        console.log('Collection stats updated successfully');
-        return true;
-    } catch (error) {
-        console.error('Error fetching collection stats:', error);
         console.warn('Using cached/fallback values');
         return false;
     }
