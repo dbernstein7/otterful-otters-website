@@ -1,9 +1,14 @@
 // Vercel serverless function to proxy OpenSea API calls
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET');
-    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    // Handle preflight
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
 
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -17,11 +22,13 @@ export default async function handler(req, res) {
         const statsResponse = await fetch(statsUrl, {
             headers: {
                 'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0',
             },
         });
 
         if (!statsResponse.ok) {
-            throw new Error(`OpenSea API error: ${statsResponse.status} ${statsResponse.statusText}`);
+            const errorText = await statsResponse.text();
+            throw new Error(`OpenSea API error: ${statsResponse.status} ${statsResponse.statusText} - ${errorText}`);
         }
 
         const statsData = await statsResponse.json();
@@ -33,6 +40,7 @@ export default async function handler(req, res) {
             const collectionResponse = await fetch(collectionUrl, {
                 headers: {
                     'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0',
                 },
             });
 
@@ -53,7 +61,8 @@ export default async function handler(req, res) {
     } catch (error) {
         console.error('Error fetching OpenSea data:', error);
         return res.status(500).json({ 
-            error: error.message || 'Failed to fetch OpenSea data' 
+            error: error.message || 'Failed to fetch OpenSea data',
+            details: error.stack
         });
     }
-}
+};
