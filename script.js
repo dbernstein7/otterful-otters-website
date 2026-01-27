@@ -169,7 +169,9 @@ function setupRefreshButton() {
     const refreshBtn = document.querySelector('.action-btn.secondary');
     
     if (refreshBtn) {
-        refreshBtn.addEventListener('click', function() {
+        refreshBtn.addEventListener('click', async function() {
+            console.log('Refresh button clicked!');
+            
             // Add loading state
             const icon = this.querySelector('.icon');
             const originalTransform = icon.style.transform;
@@ -179,19 +181,26 @@ function setupRefreshButton() {
             icon.style.transition = 'transform 0.5s linear';
             icon.style.transform = 'rotate(360deg)';
             
-            // Simulate API call
-            setTimeout(() => {
-                // Update stats (in real app, fetch from API)
-                updateStats();
+            try {
+                // Fetch and update stats from OpenSea
+                const success = await fetchCollectionStats();
                 
+                if (success) {
+                    // Show success feedback
+                    showNotification('Data refreshed successfully!', 'success');
+                } else {
+                    showNotification('Failed to fetch latest data. Using cached values.', 'info');
+                }
+            } catch (error) {
+                console.error('Error in refresh:', error);
+                showNotification('Error refreshing data. Please try again.', 'info');
+            } finally {
                 // Reset button
                 this.disabled = false;
                 this.style.opacity = '1';
+                icon.style.transition = 'transform 0.3s ease-out';
                 icon.style.transform = originalTransform;
-                
-                // Show success feedback
-                showNotification('Data refreshed successfully!', 'success');
-            }, 1500);
+            }
         });
     }
 }
@@ -249,25 +258,33 @@ async function fetchCollectionStats() {
                 
                 console.log('Parsing stats:', stats);
                 
-                // Update floor price
-                if (stats.floor_price !== undefined && stats.floor_price !== null) {
+                // Update floor price (handle null case)
+                if (stats.floor_price !== undefined && stats.floor_price !== null && stats.floor_price !== 0) {
                     updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
+                    console.log('Updated floor price:', stats.floor_price);
+                } else {
+                    console.warn('Floor price is null or undefined:', stats.floor_price);
                 }
                 
                 // Update total volume
                 if (stats.total_volume !== undefined && stats.total_volume !== null) {
                     updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
+                    console.log('Updated total volume:', stats.total_volume);
                 }
                 
                 // Update 24h volume
                 if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
                     updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
+                    console.log('Updated 24h volume:', stats.one_day_volume);
+                } else {
+                    console.warn('24h volume is null or undefined:', stats.one_day_volume);
                 }
                 
                 // Update floor price change (1 day)
                 if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
                     const changePercent = stats.one_day_change * 100; // Convert to percentage
                     updateStatChange('stat-floor-change', changePercent);
+                    console.log('Updated floor change:', changePercent + '%');
                 }
                 
                 // Try to get best offer - fetch collection data separately
