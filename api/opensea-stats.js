@@ -42,6 +42,7 @@ module.exports = async (req, res) => {
 
         const topOffer = extractTopOffer(offersData);
         const displayed = collectionPageText ? extractDisplayedStats(collectionPageText) : null;
+        const listingCurrency = collectionData?.pricing_currencies?.listing_currency || null;
 
         return res.status(200).json({
             slug: collectionSlug,
@@ -53,6 +54,11 @@ module.exports = async (req, res) => {
                 created_date: collectionData?.created_date ?? null,
                 contracts: collectionData?.contracts ?? null,
             },
+            pricing: listingCurrency ? {
+                symbol: listingCurrency.symbol ?? null,
+                eth_price: listingCurrency.eth_price ?? null,
+                decimals: listingCurrency.decimals ?? null,
+            } : null,
             topOffer,
             openseaDisplayed: displayed,
         });
@@ -108,6 +114,12 @@ function fetchText(url) {
             let body = '';
             resp.on('data', (chunk) => (body += chunk));
             resp.on('end', () => {
+                // Follow redirects (common behind Cloudflare)
+                if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+                    const nextUrl = new URL(resp.headers.location, url).toString();
+                    fetchText(nextUrl).then(resolve).catch(reject);
+                    return;
+                }
                 if (resp.statusCode >= 200 && resp.statusCode < 300) {
                     resolve(body);
                     return;

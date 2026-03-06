@@ -231,6 +231,7 @@ async function fetchCollectionStats() {
         const collection = data?.collection || null;
         const topOffer = data?.topOffer || null;
         const displayed = data?.openseaDisplayed || null;
+        const pricing = data?.pricing || null;
 
         if (!total) throw new Error('Missing stats.total from API');
         const symbol = total.floor_price_symbol || 'APE';
@@ -242,33 +243,33 @@ async function fetchCollectionStats() {
             if (floorEl) floorEl.textContent = `Floor: ${formatNumber(total.floor_price)} ${symbol}`;
         }
 
-        // Prefer OpenSea UI-displayed total volume when available
+        // Total Volume:
+        // OpenSea v2 stats `total.volume` appears to be in ETH-equivalent (not in APE),
+        // so convert to the listing currency using `pricing.eth_price` when available.
         if (displayed?.total_volume !== null && displayed?.total_volume !== undefined) {
-            updateStatValue(
-                'stat-total-volume',
-                formatLargeNumber(displayed.total_volume),
-                displayed.total_volume_symbol || symbol
-            );
-        } else if (typeof total.volume === 'number') {
-            const allTimeVolume = normalizeLikelyBaseUnits(total.volume, symbol);
-            updateStatValue('stat-total-volume', formatLargeNumber(allTimeVolume), symbol);
-        }
+            updateStatValue('stat-total-volume', formatLargeNumber(displayed.total_volume), displayed.total_volume_symbol || symbol);
+        } else if (typeof total.volume === 'number' && pricing?.eth_price) {
+            const ethPerToken = Number(pricing.eth_price);
+            if (Number.isFinite(ethPerToken) && ethPerToken > 0) {
+                const nativeVol = total.volume / ethPerToken;
+                updateStatValue('stat-total-volume', formatLargeNumber(nativeVol), symbol);
+            }
+        } // else: don't overwrite the existing DOM value
 
         const oneDay = intervals.find(i => {
             const name = String(i?.interval || '');
             return name.includes('one_day') || name.includes('1_day') || name.includes('24');
         });
-        // Prefer OpenSea UI-displayed 24h volume when available
+        // 24h Volume (same ETH->APE conversion)
         if (displayed?.volume_24h !== null && displayed?.volume_24h !== undefined) {
-            updateStatValue(
-                'stat-24h-volume',
-                formatNumber(displayed.volume_24h),
-                displayed.volume_24h_symbol || symbol
-            );
-        } else if (oneDay && typeof oneDay.volume === 'number') {
-            const vol24h = normalizeLikelyBaseUnits(oneDay.volume, symbol);
-            updateStatValue('stat-24h-volume', formatNumber(vol24h), symbol);
-        }
+            updateStatValue('stat-24h-volume', formatNumber(displayed.volume_24h), displayed.volume_24h_symbol || symbol);
+        } else if (oneDay && typeof oneDay.volume === 'number' && pricing?.eth_price) {
+            const ethPerToken = Number(pricing.eth_price);
+            if (Number.isFinite(ethPerToken) && ethPerToken > 0) {
+                const nativeVol24h = oneDay.volume / ethPerToken;
+                updateStatValue('stat-24h-volume', formatNumber(nativeVol24h), symbol);
+            }
+        } // else: don't overwrite
 
         if (topOffer && typeof topOffer.value === 'number') {
             updateStatValue('stat-top-offer', formatNumber(topOffer.value), topOffer.currency || 'WAPE');
