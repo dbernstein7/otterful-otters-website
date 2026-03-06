@@ -258,11 +258,11 @@ class AvatarBuilder {
             0.1,
             1000
         );
-        // Set initial camera position - mobile gets zoomed out 2x more and lowered
+        // Set initial camera position - start higher for headroom (avatar framed with space above head)
         if (window.innerWidth <= 768) {
-            this.camera.position.set(0, -0.6, 4.5);  // Mobile: closer and better centered
+            this.camera.position.set(0, 0.35, 4.5);  // Mobile: camera higher so full avatar visible
         } else {
-            this.camera.position.set(0, 0.2, 3.5);  // Desktop: Higher camera position, moved back
+            this.camera.position.set(0, 0.75, 3.5);  // Desktop: camera higher for headroom
         }
 
         // Renderer with performance optimizations
@@ -287,11 +287,11 @@ class AvatarBuilder {
         this.controls.enableZoom = true;  // Enable zoom for touch devices
         this.controls.enableDolly = true;  // Enable pinch zoom (dolly)
         
-        // Set target based on device type
+        // Set target so frame has headroom above avatar
         if (window.innerWidth <= 768) {
-            this.controls.target.set(0, -0.4, 0);  // Mobile: centered target
+            this.controls.target.set(0, -0.15, 0);  // Mobile: slightly higher center
         } else {
-            this.controls.target.set(0, -0.4, 0);  // Desktop: target at -0.4
+            this.controls.target.set(0, -0.15, 0);  // Desktop: slightly higher center for headroom
         }
         
         // Enable panning with middle mouse button (scroll wheel click)
@@ -1039,12 +1039,11 @@ class AvatarBuilder {
             } else {
                 // First load - center and scale normally
                 this.centerModel();
-                // Reset camera and controls to center on the model
-                // Set target based on device type
+                // Reset camera and controls (same higher target for headroom)
                 if (window.innerWidth <= 768) {
-                    this.controls.target.set(0, -0.4, 0);  // Mobile: centered target
+                    this.controls.target.set(0, -0.15, 0);
                 } else {
-                    this.controls.target.set(0, -0.4, 0);  // Desktop: target at -0.4
+                    this.controls.target.set(0, -0.15, 0);
                 }
                 this.currentZoomLevel = 2;  // Start slightly zoomed out (level +2)
                 this.applyZoomLevel();  // Apply the zoom level
@@ -1161,12 +1160,11 @@ class AvatarBuilder {
             
             this.scene.add(this.model);
 
-            // Reset camera and controls to center on the model
-            // Set to perfect viewing position matching the desired size
+            // Reset camera target (higher for headroom)
             if (window.innerWidth <= 768) {
-                this.controls.target.set(0, -0.6, 0);  // Mobile: lower target
+                this.controls.target.set(0, -0.15, 0);
             } else {
-                this.controls.target.set(0, -0.4, 0);  // Desktop: target at -0.4
+                this.controls.target.set(0, -0.15, 0);
             }
             this.currentZoomLevel = 2;  // Start slightly zoomed out (level +2)
             this.applyZoomLevel();  // Apply the zoom level
@@ -2802,17 +2800,16 @@ class AvatarBuilder {
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(container.clientWidth, container.clientHeight);
         
-        // Mobile-specific camera adjustments
+        // Match initial camera (higher for headroom)
         if (window.innerWidth <= 768) {
-            this.camera.position.set(0, -0.6, 4.5);
+            this.camera.position.set(0, 0.35, 4.5);
             if (this.controls) {
-                this.controls.target.set(0, -0.4, 0);
+                this.controls.target.set(0, -0.15, 0);
             }
         } else {
-            // Desktop: use higher position, moved back
-            this.camera.position.set(0, 0.2, 3.5);
+            this.camera.position.set(0, 0.75, 3.5);
             if (this.controls) {
-                this.controls.target.set(0, -0.4, 0);
+                this.controls.target.set(0, -0.15, 0);
             }
         }
     }
