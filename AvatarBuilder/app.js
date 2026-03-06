@@ -124,6 +124,12 @@ class AvatarBuilder {
                 return;
             }
 
+            // NFT search-only embed: just the search bar; emits load-nft to viewer via localStorage.
+            if (this.embedMode === 'nft-search') {
+                this.setupEmbedNFTSearch();
+                return;
+            }
+
             // Default + viewer embed: full 3D scene. Viewer embed hides sidebar via CSS.
             this.setupScene();
             // Note: Reference file loading removed - using default transforms
@@ -203,6 +209,43 @@ class AvatarBuilder {
         }
     }
 
+    static get NFT_LOAD_RESULT_KEY() { return 'ottvatar_nft_load_result_v1'; }
+
+    setupEmbedNFTSearch() {
+        const btn = document.getElementById('nft-search-btn');
+        const input = document.getElementById('nft-search-input');
+        const errorDiv = document.getElementById('nft-search-error');
+        if (!btn || !input || !errorDiv) return;
+
+        const emitLoad = () => {
+            const n = parseInt(input.value, 10);
+            if (isNaN(n) || n < 1 || n > 2222) {
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = 'var(--warning)';
+                errorDiv.textContent = 'Enter a number between 1 and 2222';
+                return;
+            }
+            errorDiv.style.display = 'block';
+            errorDiv.style.color = 'var(--text-secondary)';
+            errorDiv.textContent = 'Loading…';
+            this.emitEmbedSelection('load-nft', n);
+        };
+
+        btn.addEventListener('click', emitLoad);
+        input.addEventListener('keypress', (e) => { if (e.key === 'Enter') emitLoad(); });
+
+        const resultKey = AvatarBuilder.NFT_LOAD_RESULT_KEY;
+        window.addEventListener('storage', (e) => {
+            if (e.key !== resultKey || !e.newValue) return;
+            try {
+                const { success, message } = JSON.parse(e.newValue);
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = success ? 'var(--success-green, #2ed573)' : 'var(--warning)';
+                errorDiv.textContent = message || (success ? 'Loaded.' : 'Error');
+            } catch (_) {}
+        });
+    }
+
     setupEmbedViewerBridge() {
         const apply = (payload) => {
             if (!payload || typeof payload !== 'object') return;
@@ -218,6 +261,9 @@ class AvatarBuilder {
             if (type === 'remove-hat') this.removeHat();
             if (type === 'remove-shirt') this.removeShirt();
             if (type === 'remove-eyes') this.removeEyes();
+
+            const num = parseInt(value, 10);
+            if (type === 'load-nft' && !isNaN(num) && num >= 1 && num <= 2222) this.loadNFTTraits(num);
         };
 
         // Apply any last selection immediately.
@@ -2789,18 +2835,22 @@ class AvatarBuilder {
             if (traits.shirt) loadedTraits.push(`Shirt: ${traits.shirt}`);
             if (traits.eyes) loadedTraits.push(`Eyes: ${traits.eyes}`);
             errorDiv.textContent = `✓ Loaded NFT #${nftNumber}: ${loadedTraits.join(', ')}`;
-            
+            const successMsg = `✓ Loaded NFT #${nftNumber}: ${loadedTraits.join(', ')}`;
+            try { localStorage.setItem(AvatarBuilder.NFT_LOAD_RESULT_KEY, JSON.stringify({ success: true, message: successMsg })); } catch (_) {}
+
             // Clear input after successful load
             const input = document.getElementById('nft-search-input');
             if (input) input.value = '';
-            
+
             // Clear success message after 5 seconds
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
-            
+
         } catch (error) {
             console.error('Error loading NFT traits:', error);
+            const errMsg = `Error loading NFT #${nftNumber}: ${error.message}`;
+            try { localStorage.setItem(AvatarBuilder.NFT_LOAD_RESULT_KEY, JSON.stringify({ success: false, message: errMsg })); } catch (_) {}
             // Hide loading screen on error after minimum time
             const elapsedTime = Date.now() - loadingStartTime;
             const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
@@ -2809,7 +2859,7 @@ class AvatarBuilder {
                     loading.style.display = 'none';
                 }
             }, remainingTime);
-            this.showNFTError(`Error loading NFT #${nftNumber}: ${error.message}`);
+            this.showNFTError(errMsg);
         }
     }
     
