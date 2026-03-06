@@ -1330,19 +1330,68 @@ body::before {
 }
 
 /* 3D Builder split layout (viewer + separate gallery iframe) */
+.builder-nft-load {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(79, 214, 165, 0.1);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+}
+
+.builder-nft-load-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.builder-nft-input {
+    width: 80px;
+    padding: 8px 12px;
+    font-size: 1rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background: rgba(10, 26, 15, 0.8);
+    color: var(--text-primary);
+}
+
+.builder-nft-input::placeholder {
+    color: var(--text-muted);
+}
+
+.builder-nft-btn {
+    padding: 8px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, var(--panel-blue) 0%, var(--panel-blue-alt) 100%);
+    color: var(--bg-base);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.builder-nft-btn:hover {
+    filter: brightness(1.1);
+}
+
+.builder-nft-status {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.builder-nft-status.is-error {
+    color: var(--highlight-orange);
+}
+
 .builder-layout {
     margin-top: 18px;
     display: grid;
     grid-template-columns: 1.6fr 1fr;
     gap: 16px;
     align-items: stretch;
-}
-
-.builder-viewer {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-height: 0;
 }
 
 .builder-frame {
@@ -1354,16 +1403,8 @@ body::before {
 }
 
 .builder-frame--viewer {
-    flex: 1;
-    min-height: 0;
-    height: min(1200px, calc(100vh - 300px));
-}
-
-.builder-frame--nft-search {
-    flex: 0 0 auto;
-    height: 72px;
-    min-height: 72px;
-    border-radius: 14px;
+    height: min(1200px, calc(100vh - 240px));
+    min-height: 74vh;
 }
 
 .builder-gallery {
@@ -2099,13 +2140,8 @@ body::before {
     }
 
     .builder-frame--viewer {
-        height: calc(100vh - 440px);
-        min-height: 45vh;
-    }
-
-    .builder-frame--nft-search {
-        height: 64px;
-        min-height: 64px;
+        height: calc(100vh - 360px);
+        min-height: 52vh;
     }
 
     .builder-frame--gallery {

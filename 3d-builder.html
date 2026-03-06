@@ -61,19 +61,19 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
+        <div class="builder-nft-load">
+            <label for="builder-nft-input" class="builder-nft-load-label">Load NFT</label>
+            <input type="number" id="builder-nft-input" class="builder-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1–2222">
+            <button type="button" id="builder-nft-btn" class="builder-nft-btn">Load</button>
+            <span id="builder-nft-status" class="builder-nft-status" aria-live="polite"></span>
+        </div>
+
         <div class="builder-layout">
             <div class="builder-viewer">
                 <iframe
                     class="builder-frame builder-frame--viewer"
                     src="AvatarBuilder/index.html?embed=viewer"
                     title="Otterful 3D Viewer"
-                    loading="eager"
-                    referrerpolicy="no-referrer"
-                ></iframe>
-                <iframe
-                    class="builder-frame builder-frame--nft-search"
-                    src="AvatarBuilder/index.html?embed=nft-search"
-                    title="Load NFT by number"
                     loading="eager"
                     referrerpolicy="no-referrer"
                 ></iframe>
@@ -153,6 +153,41 @@
 
         tabs.forEach((t) => {
           t.addEventListener('click', () => setActive(t.dataset.panel));
+        });
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const EMBED_SELECTION_KEY = 'ottvatar_embed_selection_v1';
+        const input = document.getElementById('builder-nft-input');
+        const btn = document.getElementById('builder-nft-btn');
+        const status = document.getElementById('builder-nft-status');
+        if (!input || !btn || !status) return;
+
+        function setStatus(msg, isError) {
+          status.textContent = msg || '';
+          status.classList.toggle('is-error', !!isError);
+        }
+
+        btn.addEventListener('click', function () {
+          const raw = input.value.trim();
+          const num = parseInt(raw, 10);
+          if (!raw || isNaN(num) || num < 1 || num > 2222) {
+            setStatus('Enter 1–2222', true);
+            return;
+          }
+          setStatus('Loading…');
+          try {
+            localStorage.setItem(EMBED_SELECTION_KEY, JSON.stringify({ type: 'nft-load', value: num, ts: Date.now() }));
+            setStatus('');
+          } catch (e) {
+            setStatus('Failed to send', true);
+          }
+        });
+
+        input.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter') btn.click();
         });
       })();
     </script>
