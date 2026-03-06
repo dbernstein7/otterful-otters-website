@@ -1915,6 +1915,11 @@ body::before {
     .nav-menu-btn-icon {
         width: 22px;
         box-shadow: 0 6px 0 0 var(--text-primary), 0 12px 0 0 var(--text-primary);
+        margin-top: -4px;
+    }
+
+    .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon {
+        margin-top: 0;
     }
 
     .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon::before,
@@ -1939,7 +1944,7 @@ body::before {
     }
 
     .container {
-        padding: 58px 15px 40px;
+        padding: 48px 15px 40px;
         min-height: calc(100vh - 120px);
     }
 
