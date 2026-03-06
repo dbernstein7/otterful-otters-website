@@ -122,7 +122,11 @@ html.embed-gallery .sidebar {
 html.embed-gallery .panel {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--bg-secondary);
     width: 100%;
     max-width: none;
     min-width: 0;
@@ -143,9 +147,28 @@ html.embed-gallery .panel > .btn {
     flex-shrink: 0;
 }
 
+html.embed-gallery .panel::-webkit-scrollbar {
+    width: 10px;
+}
+
+html.embed-gallery .panel::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 5px;
+}
+
+html.embed-gallery .panel::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 5px;
+}
+
+html.embed-gallery .panel::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
+}
+
 html.embed-gallery .fur-gallery {
-    flex: 1 1 0%;
-    min-height: 0;
+    flex: 0 0 auto;
+    max-height: min(65vh, 520px);
+    min-height: 120px;
     overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -158,9 +181,6 @@ html.embed-gallery .fur-gallery {
     align-content: start;
 }
 
-html.embed-gallery .panel .fur-gallery {
-    max-height: calc(100vh - 140px);
-}
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar {
     width: 12px;
