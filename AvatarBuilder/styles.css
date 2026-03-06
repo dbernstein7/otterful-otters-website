@@ -169,6 +169,7 @@ html.embed-gallery .embed-remove-bar .btn {
 
 
 html.embed-gallery .fur-gallery {
+    display: grid;
     flex: 1 1 0%;
     min-height: 0;
     overflow-y: scroll;
@@ -215,32 +216,32 @@ html.embed-gallery .fur-btn img {
     padding: 8px;
 }
 
-/* Mobile embed gallery: even 2-column grid, no overlapping thumbnails */
+/* Mobile embed gallery: flexbox + fixed-width thumbnails so they never overlap */
 @media (max-width: 768px) {
     html.embed-gallery .sidebar {
         padding: 12px;
     }
 
     html.embed-gallery .fur-gallery {
-        display: grid !important;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-content: flex-start;
         gap: 10px;
-        padding: 10px 8px 1.25rem 8px;
-        align-content: start;
+        padding: 10px 0 1.25rem 0;
         min-width: 0;
     }
 
+    /* Each thumbnail = half width minus half gap; two per row, square, no overlap */
     html.embed-gallery .fur-btn {
+        width: calc(50% - 5px) !important;
+        flex: 0 0 calc(50% - 5px) !important;
         aspect-ratio: 1;
         min-width: 0 !important;
         min-height: 0 !important;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
+        max-width: calc(50% - 5px) !important;
         overflow: hidden;
         padding: 0;
         box-sizing: border-box;
-        display: block;
     }
 
     html.embed-gallery .fur-btn img {
@@ -260,7 +261,13 @@ html.embed-gallery .fur-btn img {
 
     html.embed-gallery .fur-gallery {
         gap: 8px;
-        padding: 8px 6px 1.25rem 6px;
+        padding: 8px 0 1.25rem 0;
+    }
+
+    html.embed-gallery .fur-btn {
+        width: calc(50% - 4px) !important;
+        flex: 0 0 calc(50% - 4px) !important;
+        max-width: calc(50% - 4px) !important;
     }
 }
 
