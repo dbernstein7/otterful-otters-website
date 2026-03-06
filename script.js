@@ -206,152 +206,94 @@ function setupRefreshButton() {
 }
 
 async function fetchCollectionStats() {
-    const collectionSlug = 'otterful-otters';
-    
-    // Try multiple approaches in order of preference
-    const approaches = [
-        // Approach 1: Try our Vercel API endpoint
-        async () => {
-            const apiUrl = '/api/opensea-stats';
-            console.log('Trying Vercel API endpoint:', apiUrl);
-            const response = await fetch(apiUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return await response.json();
-        },
-        // Approach 2: Try CORS proxy (corsproxy.io)
-        async () => {
-            const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
-            const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(apiUrl)}`;
-            console.log('Trying CORS proxy:', proxyUrl);
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
-            return { stats: data.stats || {} };
-        },
-        // Approach 3: Try another CORS proxy (api.allorigins.win)
-        async () => {
-            const apiUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}/stats`;
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
-            console.log('Trying allorigins proxy:', proxyUrl);
-            const response = await fetch(proxyUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const proxyData = await response.json();
-            return JSON.parse(proxyData.contents);
+    try {
+        const apiUrl = '/api/opensea-stats';
+        console.log('Fetching OpenSea v2 data from:', apiUrl);
+
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+            let text = '';
+            try {
+                text = await response.text();
+            } catch {
+                // ignore
+            }
+            throw new Error(`API error (${response.status}): ${text || response.statusText}`);
         }
-    ];
-    
-    for (let i = 0; i < approaches.length; i++) {
-        try {
-            console.log(`Attempting approach ${i + 1}...`);
-            const data = await approaches[i]();
-            
-            console.log('OpenSea API response:', data);
-            
-            // Check if there's an error in the response
-            if (data.error) {
-                throw new Error(`API Error: ${data.error}`);
-            }
-            
-            // OpenSea v1 API structure
-            if (data && data.stats) {
-                const stats = data.stats;
-                
-                console.log('Parsing stats:', stats);
-                
-                // Update floor price (handle null case)
-                if (stats.floor_price !== undefined && stats.floor_price !== null && stats.floor_price !== 0) {
-                    updateStatValue('stat-floor-price', formatNumber(stats.floor_price), 'APE');
-                    console.log('Updated floor price:', stats.floor_price);
-                } else {
-                    console.warn('Floor price is null or undefined:', stats.floor_price);
-                }
-                
-                // Update total volume
-                if (stats.total_volume !== undefined && stats.total_volume !== null) {
-                    updateStatValue('stat-total-volume', formatLargeNumber(stats.total_volume), 'APE');
-                    console.log('Updated total volume:', stats.total_volume);
-                }
-                
-                // Update 24h volume
-                if (stats.one_day_volume !== undefined && stats.one_day_volume !== null) {
-                    updateStatValue('stat-24h-volume', formatNumber(stats.one_day_volume), 'APE');
-                    console.log('Updated 24h volume:', stats.one_day_volume);
-                } else {
-                    console.warn('24h volume is null or undefined:', stats.one_day_volume);
-                }
-                
-                // Update floor price change (1 day)
-                if (stats.one_day_change !== undefined && stats.one_day_change !== null) {
-                    const changePercent = stats.one_day_change * 100; // Convert to percentage
-                    updateStatChange('stat-floor-change', changePercent);
-                    console.log('Updated floor change:', changePercent + '%');
-                }
-                
-                // Try to get best offer - fetch collection data separately
-                try {
-                    let collectionData = {};
-                    if (i === 0) {
-                        // If using our API, collection data should already be included
-                        collectionData = data.collection || {};
-                    } else {
-                        // Otherwise fetch it separately
-                        const collectionUrl = `https://api.opensea.io/api/v1/collection/${collectionSlug}`;
-                        const collectionProxyUrl = i === 1 
-                            ? `https://corsproxy.io/?${encodeURIComponent(collectionUrl)}`
-                            : `https://api.allorigins.win/get?url=${encodeURIComponent(collectionUrl)}`;
-                        
-                        const collectionResponse = await fetch(collectionProxyUrl);
-                        if (collectionResponse.ok) {
-                            if (i === 1) {
-                                collectionData = await collectionResponse.json();
-                            } else {
-                                const proxyData = await collectionResponse.json();
-                                collectionData = JSON.parse(proxyData.contents);
-                            }
-                        }
-                    }
-                    
-                    if (collectionData.collection) {
-                        const collection = collectionData.collection;
-                        let bestOffer = null;
-                        if (collection.best_offer !== undefined && collection.best_offer !== null) {
-                            bestOffer = collection.best_offer;
-                        } else if (collection.top_bid !== undefined && collection.top_bid !== null) {
-                            bestOffer = collection.top_bid;
-                        } else if (collection.stats && collection.stats.top_bid !== undefined) {
-                            bestOffer = collection.stats.top_bid;
-                        }
-                        
-                        if (bestOffer !== null && bestOffer !== undefined) {
-                            updateStatValue('stat-top-offer', formatNumber(bestOffer), 'WAPE');
-                        }
-                    }
-                } catch (offerError) {
-                    console.warn('Could not fetch best offer:', offerError);
-                }
-                
-                console.log(`Collection stats updated successfully using approach ${i + 1}`);
-                return true;
-            } else {
-                throw new Error('Invalid response format - no stats found');
-            }
-        } catch (error) {
-            console.error(`Approach ${i + 1} failed:`, error);
-            if (i === approaches.length - 1) {
-                // Last approach failed
-                console.error('All approaches failed. Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
-                console.warn('Using cached/fallback values');
-                return false;
-            }
-            // Try next approach
-            continue;
+
+        const data = await response.json();
+        if (!data || data.error) {
+            throw new Error(data?.error || 'Unknown API error');
         }
+
+        const total = data?.stats?.total;
+        const intervals = data?.stats?.intervals || [];
+        const collection = data?.collection || null;
+        const topOffer = data?.topOffer || null;
+
+        if (!total) throw new Error('Missing stats.total from API');
+
+        // ---------- Top stat cards ----------
+        if (typeof total.floor_price === 'number') {
+            const symbol = total.floor_price_symbol || 'APE';
+            updateStatValue('stat-floor-price', formatNumber(total.floor_price), symbol);
+            const floorEl = document.getElementById('analytics-floor');
+            if (floorEl) floorEl.textContent = `Floor: ${formatNumber(total.floor_price)} ${symbol}`;
+        }
+
+        if (typeof total.volume === 'number') {
+            updateStatValue('stat-total-volume', formatLargeNumber(total.volume), total.floor_price_symbol || 'APE');
+        }
+
+        const oneDay = intervals.find(i => {
+            const name = String(i?.interval || '');
+            return name.includes('one_day') || name.includes('1_day') || name.includes('24');
+        });
+        if (oneDay && typeof oneDay.volume === 'number') {
+            updateStatValue('stat-24h-volume', formatNumber(oneDay.volume), total.floor_price_symbol || 'APE');
+        }
+
+        if (topOffer && typeof topOffer.value === 'number') {
+            updateStatValue('stat-top-offer', formatNumber(topOffer.value), topOffer.currency || 'WAPE');
+        }
+
+        // OpenSea v2 stats endpoint does not include 1d floor % change in this payload
+        const floorChangeEl = document.getElementById('stat-floor-change');
+        if (floorChangeEl) floorChangeEl.textContent = 'Updated';
+
+        // ---------- Collection Overview ----------
+        const totalSupply = typeof collection?.total_supply === 'number' ? collection.total_supply : null;
+        const numOwners = typeof total.num_owners === 'number' ? total.num_owners : null;
+
+        if (totalSupply !== null) {
+            const el = document.getElementById('overview-total-items');
+            if (el) el.textContent = totalSupply.toLocaleString('en-US');
+        }
+        if (numOwners !== null) {
+            const ownersEl = document.getElementById('overview-owners');
+            if (ownersEl) ownersEl.textContent = numOwners.toLocaleString('en-US');
+        }
+        if (totalSupply !== null && numOwners !== null && totalSupply > 0) {
+            const pct = (numOwners / totalSupply) * 100;
+            const ownersPctEl = document.getElementById('overview-owners-percent');
+            if (ownersPctEl) ownersPctEl.textContent = `(${pct.toFixed(1)}%)`;
+
+            const ownersPctText = document.getElementById('analytics-owners-percent');
+            if (ownersPctText) ownersPctText.textContent = `Unique Owners: ${pct.toFixed(1)}%`;
+
+            const ownersBar = document.getElementById('analytics-owners-bar');
+            if (ownersBar) ownersBar.style.width = `${Math.min(100, Math.max(0, pct)).toFixed(1)}%`;
+
+            const avg = totalSupply / Math.max(1, numOwners);
+            const avgEl = document.getElementById('analytics-avg-per-owner');
+            if (avgEl) avgEl.textContent = `Average: ${avg.toFixed(2)} per owner`;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('fetchCollectionStats failed:', error);
+        return false;
     }
-    
-    return false;
 }
 
 function formatNumber(num) {
