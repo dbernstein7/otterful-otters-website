@@ -16,9 +16,11 @@ PORT = 8000
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        # Handle API endpoint for OpenSea stats
+        # Handle API endpoints
         if self.path.startswith('/api/opensea-stats'):
             self.handle_opensea_stats()
+        elif self.path.startswith('/api/otherside-manifest'):
+            self.handle_otherside_manifest()
         else:
             # Serve static files
             super().do_GET()
@@ -75,7 +77,49 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'error': str(e)}).encode())
-    
+
+    def handle_otherside_manifest(self):
+        """Return list of Otherside photos and thumbnails for the gallery"""
+        try:
+            originals_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Otherside Otter Photos')
+            thumbs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Otherside Otter Photos_thumbnails')
+            image_exts = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
+
+            if not os.path.isdir(originals_dir):
+                files = []
+            else:
+                originals = sorted(
+                    [f for f in os.listdir(originals_dir)
+                     if os.path.isfile(os.path.join(originals_dir, f)) and f.lower().endswith(image_exts)],
+                    key=lambda x: x.lower()
+                )
+                thumb_set = set()
+                if os.path.isdir(thumbs_dir):
+                    thumb_set = {f.lower() for f in os.listdir(thumbs_dir) if os.path.isfile(os.path.join(thumbs_dir, f))}
+
+                files = []
+                for name in originals:
+                    base, _ = os.path.splitext(name)
+                    thumb_name = base + '.jpg'
+                    files.append({
+                        'name': name,
+                        'thumbName': thumb_name,
+                        'hasThumbnail': thumb_name.lower() in thumb_set,
+                    })
+
+            result = {'count': len(files), 'files': files}
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode())
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode())
+
     def end_headers(self):
         # Add CORS headers to allow loading images
         self.send_header('Access-Control-Allow-Origin', '*')

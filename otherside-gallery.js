@@ -66,28 +66,10 @@ function buildCard(file, index) {
   return card;
 }
 
-function ensureObserver() {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        const img = entry.target;
-        if (!img.src && img.dataset.src) {
-          img.src = img.dataset.src;
-        }
-        observer.unobserve(img);
-      }
-    },
-    { rootMargin: '400px' }
-  );
-  return observer;
-}
-
 function renderNextBatch() {
   const grid = document.getElementById('othersideFullGallery');
   if (!grid) return;
 
-  const observer = ensureObserver();
   const frag = document.createDocumentFragment();
 
   const nextEnd = Math.min(othersideFiles.length, othersideLoadedCount + OTHERSIDE_PAGE_SIZE);
@@ -97,15 +79,12 @@ function renderNextBatch() {
   }
   grid.appendChild(frag);
 
-  // Observe newly added images
-  const imgs = grid.querySelectorAll('img.otherside-grid-img');
-  for (let i = othersideLoadedCount; i < nextEnd; i++) {
-    const img = imgs[i];
-    if (img) {
-      // Load first 12 immediately
-      if (i < 12 && img.dataset.src) img.src = img.dataset.src;
-      else observer.observe(img);
-    }
+  // Set src for all new images so they load (loading="lazy" still lets browser prioritize)
+  const added = nextEnd - othersideLoadedCount;
+  const allImgs = grid.querySelectorAll('img.otherside-grid-img');
+  for (let i = allImgs.length - added; i < allImgs.length; i++) {
+    const img = allImgs[i];
+    if (img && img.dataset.src) img.src = img.dataset.src;
   }
 
   othersideLoadedCount = nextEnd;
