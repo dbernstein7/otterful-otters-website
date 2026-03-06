@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Error setting up mobile nav:', err);
         }
+
+        try {
+            handleInitialHashNavigation();
+        } catch (err) {
+            console.error('Error handling initial hash navigation:', err);
+        }
         
         // Setup refresh button
         try {
@@ -103,6 +109,51 @@ document.addEventListener('DOMContentLoaded', function() {
         alert('Error loading page. Please check the browser console (F12) for details.');
     }
 });
+
+function handleInitialHashNavigation() {
+    // Allow other pages to deep-link into sections of index.html via hashes.
+    // Example: index.html#analytics, index.html#collection, etc.
+    const raw = (window.location.hash || '').replace(/^#/, '').trim().toLowerCase();
+    if (!raw) return;
+
+    const key = raw.split('?')[0].split('&')[0];
+
+    const scrollTargets = {
+        home: function () { window.scrollTo({ top: 0, behavior: 'smooth' }); },
+        analytics: function () {
+            const el = document.getElementById('collectionOverview');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        collection: function () {
+            const el = document.querySelector('.gallery-section');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        explore: function () {
+            const el = document.getElementById('exploreSection');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        team: function () {
+            const el = document.getElementById('teamSection');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    if (!scrollTargets[key]) return;
+
+    // Update active state for the in-page (non-link) pills on desktop.
+    const navPills = document.querySelectorAll('.nav-pill');
+    navPills.forEach((pill) => {
+        if (pill.tagName !== 'A') pill.classList.remove('active');
+    });
+    navPills.forEach((pill) => {
+        if (pill.tagName === 'A') return;
+        const txt = (pill.textContent || '').trim().toLowerCase();
+        if (txt === key) pill.classList.add('active');
+    });
+
+    // Let layout settle before scrolling (images/fonts can shift heights).
+    setTimeout(() => scrollTargets[key](), 50);
+}
 
 function initAnimations() {
     // Add stagger animation to cards
