@@ -79,7 +79,7 @@ html.embed-viewer .randomize-btn {
     bottom: 13px;
 }
 
-/* Mobile: no scroll on viewer (avatar) window; only gallery iframe scrolls */
+/* Mobile: no scroll on viewer (avatar) window; only gallery iframe scrolls; randomize at bottom of iframe */
 @media (max-width: 768px) {
     html.embed-viewer html,
     html.embed-viewer body {
@@ -91,7 +91,7 @@ html.embed-viewer .randomize-btn {
         overflow: hidden;
     }
     html.embed-viewer .randomize-btn {
-        bottom: 115px !important;
+        bottom: 13px !important;
     }
 }
 
@@ -221,8 +221,23 @@ html.embed-gallery .fur-btn img {
     }
 
     html.embed-gallery .fur-gallery {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.95rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        padding: 0.75rem 0.5rem 1.25rem 0.5rem;
+    }
+
+    html.embed-gallery .fur-btn {
+        aspect-ratio: 1;
+        min-width: 0;
+        min-height: 0;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    html.embed-gallery .fur-btn img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
     }
 }
 

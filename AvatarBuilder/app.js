@@ -286,7 +286,7 @@ class AvatarBuilder {
         );
         // Set initial camera position - start higher for headroom (avatar framed with space above head)
         if (window.innerWidth <= 768) {
-            this.camera.position.set(0, 0.35, 4.5);  // Mobile: camera higher so full avatar visible
+            this.camera.position.set(0, 0.5, 3.7);   // Mobile: zoomed in and raised slightly
         } else {
             this.camera.position.set(0, 0.75, 3.5);  // Desktop: camera higher for headroom
         }
@@ -2828,7 +2828,7 @@ class AvatarBuilder {
         
         // Match initial camera (higher for headroom)
         if (window.innerWidth <= 768) {
-            this.camera.position.set(0, 0.35, 4.5);
+            this.camera.position.set(0, 0.5, 3.7);
             if (this.controls) {
                 this.controls.target.set(0, -0.15, 0);
             }
