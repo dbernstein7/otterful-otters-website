@@ -186,6 +186,11 @@ class AvatarBuilder {
             bar.appendChild(removeShirtBtn);
             bar.appendChild(removeEyesBtn);
             bar.setAttribute('aria-hidden', 'false');
+            // In gallery embed, enable/disable is done in the viewer iframe, so our buttons stay disabled.
+            // Enable them here so clicks work; viewer will no-op if nothing to remove.
+            removeHatBtn.disabled = false;
+            removeShirtBtn.disabled = false;
+            removeEyesBtn.disabled = false;
             // Show only the button for the current panel
             const showRemoveBar = (p) => {
                 removeHatBtn.style.display = p === 'hat' ? '' : 'none';
