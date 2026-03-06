@@ -58,6 +58,7 @@ html.embed-viewer .main-content,
 html.embed-gallery .main-content {
     padding: 0;
     height: 100vh;
+    overflow: visible;
 }
 
 /* Viewer embed: no sidebar, canvas fills */
@@ -93,14 +94,18 @@ html.embed-gallery .sidebar {
     position: static;
     width: 100%;
     max-width: 100%;
+    max-height: none;
     height: 100vh;
-    overflow: auto;
+    overflow: hidden;
     background: transparent;
     padding: 18px;
+    display: flex;
+    flex-direction: column;
 }
 
 html.embed-gallery .panel {
-    height: calc(100vh - 36px);
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     width: 100%;
     max-width: none;
@@ -120,15 +125,29 @@ html.embed-gallery .panel p {
 
 html.embed-gallery .fur-gallery {
     max-height: none;
-    height: auto;
-    flex: 1;
+    flex: 1 1 0%;
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1.1rem;
     padding: 0.75rem 0.75rem 1.25rem 0.75rem;
     align-content: start;
+}
+
+html.embed-gallery .fur-gallery::-webkit-scrollbar {
+    width: 10px;
+}
+
+html.embed-gallery .fur-gallery::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 5px;
+}
+
+html.embed-gallery .fur-gallery::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 5px;
 }
 
 html.embed-gallery .fur-btn {
