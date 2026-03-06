@@ -1290,8 +1290,12 @@ body::before {
 }
 
 /* Embedded app pages (3D Builder / Otter Bros) */
+.embed-page .container {
+    padding: 130px 45px 45px;
+}
+
 .page-embed {
-    margin-top: 30px;
+    margin-top: 18px;
     width: 100%;
 }
 
@@ -1300,14 +1304,14 @@ body::before {
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 18px 22px;
+    padding: 14px 18px;
     background: rgba(79, 214, 165, 0.12);
     border: 1px solid var(--border-glow);
     border-radius: 18px;
     backdrop-filter: blur(10px);
     color: var(--text-secondary);
     font-size: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
 }
 
 .page-embed-link.action-btn {
@@ -1317,8 +1321,8 @@ body::before {
 
 .page-embed-frame {
     width: 100%;
-    height: min(1100px, calc(100vh - 320px));
-    min-height: 70vh;
+    height: min(1200px, calc(100vh - 250px));
+    min-height: 76vh;
     border: 1px solid rgba(90, 255, 180, 0.35);
     border-radius: 22px;
     background: rgba(0, 0, 0, 0.25);
@@ -1980,13 +1984,18 @@ body::before {
         min-height: calc(100vh - 120px);
     }
 
+    .embed-page .container {
+        padding: 22px 12px 24px;
+        min-height: 100vh;
+    }
+
     .page-embed-note {
         flex-direction: column;
         align-items: flex-start;
     }
 
     .page-embed-frame {
-        height: calc(100vh - 280px);
+        height: calc(100vh - 230px);
         border-radius: 18px;
     }
 
