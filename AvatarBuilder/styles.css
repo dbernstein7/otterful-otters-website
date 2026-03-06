@@ -123,13 +123,20 @@ html.embed-gallery .panel p {
     display: none;
 }
 
+html.embed-gallery .panel > .btn {
+    flex-shrink: 0;
+}
+
 html.embed-gallery .fur-gallery {
     max-height: none;
     flex: 1 1 0%;
     min-height: 0;
-    overflow-y: auto;
+    overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--bg-secondary);
     grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1.1rem;
     padding: 0.75rem 0.75rem 1.25rem 0.75rem;
@@ -137,17 +144,21 @@ html.embed-gallery .fur-gallery {
 }
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar {
-    width: 10px;
+    width: 12px;
 }
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar-track {
     background: var(--bg-secondary);
-    border-radius: 5px;
+    border-radius: 6px;
 }
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar-thumb {
     background: var(--accent);
-    border-radius: 5px;
+    border-radius: 6px;
+}
+
+html.embed-gallery .fur-gallery::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-hover);
 }
 
 html.embed-gallery .fur-btn {
