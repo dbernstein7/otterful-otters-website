@@ -230,6 +230,7 @@ async function fetchCollectionStats() {
         const intervals = data?.stats?.intervals || [];
         const collection = data?.collection || null;
         const topOffer = data?.topOffer || null;
+        const displayed = data?.openseaDisplayed || null;
 
         if (!total) throw new Error('Missing stats.total from API');
         const symbol = total.floor_price_symbol || 'APE';
@@ -241,7 +242,14 @@ async function fetchCollectionStats() {
             if (floorEl) floorEl.textContent = `Floor: ${formatNumber(total.floor_price)} ${symbol}`;
         }
 
-        if (typeof total.volume === 'number') {
+        // Prefer OpenSea UI-displayed total volume when available
+        if (displayed?.total_volume !== null && displayed?.total_volume !== undefined) {
+            updateStatValue(
+                'stat-total-volume',
+                formatLargeNumber(displayed.total_volume),
+                displayed.total_volume_symbol || symbol
+            );
+        } else if (typeof total.volume === 'number') {
             const allTimeVolume = normalizeLikelyBaseUnits(total.volume, symbol);
             updateStatValue('stat-total-volume', formatLargeNumber(allTimeVolume), symbol);
         }
@@ -250,13 +258,24 @@ async function fetchCollectionStats() {
             const name = String(i?.interval || '');
             return name.includes('one_day') || name.includes('1_day') || name.includes('24');
         });
-        if (oneDay && typeof oneDay.volume === 'number') {
+        // Prefer OpenSea UI-displayed 24h volume when available
+        if (displayed?.volume_24h !== null && displayed?.volume_24h !== undefined) {
+            updateStatValue(
+                'stat-24h-volume',
+                formatNumber(displayed.volume_24h),
+                displayed.volume_24h_symbol || symbol
+            );
+        } else if (oneDay && typeof oneDay.volume === 'number') {
             const vol24h = normalizeLikelyBaseUnits(oneDay.volume, symbol);
             updateStatValue('stat-24h-volume', formatNumber(vol24h), symbol);
         }
 
         if (topOffer && typeof topOffer.value === 'number') {
             updateStatValue('stat-top-offer', formatNumber(topOffer.value), topOffer.currency || 'WAPE');
+        }
+        // Prefer OpenSea UI-displayed top offer when available
+        if (displayed?.top_offer !== null && displayed?.top_offer !== undefined) {
+            updateStatValue('stat-top-offer', formatNumber(displayed.top_offer), displayed.top_offer_symbol || 'WAPE');
         }
 
         // OpenSea v2 stats endpoint does not include 1d floor % change in this payload
@@ -289,6 +308,22 @@ async function fetchCollectionStats() {
             const avg = totalSupply / Math.max(1, numOwners);
             const avgEl = document.getElementById('analytics-avg-per-owner');
             if (avgEl) avgEl.textContent = `Average: ${avg.toFixed(2)} per owner`;
+        }
+
+        // Listed % (from OpenSea UI scrape)
+        if (displayed?.listed_percent !== null && displayed?.listed_percent !== undefined) {
+            const listedPct = displayed.listed_percent;
+            const overviewListed = document.getElementById('overview-listed');
+            if (overviewListed) overviewListed.textContent = `${listedPct.toFixed(1)}%`;
+
+            const listedText = document.getElementById('analytics-listed');
+            if (listedText) listedText.textContent = `Listed: ${listedPct.toFixed(1)}%`;
+
+            const availText = document.getElementById('analytics-available');
+            if (availText) availText.textContent = `Available: ${(100 - listedPct).toFixed(1)}%`;
+
+            const listedBar = document.getElementById('analytics-listed-bar');
+            if (listedBar) listedBar.style.width = `${Math.min(100, Math.max(0, listedPct)).toFixed(1)}%`;
         }
 
         return true;
