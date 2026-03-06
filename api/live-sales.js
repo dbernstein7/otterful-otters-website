@@ -60,7 +60,10 @@ module.exports = async function handler(req, res) {
 
     for (const evt of events) {
       try {
-        // SaleEvent: buyer is string address
+        // SaleEvent: seller + buyer (string addresses)
+        let seller = evt.seller || evt.maker;
+        if (typeof seller === 'object') seller = seller?.address;
+        seller = shortenAddress(seller || '—');
         let buyer = evt.buyer || evt.taker || (evt.winner_account && evt.winner_account.address) || '—';
         if (typeof buyer === 'object') buyer = buyer.address || '—';
         buyer = shortenAddress(buyer);
@@ -82,6 +85,7 @@ module.exports = async function handler(req, res) {
         if (!link && tokenId) link = `https://opensea.io/assets/ape_chain/${CONTRACT}/${tokenId}`;
 
         sales.push({
+          seller,
           buyer,
           price: Math.round(priceVal * 1e4) / 1e4,
           symbol,

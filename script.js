@@ -336,16 +336,25 @@ async function fetchLiveSales() {
             inner.innerHTML = '<span class="live-sales-empty">No recent sales</span>';
             return;
         }
+        inner.innerHTML =
+            '<div class="live-sales-table-header">' +
+            '<span>Event</span><span>Item</span><span>Price</span><span>From</span><span>To</span>' +
+            '</div>';
         sales.forEach(function (s) {
-            const item = document.createElement('div');
-            item.className = 'live-sales-item';
-            const linkText = s.token_id ? `#${s.token_id}` : 'NFT';
-            const link = s.link ? `<a href="${s.link}" target="_blank" rel="noopener noreferrer">${linkText}</a>` : linkText;
-            item.innerHTML =
-                '<span class="live-sales-buyer">' + (s.buyer || '—') + '</span>' +
-                '<span class="live-sales-price">' + (s.price != null ? s.price + ' ' + (s.symbol || '') : '—') + '</span>' +
-                '<span class="live-sales-link">' + link + '</span>';
-            inner.appendChild(item);
+            const row = document.createElement('div');
+            row.className = 'live-sales-item';
+            const linkText = s.token_id != null ? '#' + s.token_id : '—';
+            const link = s.link
+                ? '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer">' + linkText + '</a>'
+                : linkText;
+            const priceStr = s.price != null ? s.price + ' ' + (s.symbol || '') : '—';
+            row.innerHTML =
+                '<span class="live-sales-event">Sale</span>' +
+                '<span>' + link + '</span>' +
+                '<span class="live-sales-price">' + priceStr + '</span>' +
+                '<span class="live-sales-from">' + (s.seller || '—') + '</span>' +
+                '<span class="live-sales-to">' + (s.buyer || '—') + '</span>';
+            inner.appendChild(row);
         });
     } catch (err) {
         if (loading) loading.style.display = 'none';

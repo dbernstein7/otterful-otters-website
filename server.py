@@ -113,7 +113,13 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             sales = []
             for evt in events:
                 try:
-                    # SaleEvent: buyer string
+                    # SaleEvent: seller + buyer strings
+                    seller = evt.get('seller') or evt.get('maker')
+                    if isinstance(seller, dict):
+                        seller = seller.get('address', '—')
+                    seller = seller or '—'
+                    if isinstance(seller, str) and len(seller) > 12:
+                        seller = seller[:6] + '…' + seller[-4:]
                     buyer = evt.get('buyer') or evt.get('taker')
                     if isinstance(buyer, dict):
                         buyer = buyer.get('address', '—')
@@ -138,6 +144,7 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                     if not permalink and token_id:
                         permalink = f'https://opensea.io/assets/ape_chain/{contract_address}/{token_id}'
                     sales.append({
+                        'seller': seller,
                         'buyer': buyer,
                         'price': round(price_val, 4),
                         'symbol': symbol,
