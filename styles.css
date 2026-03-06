@@ -1915,7 +1915,7 @@ body::before {
     .nav-menu-btn-icon {
         width: 22px;
         box-shadow: 0 6px 0 0 var(--text-primary), 0 12px 0 0 var(--text-primary);
-        margin-top: -8px;
+        margin-top: -12px;
     }
 
     .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon::before,
