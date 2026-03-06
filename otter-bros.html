@@ -63,9 +63,17 @@
 
         <div class="page-embed">
             <div class="page-embed-note">
-                Otter Bros can’t be embedded here because it sends <code>X-Frame-Options: DENY</code>.
+                If the embed doesn’t load, Otter Bros is currently blocking iframes (<code>X-Frame-Options: DENY</code>).
                 <a class="action-btn primary page-embed-link" href="https://otterfulotterbros.netlify.app">Open Otter Bros</a>
             </div>
+
+            <iframe
+                class="page-embed-frame"
+                src="https://otterfulotterbros.netlify.app"
+                title="Otter Bros"
+                loading="eager"
+                referrerpolicy="no-referrer"
+            ></iframe>
         </div>
     </div>
 
