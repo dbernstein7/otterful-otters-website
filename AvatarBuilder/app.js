@@ -175,6 +175,27 @@ class AvatarBuilder {
         // Remove/scene controls shouldn't show in gallery embed.
         const scenePanel = document.getElementById('scene-panel');
         if (scenePanel) scenePanel.style.display = 'none';
+
+        // Move remove buttons into fixed bar at bottom so they're always visible (no scrolling needed).
+        const bar = document.getElementById('embed-remove-bar');
+        const removeHatBtn = document.getElementById('remove-hat-btn');
+        const removeShirtBtn = document.getElementById('remove-shirt-btn');
+        const removeEyesBtn = document.getElementById('remove-eyes-btn');
+        if (bar && removeHatBtn && removeShirtBtn && removeEyesBtn) {
+            bar.appendChild(removeHatBtn);
+            bar.appendChild(removeShirtBtn);
+            bar.appendChild(removeEyesBtn);
+            bar.setAttribute('aria-hidden', 'false');
+            // Show only the button for the current panel
+            const showRemoveBar = (p) => {
+                removeHatBtn.style.display = p === 'hat' ? '' : 'none';
+                removeShirtBtn.style.display = p === 'shirt' ? '' : 'none';
+                removeEyesBtn.style.display = p === 'eyes' ? '' : 'none';
+                bar.style.display = (p === 'hat' || p === 'shirt' || p === 'eyes') ? 'flex' : 'none';
+            };
+            showRemoveBar(panel);
+            // If parent changes panel via iframe reload, panel is fixed; no need to observe.
+        }
     }
 
     setupEmbedViewerBridge() {

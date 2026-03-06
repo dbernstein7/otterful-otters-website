@@ -122,11 +122,7 @@ html.embed-gallery .sidebar {
 html.embed-gallery .panel {
     flex: 1;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-    scrollbar-color: var(--accent) var(--bg-secondary);
+    overflow: hidden;
     width: 100%;
     max-width: none;
     min-width: 0;
@@ -147,28 +143,34 @@ html.embed-gallery .panel > .btn {
     flex-shrink: 0;
 }
 
-html.embed-gallery .panel::-webkit-scrollbar {
-    width: 10px;
+/* Fixed bar at bottom of gallery sidebar so Remove Hat/Shirt/Eyes is always visible without scrolling (overlay so gallery height unchanged) */
+html.embed-gallery .sidebar {
+    position: relative;
 }
 
-html.embed-gallery .panel::-webkit-scrollbar-track {
-    background: var(--bg-secondary);
-    border-radius: 5px;
+html.embed-gallery .embed-remove-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px 18px;
+    background: linear-gradient(to top, var(--bg-secondary) 60%, transparent);
+    min-height: 52px;
+    pointer-events: none;
 }
 
-html.embed-gallery .panel::-webkit-scrollbar-thumb {
-    background: var(--accent);
-    border-radius: 5px;
+html.embed-gallery .embed-remove-bar .btn {
+    margin-top: 0;
+    pointer-events: auto;
 }
 
-html.embed-gallery .panel::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-hover);
-}
 
 html.embed-gallery .fur-gallery {
-    flex: 0 0 auto;
-    max-height: min(65vh, 520px);
-    min-height: 120px;
+    flex: 1 1 0%;
+    min-height: 0;
     overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -181,6 +183,9 @@ html.embed-gallery .fur-gallery {
     align-content: start;
 }
 
+html.embed-gallery .panel .fur-gallery {
+    max-height: calc(100vh - 140px);
+}
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar {
     width: 12px;
