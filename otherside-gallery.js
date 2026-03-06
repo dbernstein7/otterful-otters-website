@@ -164,7 +164,45 @@ function setupModalHandlers() {
   }
 }
 
+function setupMobileNav() {
+  const menuBtn = document.querySelector('.nav-menu-btn');
+  const drawer = document.getElementById('navDrawer');
+  const overlay = document.getElementById('navDrawerOverlay');
+  if (!menuBtn || !drawer || !overlay) return;
+
+  function openDrawer() {
+    drawer.classList.add('is-open');
+    overlay.classList.add('is-open');
+    menuBtn.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    overlay.classList.remove('is-open');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  menuBtn.addEventListener('click', () => {
+    if (drawer.classList.contains('is-open')) closeDrawer();
+    else openDrawer();
+  });
+
+  overlay.addEventListener('click', closeDrawer);
+
+  document.querySelectorAll('.nav-drawer-pill').forEach((pill) => {
+    pill.addEventListener('click', () => closeDrawer());
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
+  setupMobileNav();
+
   try {
     othersideFiles = await loadManifest();
     updateCount();

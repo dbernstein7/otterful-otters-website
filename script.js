@@ -44,6 +44,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Error setting up navigation:', err);
         }
+
+        try {
+            setupMobileNav();
+        } catch (err) {
+            console.error('Error setting up mobile nav:', err);
+        }
         
         // Setup refresh button
         try {
@@ -160,6 +166,59 @@ function setupNavigation() {
                 if (team) {
                     team.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
+            }
+        });
+    });
+}
+
+function setupMobileNav() {
+    const menuBtn = document.querySelector('.nav-menu-btn');
+    const drawer = document.getElementById('navDrawer');
+    const overlay = document.getElementById('navDrawerOverlay');
+    if (!menuBtn || !drawer || !overlay) return;
+
+    function openDrawer() {
+        drawer.classList.add('is-open');
+        overlay.classList.add('is-open');
+        menuBtn.setAttribute('aria-expanded', 'true');
+        drawer.setAttribute('aria-hidden', 'false');
+        overlay.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+        drawer.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        drawer.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
+    menuBtn.addEventListener('click', function () {
+        if (drawer.classList.contains('is-open')) closeDrawer();
+        else openDrawer();
+    });
+
+    overlay.addEventListener('click', closeDrawer);
+
+    var scrollTargets = {
+        home: function () { window.scrollTo({ top: 0, behavior: 'smooth' }); },
+        analytics: function () { document.getElementById('collectionOverview') && document.getElementById('collectionOverview').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+        collection: function () { var el = document.querySelector('.gallery-section'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+        explore: function () { document.getElementById('exploreSection') && document.getElementById('exploreSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+        team: function () { document.getElementById('teamSection') && document.getElementById('teamSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    };
+
+    document.querySelectorAll('.nav-drawer-pill').forEach(function (pill) {
+        pill.addEventListener('click', function (e) {
+            var scrollKey = this.getAttribute('data-scroll');
+            if (scrollKey && scrollTargets[scrollKey]) {
+                e.preventDefault();
+                closeDrawer();
+                scrollTargets[scrollKey]();
+            } else if (this.tagName === 'A') {
+                closeDrawer();
             }
         });
     });

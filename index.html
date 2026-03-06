@@ -22,7 +22,11 @@
 <body>
     <div class="stars"></div>
     
-    <nav class="top-nav">
+    <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-menu-btn-icon"></span>
+    </button>
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" aria-hidden="true"></div>
+    <nav class="top-nav" id="topNav">
         <div class="nav-pill active">Home</div>
         <div class="nav-pill">Analytics</div>
         <div class="nav-pill">Collection</div>
@@ -33,6 +37,17 @@
         <a href="https://otherside-events.nightglyders.com/" target="_blank" class="nav-pill">Otherside Events</a>
         <div class="nav-pill">Team</div>
     </nav>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <div class="nav-drawer-pill" data-scroll="home">Home</div>
+        <div class="nav-drawer-pill" data-scroll="analytics">Analytics</div>
+        <div class="nav-drawer-pill" data-scroll="collection">Collection</div>
+        <div class="nav-drawer-pill" data-scroll="explore">Explore</div>
+        <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
+        <a href="AvatarBuilder/index.html" class="nav-drawer-pill">3D Builder</a>
+        <a href="https://otterfulotterbros.netlify.app" target="_blank" class="nav-drawer-pill">Otter Bros</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" class="nav-drawer-pill">Otherside Events</a>
+        <div class="nav-drawer-pill" data-scroll="team">Team</div>
+    </aside>
     
     <div class="top-right-icons">
         <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
