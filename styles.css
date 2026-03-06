@@ -651,6 +651,96 @@ body::before {
     flex-wrap: wrap;
 }
 
+.live-sales-feed {
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.live-sales-feed-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.live-sales-ticker {
+    width: 100%;
+    max-height: 120px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 16px;
+    background: rgba(10, 26, 15, 0.85);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    scrollbar-width: thin;
+}
+
+.live-sales-ticker::-webkit-scrollbar {
+    width: 8px;
+}
+
+.live-sales-ticker::-webkit-scrollbar-track {
+    background: rgba(79, 214, 165, 0.1);
+    border-radius: 4px;
+}
+
+.live-sales-ticker::-webkit-scrollbar-thumb {
+    background: var(--panel-blue);
+    border-radius: 4px;
+}
+
+.live-sales-ticker-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.live-sales-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    background: rgba(79, 214, 165, 0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(79, 214, 165, 0.2);
+}
+
+.live-sales-item a {
+    color: var(--panel-blue-alt);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.live-sales-item a:hover {
+    text-decoration: underline;
+}
+
+.live-sales-buyer {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    min-width: 100px;
+}
+
+.live-sales-price {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--highlight-yellow);
+}
+
+.live-sales-link {
+    flex-shrink: 0;
+}
+
+.live-sales-loading,
+.live-sales-empty {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 12px;
+}
+
 .action-btn {
     display: flex;
     align-items: center;

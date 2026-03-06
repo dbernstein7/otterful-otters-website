@@ -19,6 +19,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Handle API endpoints
         if self.path.startswith('/api/opensea-stats'):
             self.handle_opensea_stats()
+        elif self.path.startswith('/api/live-sales'):
+            self.handle_live_sales()
         elif self.path.startswith('/api/otherside-manifest'):
             self.handle_otherside_manifest()
         else:
@@ -77,6 +79,64 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'error': str(e)}).encode())
+
+    def handle_live_sales(self):
+        """Fetch last 10 sales (OpenSea events) for the collection"""
+        try:
+            collection_slug = 'otterful-otters'
+            url = f'https://api.opensea.io/api/v1/events?collection_slug={collection_slug}&event_type=successful&limit=10'
+            req = urllib.request.Request(url)
+            req.add_header('Accept', 'application/json')
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                data = json.loads(resp.read().decode())
+
+            contract_address = '0x4e5913922b7ddf916c8d27d1016827f799687e66'
+            sales = []
+            for evt in data.get('asset_events') or []:
+                try:
+                    buyer = (evt.get('winner_account') or {}).get('address') or (evt.get('buyer') or {}).get('address') or '—'
+                    if isinstance(buyer, dict):
+                        buyer = buyer.get('address', '—')
+                    price = evt.get('total_price')
+                    token = evt.get('payment_token') or {}
+                    decimals = int(token.get('decimals') or 18)
+                    if price is not None and decimals:
+                        price_val = int(price) / (10 ** decimals)
+                    else:
+                        price_val = 0
+                    symbol = (token.get('symbol') or 'ETH').upper()
+                    asset = evt.get('asset') or {}
+                    token_id = asset.get('token_id') or (evt.get('asset') and evt['asset'].get('token_id'))
+                    permalink = asset.get('permalink') or ''
+                    if not permalink and token_id:
+                        permalink = f'https://magiceden.us/item-details/apechain/{contract_address}/{token_id}'
+                    sales.append({
+                        'buyer': buyer[:6] + '…' + buyer[-4:] if isinstance(buyer, str) and len(buyer) > 12 else (buyer or '—'),
+                        'price': round(price_val, 4),
+                        'symbol': symbol,
+                        'link': permalink,
+                        'token_id': token_id,
+                    })
+                except (KeyError, TypeError, ZeroDivisionError):
+                    continue
+            result = {'sales': sales[:10]}
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode())
+        except urllib.error.HTTPError as e:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'sales': [], 'error': str(e.code)}).encode())
+        except Exception as e:
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'sales': [], 'error': str(e)}).encode())
 
     def handle_otherside_manifest(self):
         """Return list of Otherside photos and thumbnails for the gallery"""

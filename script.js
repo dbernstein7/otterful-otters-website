@@ -104,6 +104,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Error setting up data updates:', err);
         }
+
+        try {
+            fetchLiveSales();
+        } catch (err) {
+            console.error('Error fetching live sales:', err);
+        }
     } catch (error) {
         console.error('Critical error during initialization:', error);
         alert('Error loading page. Please check the browser console (F12) for details.');
@@ -294,7 +300,7 @@ function setupRefreshButton() {
             try {
                 // Fetch and update stats from OpenSea
                 const success = await fetchCollectionStats();
-                
+                fetchLiveSales();
                 if (success) {
                     // Show success feedback
                     showNotification('Data refreshed successfully!', 'success');
@@ -312,6 +318,38 @@ function setupRefreshButton() {
                 icon.style.transform = originalTransform;
             }
         });
+    }
+}
+
+async function fetchLiveSales() {
+    const inner = document.getElementById('liveSalesTickerInner');
+    const loading = document.getElementById('liveSalesLoading');
+    if (!inner) return;
+    if (loading) loading.style.display = 'block';
+    try {
+        const response = await fetch('/api/live-sales');
+        const data = await response.json().catch(() => ({}));
+        const sales = Array.isArray(data.sales) ? data.sales : [];
+        if (loading) loading.style.display = 'none';
+        inner.innerHTML = '';
+        if (sales.length === 0) {
+            inner.innerHTML = '<span class="live-sales-empty">No recent sales</span>';
+            return;
+        }
+        sales.forEach(function (s) {
+            const item = document.createElement('div');
+            item.className = 'live-sales-item';
+            const linkText = s.token_id ? `#${s.token_id}` : 'NFT';
+            const link = s.link ? `<a href="${s.link}" target="_blank" rel="noopener noreferrer">${linkText}</a>` : linkText;
+            item.innerHTML =
+                '<span class="live-sales-buyer">' + (s.buyer || '—') + '</span>' +
+                '<span class="live-sales-price">' + (s.price != null ? s.price + ' ' + (s.symbol || '') : '—') + '</span>' +
+                '<span class="live-sales-link">' + link + '</span>';
+            inner.appendChild(item);
+        });
+    } catch (err) {
+        if (loading) loading.style.display = 'none';
+        inner.innerHTML = '<span class="live-sales-empty">Sales unavailable</span>';
     }
 }
 
