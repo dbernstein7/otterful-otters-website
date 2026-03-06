@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
+    <title>Top Holders • Otterful Otters</title>
+    <link rel="icon" type="image/png" href="fishy-log.png.png">
+    <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="embed-page">
+    <div class="stars"></div>
+
+    <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-menu-btn-icon"></span>
+    </button>
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" aria-hidden="true"></div>
+    <nav class="top-nav" id="topNav">
+        <a href="index.html#home" class="nav-pill">Home</a>
+        <a href="index.html#analytics" class="nav-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-pill">Collection</a>
+        <a href="index.html#explore" class="nav-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
+        <a href="3d-builder.html" class="nav-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
+        <a href="leaderboard.html" class="nav-pill active" aria-current="page">Leaderboard</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-pill">Team</a>
+    </nav>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <a href="index.html#home" class="nav-drawer-pill">Home</a>
+        <a href="index.html#analytics" class="nav-drawer-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
+        <a href="index.html#explore" class="nav-drawer-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
+        <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
+        <a href="leaderboard.html" class="nav-drawer-pill active" aria-current="page">Leaderboard</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-drawer-pill">Team</a>
+    </aside>
+
+    <div class="top-right-icons">
+        <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
+            <img src="me icon.png" alt="Magic Eden" class="me-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+        </header>
+
+        <section class="leaderboard-section">
+            <h2 class="section-title leaderboard-title">Top Holders</h2>
+
+            <div class="leaderboard-podium">
+                <div class="leaderboard-top-three">
+                    <div class="leaderboard-card leaderboard-card--2nd" data-rank="2">
+                        <span class="leaderboard-medal" aria-hidden="true">🥈</span>
+                        <span class="leaderboard-rank">2</span>
+                        <span class="leaderboard-address" id="holder-2-address">0x1234...abcd</span>
+                        <span class="leaderboard-count" id="holder-2-count">42</span>
+                        <span class="leaderboard-label">Otters</span>
+                    </div>
+                    <div class="leaderboard-card leaderboard-card--1st" data-rank="1">
+                        <span class="leaderboard-medal" aria-hidden="true">🥇</span>
+                        <span class="leaderboard-rank">1</span>
+                        <span class="leaderboard-address" id="holder-1-address">0x5678...wxyz</span>
+                        <span class="leaderboard-count" id="holder-1-count">89</span>
+                        <span class="leaderboard-label">Otters</span>
+                    </div>
+                    <div class="leaderboard-card leaderboard-card--3rd" data-rank="3">
+                        <span class="leaderboard-medal" aria-hidden="true">🥉</span>
+                        <span class="leaderboard-rank">3</span>
+                        <span class="leaderboard-address" id="holder-3-address">0x9abc...def0</span>
+                        <span class="leaderboard-count" id="holder-3-count">28</span>
+                        <span class="leaderboard-label">Otters</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="leaderboard-list-wrap">
+                <ul class="leaderboard-list" id="leaderboardList">
+                    <!-- Rows 4+ injected by script -->
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <script>
+      (function () {
+        const menuBtn = document.querySelector('.nav-menu-btn');
+        const drawer = document.getElementById('navDrawer');
+        const overlay = document.getElementById('navDrawerOverlay');
+        if (menuBtn && drawer && overlay) {
+          function openDrawer() {
+            drawer.classList.add('is-open');
+            overlay.classList.add('is-open');
+            menuBtn.setAttribute('aria-expanded', 'true');
+            drawer.setAttribute('aria-hidden', 'false');
+            overlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+          }
+          function closeDrawer() {
+            drawer.classList.remove('is-open');
+            overlay.classList.remove('is-open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            drawer.setAttribute('aria-hidden', 'true');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+          }
+          menuBtn.addEventListener('click', function () {
+            if (drawer.classList.contains('is-open')) closeDrawer();
+            else openDrawer();
+          });
+          overlay.addEventListener('click', closeDrawer);
+          document.querySelectorAll('.nav-drawer-pill').forEach(function (pill) {
+            pill.addEventListener('click', closeDrawer);
+          });
+        }
+      })();
+    </script>
+    <script>
+      (function () {
+        // Placeholder top holders (replace with API data)
+        var topHolders = [
+          { rank: 1, address: '0x5678...wxyz', count: 89 },
+          { rank: 2, address: '0x1234...abcd', count: 42 },
+          { rank: 3, address: '0x9abc...def0', count: 28 },
+          { rank: 4, address: '0x1111...1111', count: 22 },
+          { rank: 5, address: '0x2222...2222', count: 18 },
+          { rank: 6, address: '0x3333...3333', count: 15 },
+          { rank: 7, address: '0x4444...4444', count: 12 },
+          { rank: 8, address: '0x5555...5555', count: 11 },
+          { rank: 9, address: '0x6666...6666', count: 10 },
+          { rank: 10, address: '0x7777...7777', count: 9 }
+        ];
+
+        // Fill top 3 in podium (already in HTML; optionally sync from data)
+        [1, 2, 3].forEach(function (r) {
+          var h = topHolders.find(function (x) { return x.rank === r; });
+          if (h) {
+            var addrEl = document.getElementById('holder-' + r + '-address');
+            var countEl = document.getElementById('holder-' + r + '-count');
+            if (addrEl) addrEl.textContent = h.address;
+            if (countEl) countEl.textContent = h.count;
+          }
+        });
+
+        // Fill list 4+
+        var list = document.getElementById('leaderboardList');
+        if (list) {
+          topHolders.filter(function (h) { return h.rank >= 4; }).forEach(function (h) {
+            var li = document.createElement('li');
+            li.className = 'leaderboard-list-item';
+            li.innerHTML =
+              '<span class="leaderboard-list-rank">' + h.rank + '</span>' +
+              '<span class="leaderboard-list-address">' + h.address + '</span>' +
+              '<span class="leaderboard-list-count">' + h.count + ' <span class="leaderboard-list-label">Otters</span></span>';
+            list.appendChild(li);
+          });
+        }
+      })();
+    </script>
+</body>
+</html>
