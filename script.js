@@ -105,10 +105,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error setting up data updates:', err);
         }
 
+        // Rarity Rank Viewer
         try {
-            fetchLiveSales();
+            setupRarityRankViewer();
         } catch (err) {
-            console.error('Error fetching live sales:', err);
+            console.error('Error setting up Rarity Rank Viewer:', err);
         }
     } catch (error) {
         console.error('Critical error during initialization:', error);
@@ -159,6 +160,76 @@ function handleInitialHashNavigation() {
 
     // Let layout settle before scrolling (images/fonts can shift heights).
     setTimeout(() => scrollTargets[key](), 50);
+}
+
+function setupRarityRankViewer() {
+    const form = document.getElementById('rarityRankForm');
+    const resultEl = document.getElementById('rarityRankResult');
+    const errorEl = document.getElementById('rarityRankError');
+    const btn = document.getElementById('rarityLookupBtn');
+    if (!form || !resultEl || !errorEl || !btn) return;
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        errorEl.hidden = true;
+        resultEl.hidden = true;
+        const chain = (document.getElementById('rarity-chain') || {}).value.trim() || 'ape_chain';
+        const contract = (document.getElementById('rarity-contract') || {}).value.trim();
+        const tokenId = (document.getElementById('rarity-token-id') || {}).value.trim();
+        if (!contract || !tokenId) {
+            errorEl.textContent = 'Please enter contract and token ID.';
+            errorEl.hidden = false;
+            return;
+        }
+
+        const originalLabel = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Loading…';
+        try {
+            const url = `/api/nft-rarity?chain=${encodeURIComponent(chain)}&contract=${encodeURIComponent(contract)}&token_id=${encodeURIComponent(tokenId)}`;
+            const res = await fetch(url);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                errorEl.textContent = data.error || data.message || `Request failed (${res.status}).`;
+                if (data.help) errorEl.textContent += ' ' + data.help;
+                errorEl.hidden = false;
+                return;
+            }
+            // Display result: common fields for rarity/rank APIs
+            const rank = data.rarityRank ?? data.rank ?? data.rarity?.rank ?? data.rarityRank;
+            const score = data.rarityScore ?? data.rarity?.score ?? data.score;
+            const rows = [];
+            if (rank != null) rows.push({ label: 'Rarity Rank', value: String(rank) });
+            if (score != null) rows.push({ label: 'Rarity Score', value: String(score) });
+            if (data.name) rows.push({ label: 'Name', value: data.name });
+            if (data.token_id != null) rows.push({ label: 'Token ID', value: String(data.token_id) });
+            if (data.contract) rows.push({ label: 'Contract', value: data.contract });
+            // Fallback: show a few top-level keys
+            if (rows.length === 0 && typeof data === 'object') {
+                Object.keys(data).slice(0, 10).forEach(function (k) {
+                    const v = data[k];
+                    if (v != null && typeof v !== 'object') rows.push({ label: k, value: String(v) });
+                });
+            }
+            if (rows.length === 0) rows.push({ label: 'Response', value: JSON.stringify(data).slice(0, 200) });
+            resultEl.innerHTML = rows.map(function (r) {
+                return '<div class="rarity-rank-row"><span>' + escapeHtml(r.label) + '</span><strong>' + escapeHtml(r.value) + '</strong></div>';
+            }).join('');
+            resultEl.hidden = false;
+        } catch (err) {
+            errorEl.textContent = 'Network error: ' + (err.message || 'Failed to fetch.');
+            errorEl.hidden = false;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalLabel;
+        }
+    });
+}
+
+function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
 }
 
 function initAnimations() {
@@ -300,7 +371,7 @@ function setupRefreshButton() {
             try {
                 // Fetch and update stats from OpenSea
                 const success = await fetchCollectionStats();
-                fetchLiveSales();
+                
                 if (success) {
                     // Show success feedback
                     showNotification('Data refreshed successfully!', 'success');
@@ -318,47 +389,6 @@ function setupRefreshButton() {
                 icon.style.transform = originalTransform;
             }
         });
-    }
-}
-
-async function fetchLiveSales() {
-    const inner = document.getElementById('liveSalesTickerInner');
-    const loading = document.getElementById('liveSalesLoading');
-    if (!inner) return;
-    if (loading) loading.style.display = 'block';
-    try {
-        const response = await fetch('/api/live-sales');
-        const data = await response.json().catch(() => ({}));
-        const sales = Array.isArray(data.sales) ? data.sales : [];
-        if (loading) loading.style.display = 'none';
-        inner.innerHTML = '';
-        if (sales.length === 0) {
-            inner.innerHTML = '<span class="live-sales-empty">No recent sales</span>';
-            return;
-        }
-        inner.innerHTML =
-            '<div class="live-sales-table-header">' +
-            '<span>Event</span><span>Item</span><span>Price</span><span>From</span><span>To</span>' +
-            '</div>';
-        sales.forEach(function (s) {
-            const row = document.createElement('div');
-            row.className = 'live-sales-item';
-            const linkText = s.token_id != null ? '#' + s.token_id : '—';
-            const link = s.link
-                ? '<a href="' + s.link + '" target="_blank" rel="noopener noreferrer">' + linkText + '</a>'
-                : linkText;
-            const priceStr = s.price != null ? s.price + ' ' + (s.symbol || '') : '—';
-            row.innerHTML =
-                '<span class="live-sales-event">Sale</span>' +
-                '<span>' + link + '</span>' +
-                '<span class="live-sales-price">' + priceStr + '</span>' +
-                '<span class="live-sales-from">' + (s.seller || '—') + '</span>' +
-                '<span class="live-sales-to">' + (s.buyer || '—') + '</span>';
-            inner.appendChild(row);
-        });
-    } catch (err) {
-        if (loading) loading.style.display = 'none';
-        inner.innerHTML = '<span class="live-sales-empty">Sales unavailable</span>';
     }
 }
 

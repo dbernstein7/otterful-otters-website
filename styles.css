@@ -651,147 +651,6 @@ body::before {
     flex-wrap: wrap;
 }
 
-/* Live Sales — OpenSea-style activity table */
-.live-sales-feed {
-    margin-top: 12px;
-    margin-bottom: 12px;
-}
-
-.live-sales-feed-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.live-sales-feed-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0;
-}
-
-.live-sales-feed-view-all {
-    font-size: 0.875rem;
-    color: var(--panel-blue-alt);
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.live-sales-feed-view-all:hover {
-    text-decoration: underline;
-}
-
-.live-sales-table-wrap {
-    width: 100%;
-    max-height: 280px;
-    overflow-y: auto;
-    overflow-x: auto;
-    background: rgba(18, 28, 22, 0.95);
-    border: 1px solid var(--border-soft);
-    border-radius: 12px;
-    scrollbar-width: thin;
-}
-
-.live-sales-table-wrap::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-.live-sales-table-wrap::-webkit-scrollbar-track {
-    background: rgba(79, 214, 165, 0.06);
-    border-radius: 4px;
-}
-
-.live-sales-table-wrap::-webkit-scrollbar-thumb {
-    background: var(--panel-blue);
-    border-radius: 4px;
-}
-
-.live-sales-table-inner {
-    min-width: 100%;
-}
-
-.live-sales-table-header {
-    display: grid;
-    grid-template-columns: 70px 1fr 100px 1fr 1fr;
-    gap: 12px 16px;
-    padding: 10px 16px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid var(--border-soft);
-}
-
-.live-sales-item {
-    display: grid;
-    grid-template-columns: 70px 1fr 100px 1fr 1fr;
-    gap: 12px 16px;
-    align-items: center;
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.live-sales-item:last-child {
-    border-bottom: none;
-}
-
-.live-sales-item:hover {
-    background: rgba(79, 214, 165, 0.06);
-}
-
-.live-sales-event {
-    color: var(--success-green);
-    font-weight: 600;
-}
-
-.live-sales-item a {
-    color: var(--panel-blue-alt);
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.live-sales-item a:hover {
-    text-decoration: underline;
-}
-
-.live-sales-price {
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.live-sales-from,
-.live-sales-to {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-}
-
-.live-sales-loading,
-.live-sales-empty {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    text-align: center;
-    padding: 20px;
-}
-
-@media (max-width: 640px) {
-    .live-sales-table-header,
-    .live-sales-item {
-        grid-template-columns: 60px minmax(60px, 1fr) 80px minmax(50px, 1fr) minmax(50px, 1fr);
-        padding: 8px 12px;
-        font-size: 0.8rem;
-    }
-    .live-sales-table-wrap {
-        max-height: 240px;
-    }
-}
-
 .action-btn {
     display: flex;
     align-items: center;
@@ -2413,6 +2272,17 @@ body::before {
         height: 24px;
     }
 
+    .rarity-rank-fields {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .rarity-input {
+        width: 100%;
+    }
+    .rarity-input--wide {
+        width: 100%;
+    }
+
     .gallery-grid {
         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 12px;
@@ -2658,6 +2528,69 @@ body::before {
 
 .info-card:nth-child(1) { animation-delay: 0.5s; }
 .info-card:nth-child(2) { animation-delay: 0.6s; }
+
+/* Rarity Rank Viewer */
+.rarity-rank-viewer {
+    margin-top: 24px;
+}
+.rarity-rank-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 18px;
+}
+.rarity-rank-form {
+    margin-bottom: 16px;
+}
+.rarity-rank-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 20px;
+}
+.rarity-label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+.rarity-input {
+    width: 100px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: rgba(10, 26, 15, 0.6);
+    color: var(--text-primary);
+}
+.rarity-input--wide {
+    width: 280px;
+    font-family: monospace;
+}
+.rarity-rank-result {
+    padding: 16px;
+    background: rgba(79, 214, 165, 0.15);
+    border: 1px solid var(--border-glow);
+    border-radius: 14px;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+.rarity-rank-result .rarity-rank-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.rarity-rank-result .rarity-rank-row:last-child { border-bottom: none; }
+.rarity-rank-error {
+    padding: 12px;
+    background: rgba(255, 159, 46, 0.15);
+    border: 1px solid var(--highlight-orange);
+    border-radius: 12px;
+    color: var(--highlight-orange);
+    font-size: 0.9rem;
+}
 
 .analytics-card {
     animation-delay: 0.7s;

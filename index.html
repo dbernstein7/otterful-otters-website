@@ -93,17 +93,6 @@
                 <img src="Magic-Eden-Emblem.png" alt="Magic Eden" class="icon">
                 Magic Eden
             </a>
-            <div class="live-sales-feed" style="flex-basis: 100%; width: 100%;">
-                <div class="live-sales-feed-header">
-                    <h3 class="live-sales-feed-title">Activity</h3>
-                    <a href="https://opensea.io/collection/otterful-otters/activity" target="_blank" rel="noopener noreferrer" class="live-sales-feed-view-all">View all on OpenSea</a>
-                </div>
-                <div class="live-sales-table-wrap" id="liveSalesTicker" aria-live="polite">
-                    <div class="live-sales-table-inner" id="liveSalesTickerInner">
-                        <span class="live-sales-loading" id="liveSalesLoading">Loading…</span>
-                    </div>
-                </div>
-            </div>
             <button class="action-btn secondary">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
@@ -199,6 +188,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+        <div class="info-card rarity-rank-viewer" id="rarityRankViewer">
+            <h2>Rarity Rank Viewer</h2>
+            <p class="rarity-rank-desc">Enter an NFT token ID to look up rarity and rank for this collection.</p>
+            <form class="rarity-rank-form" id="rarityRankForm" aria-label="Look up NFT rarity">
+                <div class="rarity-rank-fields">
+                    <label for="rarity-chain" class="rarity-label">Chain</label>
+                    <input type="text" id="rarity-chain" class="rarity-input" value="ape_chain" placeholder="e.g. ape_chain">
+                    <label for="rarity-contract" class="rarity-label">Contract</label>
+                    <input type="text" id="rarity-contract" class="rarity-input rarity-input--wide" value="0x4e5913922b7ddf916c8d27d1016827f799687e66" placeholder="0x...">
+                    <label for="rarity-token-id" class="rarity-label">Token ID</label>
+                    <input type="number" id="rarity-token-id" class="rarity-input" min="1" max="2222" placeholder="1–2222" required>
+                    <button type="submit" class="action-btn primary" id="rarityLookupBtn">Look up</button>
+                </div>
+            </form>
+            <div id="rarityRankResult" class="rarity-rank-result" aria-live="polite" hidden></div>
+            <div id="rarityRankError" class="rarity-rank-error" aria-live="assertive" hidden></div>
         </div>
 
         <div class="analytics-card" id="marketAnalytics">
