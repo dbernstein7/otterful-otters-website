@@ -1311,7 +1311,7 @@ body::before {
     backdrop-filter: blur(10px);
     color: var(--text-secondary);
     font-size: 16px;
-    margin-bottom: 12px;
+    margin-top: 12px;
 }
 
 .page-embed-link.action-btn {
