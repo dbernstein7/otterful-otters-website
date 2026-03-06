@@ -215,29 +215,52 @@ html.embed-gallery .fur-btn img {
     padding: 8px;
 }
 
-@media (max-width: 520px) {
+/* Mobile embed gallery: even 2-column grid, no overlapping thumbnails */
+@media (max-width: 768px) {
     html.embed-gallery .sidebar {
-        padding: 14px;
+        padding: 12px;
     }
 
     html.embed-gallery .fur-gallery {
+        display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 1rem;
-        padding: 0.75rem 0.5rem 1.25rem 0.5rem;
+        gap: 10px;
+        padding: 10px 8px 1.25rem 8px;
+        align-content: start;
+        min-width: 0;
     }
 
     html.embed-gallery .fur-btn {
         aspect-ratio: 1;
-        min-width: 0;
-        min-height: 0;
+        min-width: 0 !important;
+        min-height: 0 !important;
         width: 100%;
+        max-width: 100%;
+        height: auto;
         overflow: hidden;
+        padding: 0;
+        box-sizing: border-box;
+        display: block;
     }
 
     html.embed-gallery .fur-btn img {
         width: 100%;
         height: 100%;
         object-fit: contain;
+        display: block;
+        padding: 6px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 520px) {
+    html.embed-gallery .sidebar {
+        padding: 10px;
+    }
+
+    html.embed-gallery .fur-gallery {
+        gap: 8px;
+        padding: 8px 6px 1.25rem 6px;
     }
 }
 
