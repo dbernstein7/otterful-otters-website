@@ -12,6 +12,16 @@ import urllib.request
 import urllib.parse
 import json
 
+# Load .env if present (OPENSEA_API_KEY etc.) — file is gitignored
+_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+if os.path.isfile(_env_path):
+    with open(_env_path) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                k, _, v = line.partition('=')
+                os.environ.setdefault(k.strip(), v.strip())
+
 PORT = 8000
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -103,27 +113,32 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             sales = []
             for evt in events:
                 try:
-                    buyer_obj = evt.get('taker') or evt.get('buyer') or evt.get('winner_account')
-                    buyer = buyer_obj.get('address') if isinstance(buyer_obj, dict) else (buyer_obj if isinstance(buyer_obj, str) else '—')
+                    # SaleEvent: buyer string
+                    buyer = evt.get('buyer') or evt.get('taker')
+                    if isinstance(buyer, dict):
+                        buyer = buyer.get('address', '—')
+                    buyer = buyer or '—'
                     if isinstance(buyer, str) and len(buyer) > 12:
                         buyer = buyer[:6] + '…' + buyer[-4:]
 
+                    # SaleEvent: payment.quantity (string), payment.decimals, payment.symbol
                     price_val = 0
                     symbol = 'APE'
-                    token = evt.get('payment_token') or {}
-                    total = evt.get('total_price')
-                    if total is not None:
-                        decimals = int(token.get('decimals') or 18)
-                        price_val = int(total) / (10 ** decimals)
-                    symbol = (token.get('symbol') or 'APE').upper()
+                    payment = evt.get('payment') or {}
+                    qty = payment.get('quantity')
+                    if qty is not None:
+                        dec = int(payment.get('decimals', 18))
+                        price_val = int(qty) / (10 ** dec)
+                    symbol = (payment.get('symbol') or 'APE').upper()
 
-                    asset = evt.get('asset') or evt.get('nft') or {}
-                    token_id = asset.get('token_id') or asset.get('identifier')
-                    permalink = asset.get('permalink') or ''
+                    # SaleEvent: nft.identifier (token_id), nft.opensea_url
+                    nft = evt.get('nft') or evt.get('asset') or {}
+                    token_id = nft.get('identifier') or nft.get('token_id')
+                    permalink = nft.get('opensea_url') or nft.get('permalink') or ''
                     if not permalink and token_id:
-                        permalink = f'https://magiceden.us/item-details/apechain/{contract_address}/{token_id}'
+                        permalink = f'https://opensea.io/assets/ape_chain/{contract_address}/{token_id}'
                     sales.append({
-                        'buyer': buyer or '—',
+                        'buyer': buyer,
                         'price': round(price_val, 4),
                         'symbol': symbol,
                         'link': permalink,

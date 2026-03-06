@@ -60,35 +60,26 @@ module.exports = async function handler(req, res) {
 
     for (const evt of events) {
       try {
-        // v2: taker/buyer vs maker/seller; or winner_account (v1)
-        const buyerObj = evt.taker || evt.buyer || evt.winner_account;
-        let buyer = buyerObj?.address || (typeof buyerObj === 'string' ? buyerObj : null) || '—';
+        // SaleEvent: buyer is string address
+        let buyer = evt.buyer || evt.taker || (evt.winner_account && evt.winner_account.address) || '—';
+        if (typeof buyer === 'object') buyer = buyer.address || '—';
         buyer = shortenAddress(buyer);
 
-        // v2: price in event or order; can be in wei/smallest unit
+        // SaleEvent: payment has quantity (string, smallest unit), decimals, symbol
         let priceVal = 0;
         let symbol = 'APE';
-        const priceObj = evt.payment_token || evt.price || evt.total_price;
-        if (priceObj) {
-          if (typeof priceObj === 'object' && priceObj.value != null) {
-            const dec = Number(priceObj.decimals) || 18;
-            priceVal = Number(priceObj.value) / Math.pow(10, dec);
-            symbol = (priceObj.symbol || priceObj.currency_symbol || 'APE').toUpperCase();
-          } else if (typeof priceObj === 'string' || typeof priceObj === 'number') {
-            priceVal = Number(priceObj) / 1e18;
-          }
-        }
-        if (evt.total_price != null && priceVal === 0) {
-          const token = evt.payment_token || {};
-          const dec = Number(token.decimals) || 18;
-          priceVal = Number(evt.total_price) / Math.pow(10, dec);
-          symbol = (token.symbol || 'APE').toUpperCase();
+        const payment = evt.payment;
+        if (payment && payment.quantity != null) {
+          const dec = Number(payment.decimals) !== undefined ? Number(payment.decimals) : 18;
+          priceVal = Number(payment.quantity) / Math.pow(10, dec);
+          symbol = (payment.symbol || 'APE').toUpperCase();
         }
 
-        const asset = evt.asset || evt.nft || {};
-        const tokenId = asset.token_id || asset.identifier || evt.token_id;
-        let link = asset.permalink || evt.permalink || '';
-        if (!link && tokenId) link = `https://magiceden.us/item-details/apechain/${CONTRACT}/${tokenId}`;
+        // SaleEvent: nft has identifier (token_id), opensea_url
+        const nft = evt.nft || evt.asset || {};
+        const tokenId = nft.identifier !== undefined ? nft.identifier : (nft.token_id || evt.token_id);
+        let link = nft.opensea_url || nft.permalink || '';
+        if (!link && tokenId) link = `https://opensea.io/assets/ape_chain/${CONTRACT}/${tokenId}`;
 
         sales.push({
           buyer,
