@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ottvatar Viewer</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const embed = (params.get('embed') || '').trim().toLowerCase();
+            if (embed) document.documentElement.classList.add(`embed-${embed}`);
+            const panel = (params.get('panel') || '').trim().toLowerCase();
+            if (panel) document.documentElement.dataset.embedPanel = panel;
+        })();
+    </script>
 </head>
 <body>
     <div class="container">

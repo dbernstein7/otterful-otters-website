@@ -61,14 +61,36 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
-        <div class="page-embed">
-            <iframe
-                class="page-embed-frame"
-                src="AvatarBuilder/index.html"
-                title="Otterful 3D Builder"
-                loading="eager"
-                referrerpolicy="no-referrer"
-            ></iframe>
+        <div class="builder-layout">
+            <div class="builder-viewer">
+                <iframe
+                    class="builder-frame builder-frame--viewer"
+                    src="AvatarBuilder/index.html?embed=viewer"
+                    title="Otterful 3D Viewer"
+                    loading="eager"
+                    referrerpolicy="no-referrer"
+                ></iframe>
+            </div>
+
+            <aside class="builder-gallery">
+                <div class="builder-gallery-top">
+                    <div class="builder-tabs" role="tablist" aria-label="Trait galleries">
+                        <button type="button" class="builder-tab is-active" data-panel="fur" role="tab" aria-selected="true">Fur</button>
+                        <button type="button" class="builder-tab" data-panel="hat" role="tab" aria-selected="false">Hats</button>
+                        <button type="button" class="builder-tab" data-panel="shirt" role="tab" aria-selected="false">Shirts</button>
+                        <button type="button" class="builder-tab" data-panel="eyes" role="tab" aria-selected="false">Eyes</button>
+                    </div>
+                </div>
+
+                <iframe
+                    id="traitGalleryFrame"
+                    class="builder-frame builder-frame--gallery"
+                    src="AvatarBuilder/index.html?embed=gallery&panel=fur"
+                    title="Otterful Trait Gallery"
+                    loading="eager"
+                    referrerpolicy="no-referrer"
+                ></iframe>
+            </aside>
         </div>
     </div>
 
@@ -104,6 +126,27 @@
 
         overlay.addEventListener('click', closeDrawer);
         document.querySelectorAll('.nav-drawer-pill').forEach((pill) => pill.addEventListener('click', closeDrawer));
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const frame = document.getElementById('traitGalleryFrame');
+        const tabs = Array.from(document.querySelectorAll('.builder-tab'));
+        if (!frame || tabs.length === 0) return;
+
+        function setActive(panel) {
+          tabs.forEach((t) => {
+            const isOn = t.dataset.panel === panel;
+            t.classList.toggle('is-active', isOn);
+            t.setAttribute('aria-selected', isOn ? 'true' : 'false');
+          });
+          frame.src = `AvatarBuilder/index.html?embed=gallery&panel=${encodeURIComponent(panel)}`;
+        }
+
+        tabs.forEach((t) => {
+          t.addEventListener('click', () => setActive(t.dataset.panel));
+        });
       })();
     </script>
 </body>

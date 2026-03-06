@@ -5,6 +5,11 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 class AvatarBuilder {
     constructor() {
+        const params = new URLSearchParams(window.location.search);
+        this.embedMode = (params.get('embed') || '').trim().toLowerCase() || null; // 'viewer' | 'gallery' | null
+        this.embedPanel = (params.get('panel') || '').trim().toLowerCase() || null; // fur|hat|shirt|eyes
+        this.embedSelectionKey = 'ottvatar_embed_selection_v1';
+
         this.scene = null;
         this.camera = null;
         this.renderer = null;
@@ -112,6 +117,14 @@ class AvatarBuilder {
             }
             
             this.setupTheme();
+
+            // Gallery-only embed: show one gallery and emit selections (no 3D scene).
+            if (this.embedMode === 'gallery') {
+                this.setupEmbedGallery();
+                return;
+            }
+
+            // Default + viewer embed: full 3D scene. Viewer embed hides sidebar via CSS.
             this.setupScene();
             // Note: Reference file loading removed - using default transforms
             this.setupEventListeners();
@@ -120,10 +133,85 @@ class AvatarBuilder {
             this.setupHatGallery();
             this.setupShirtGallery();
             this.setupEyesGallery();
+
+            if (this.embedMode === 'viewer') {
+                this.setupEmbedViewerBridge();
+            }
+
             this.animate();
         } catch (error) {
             console.error('Error in AvatarBuilder.init():', error);
             throw error;
+        }
+    }
+
+    setupEmbedGallery() {
+        // Hide viewer/scene UI if present; CSS also handles most of this.
+        const viewer = document.querySelector('.viewer-container');
+        if (viewer) viewer.classList.add('is-embed-gallery');
+
+        // Show only the requested panel (default to 'fur').
+        const panel = this.embedPanel || (document.documentElement.dataset.embedPanel || '').toLowerCase() || 'fur';
+        const panels = {
+            fur: document.querySelector('.panel:not([id])') || null, // first Fur panel has no id
+            hat: document.getElementById('hat-panel'),
+            shirt: document.getElementById('shirt-panel'),
+            eyes: document.getElementById('eyes-panel')
+        };
+
+        Object.values(panels).forEach((el) => {
+            if (el) el.style.display = 'none';
+        });
+
+        // Always set up the galleries so the DOM exists; only selected panel is shown.
+        this.setupFurGallery();
+        this.setupHatGallery();
+        this.setupShirtGallery();
+        this.setupEyesGallery();
+
+        if (panels[panel]) panels[panel].style.display = 'block';
+        else if (panels.fur) panels.fur.style.display = 'block';
+
+        // Remove/scene controls shouldn't show in gallery embed.
+        const scenePanel = document.getElementById('scene-panel');
+        if (scenePanel) scenePanel.style.display = 'none';
+    }
+
+    setupEmbedViewerBridge() {
+        const apply = (payload) => {
+            if (!payload || typeof payload !== 'object') return;
+            const type = (payload.type || '').toLowerCase();
+            const value = payload.value;
+            if (!type) return;
+
+            if (type === 'fur' && typeof value === 'string') this.loadFurFile(value);
+            if (type === 'hat' && typeof value === 'string') this.loadHat(value);
+            if (type === 'shirt' && typeof value === 'string') this.loadShirt(value);
+            if (type === 'eyes' && typeof value === 'string') this.loadEyes(value);
+
+            if (type === 'remove-hat') this.removeHat();
+            if (type === 'remove-shirt') this.removeShirt();
+            if (type === 'remove-eyes') this.removeEyes();
+        };
+
+        // Apply any last selection immediately.
+        try {
+            const raw = localStorage.getItem(this.embedSelectionKey);
+            if (raw) apply(JSON.parse(raw));
+        } catch (_) {}
+
+        window.addEventListener('storage', (e) => {
+            if (e.key !== this.embedSelectionKey || !e.newValue) return;
+            try { apply(JSON.parse(e.newValue)); } catch (_) {}
+        });
+    }
+
+    emitEmbedSelection(type, value = null) {
+        try {
+            const payload = { type, value, ts: Date.now() };
+            localStorage.setItem(this.embedSelectionKey, JSON.stringify(payload));
+        } catch (err) {
+            console.warn('Failed to emit embed selection:', err);
         }
     }
 
@@ -740,7 +828,8 @@ class AvatarBuilder {
             button.appendChild(img);
             
             button.addEventListener('click', () => {
-                this.loadFurFile(furName);
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('fur', furName);
+                else this.loadFurFile(furName);
             });
             gallery.appendChild(button);
         });
@@ -769,15 +858,20 @@ class AvatarBuilder {
             button.appendChild(img);
             
             button.addEventListener('click', () => {
-                this.loadHat(hatName);
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('hat', hatName);
+                else this.loadHat(hatName);
             });
             gallery.appendChild(button);
         });
 
         // Remove hat button
-        document.getElementById('remove-hat-btn').addEventListener('click', () => {
-            this.removeHat();
-        });
+        const removeHatBtn = document.getElementById('remove-hat-btn');
+        if (removeHatBtn) {
+            removeHatBtn.addEventListener('click', () => {
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('remove-hat');
+                else this.removeHat();
+            });
+        }
     }
 
     setupShirtGallery() {
@@ -802,15 +896,20 @@ class AvatarBuilder {
             button.appendChild(img);
             
             button.addEventListener('click', () => {
-                this.loadShirt(shirtName);
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('shirt', shirtName);
+                else this.loadShirt(shirtName);
             });
             gallery.appendChild(button);
         });
 
         // Remove shirt button
-        document.getElementById('remove-shirt-btn').addEventListener('click', () => {
-            this.removeShirt();
-        });
+        const removeShirtBtn = document.getElementById('remove-shirt-btn');
+        if (removeShirtBtn) {
+            removeShirtBtn.addEventListener('click', () => {
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('remove-shirt');
+                else this.removeShirt();
+            });
+        }
     }
 
     setupEyesGallery() {
@@ -841,15 +940,20 @@ class AvatarBuilder {
             }
             
             button.addEventListener('click', () => {
-                this.loadEyes(eyeName);
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('eyes', eyeName);
+                else this.loadEyes(eyeName);
             });
             gallery.appendChild(button);
         });
 
         // Remove eyes button
-        document.getElementById('remove-eyes-btn').addEventListener('click', () => {
-            this.removeEyes();
-        });
+        const removeEyesBtn = document.getElementById('remove-eyes-btn');
+        if (removeEyesBtn) {
+            removeEyesBtn.addEventListener('click', () => {
+                if (this.embedMode === 'gallery') this.emitEmbedSelection('remove-eyes');
+                else this.removeEyes();
+            });
+        }
     }
 
     async loadFurFile(furName, preserveWearables = true, manageLoadingScreen = true) {
