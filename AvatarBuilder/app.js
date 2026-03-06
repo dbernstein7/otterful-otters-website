@@ -1499,7 +1499,7 @@ class AvatarBuilder {
 
     async loadHat(hatName) {
         if (!this.model) {
-            alert("Please load an otter fur first!");
+            if (this.embedMode !== 'viewer') alert("Please load an otter fur first!");
             return;
         }
 
@@ -2267,7 +2267,7 @@ class AvatarBuilder {
 
     async loadShirt(shirtName) {
         if (!this.model) {
-            alert("Please load an otter fur first!");
+            if (this.embedMode !== 'viewer') alert("Please load an otter fur first!");
             return;
         }
 
@@ -2369,7 +2369,7 @@ class AvatarBuilder {
 
     async loadEyes(eyeName) {
         if (!this.model) {
-            alert("Please load an otter fur first!");
+            if (this.embedMode !== 'viewer') alert("Please load an otter fur first!");
             return;
         }
 
