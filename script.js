@@ -232,17 +232,18 @@ async function fetchCollectionStats() {
         const topOffer = data?.topOffer || null;
 
         if (!total) throw new Error('Missing stats.total from API');
+        const symbol = total.floor_price_symbol || 'APE';
 
         // ---------- Top stat cards ----------
         if (typeof total.floor_price === 'number') {
-            const symbol = total.floor_price_symbol || 'APE';
             updateStatValue('stat-floor-price', formatNumber(total.floor_price), symbol);
             const floorEl = document.getElementById('analytics-floor');
             if (floorEl) floorEl.textContent = `Floor: ${formatNumber(total.floor_price)} ${symbol}`;
         }
 
         if (typeof total.volume === 'number') {
-            updateStatValue('stat-total-volume', formatLargeNumber(total.volume), total.floor_price_symbol || 'APE');
+            const allTimeVolume = normalizeLikelyBaseUnits(total.volume, symbol);
+            updateStatValue('stat-total-volume', formatLargeNumber(allTimeVolume), symbol);
         }
 
         const oneDay = intervals.find(i => {
@@ -250,7 +251,8 @@ async function fetchCollectionStats() {
             return name.includes('one_day') || name.includes('1_day') || name.includes('24');
         });
         if (oneDay && typeof oneDay.volume === 'number') {
-            updateStatValue('stat-24h-volume', formatNumber(oneDay.volume), total.floor_price_symbol || 'APE');
+            const vol24h = normalizeLikelyBaseUnits(oneDay.volume, symbol);
+            updateStatValue('stat-24h-volume', formatNumber(vol24h), symbol);
         }
 
         if (topOffer && typeof topOffer.value === 'number') {
@@ -294,6 +296,16 @@ async function fetchCollectionStats() {
         console.error('fetchCollectionStats failed:', error);
         return false;
     }
+}
+
+function normalizeLikelyBaseUnits(value, symbol) {
+    if (value === undefined || value === null || !Number.isFinite(value)) return value;
+    // If the API ever returns token base units (eg wei), this will be enormous.
+    // Use a conservative threshold so we don't accidentally shrink legitimate large volumes.
+    if (Math.abs(value) >= 1e12 && ['APE', 'WAPE', 'ETH', 'WETH'].includes(String(symbol).toUpperCase())) {
+        return value / 1e18;
+    }
+    return value;
 }
 
 function formatNumber(num) {
