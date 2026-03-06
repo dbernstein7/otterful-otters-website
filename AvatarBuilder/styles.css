@@ -103,6 +103,9 @@ html.embed-gallery .panel {
     height: auto;
     min-height: calc(100vh - 36px);
     overflow: visible;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
 }
 
 html.embed-gallery .panel h2 {
@@ -118,7 +121,7 @@ html.embed-gallery .fur-gallery {
     max-height: none;
     height: auto;
     overflow-y: auto;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 1.1rem;
     padding: 0.75rem 0.75rem 1.25rem 0.75rem;
 }
