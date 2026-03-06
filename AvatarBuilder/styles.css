@@ -144,10 +144,8 @@ html.embed-gallery .panel > .btn {
 }
 
 html.embed-gallery .fur-gallery {
-    max-height: none;
     flex: 1 1 0%;
     min-height: 0;
-    height: 0;
     overflow-y: scroll;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
@@ -158,6 +156,10 @@ html.embed-gallery .fur-gallery {
     gap: 1.1rem;
     padding: 0.75rem 0.75rem 1.25rem 0.75rem;
     align-content: start;
+}
+
+html.embed-gallery .panel .fur-gallery {
+    max-height: calc(100vh - 140px);
 }
 
 html.embed-gallery .fur-gallery::-webkit-scrollbar {
