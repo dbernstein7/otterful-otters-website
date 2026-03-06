@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
+    <title>Otherside Gallery • Otterful Otters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="stars"></div>
+    
+    <nav class="top-nav">
+        <a href="index.html" class="nav-pill">Home</a>
+        <a href="AvatarBuilder/index.html" class="nav-pill">3D Builder</a>
+        <a href="https://otterfulotterbros.netlify.app" target="_blank" class="nav-pill">Otter Bros</a>
+        <a href="otherside-gallery.html" class="nav-pill active">Otherside Gallery</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" class="nav-pill">Otherside Events</a>
+    </nav>
+    
+    <div class="top-right-icons">
+        <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
+            <img src="me icon.png" alt="Magic Eden" class="me-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <div class="section-title otherside-page-title">Otherside Gallery</div>
+            <div class="otherside-page-subtitle">
+                <span id="othersideGalleryCount">Loading photos…</span>
+            </div>
+        </header>
+
+        <div class="otherside-full-gallery">
+            <div id="othersideFullGallery" class="otherside-grid">
+                <!-- Thumbnails injected here -->
+            </div>
+            <div class="load-more-container">
+                <button id="othersideLoadMore" class="action-btn secondary" style="display:none;">Load More</button>
+            </div>
+        </div>
+
+        <!-- Modal for viewing full-size Otherside images -->
+        <div id="othersideModal" class="otherside-modal">
+            <span class="otherside-modal-close">&times;</span>
+            <button class="otherside-modal-nav otherside-modal-prev" aria-label="Previous image">‹</button>
+            <img id="othersideModalImage" src="" alt="Otherside Otter">
+            <button class="otherside-modal-nav otherside-modal-next" aria-label="Next image">›</button>
+        </div>
+    </div>
+
+    <script src="otherside-gallery.js"></script>
+</body>
+</html>
+
