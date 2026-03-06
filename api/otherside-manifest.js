@@ -12,35 +12,41 @@ module.exports = async (req, res) => {
   try {
     const originalsDir = path.join(process.cwd(), 'Otherside Otter Photos');
     const thumbsDir = path.join(process.cwd(), 'Otherside Otter Photos_thumbnails');
-
     const imageExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
-    const originals = fs
-      .readdirSync(originalsDir, { withFileTypes: true })
-      .filter((d) => d.isFile() && imageExts.has(path.extname(d.name).toLowerCase()))
-      .map((d) => d.name)
-      .sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }));
 
-    let thumbSet = null;
+    let originals = [];
     try {
-      thumbSet = new Set(
-        fs
-          .readdirSync(thumbsDir, { withFileTypes: true })
-          .filter((d) => d.isFile())
-          .map((d) => d.name.toLowerCase())
-      );
+      originals = fs
+        .readdirSync(originalsDir, { withFileTypes: true })
+        .filter((d) => d.isFile() && imageExts.has(path.extname(d.name).toLowerCase()))
+        .map((d) => d.name)
+        .sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }));
     } catch {
-      thumbSet = new Set();
+      // originals dir missing (e.g. excluded by .vercelignore) — build from thumbnails
     }
 
-    const files = originals.map((name) => {
-      const base = name.replace(/\.[^.]+$/, '');
-      const thumbName = `${base}.jpg`;
-      return {
-        name,
-        thumbName,
-        hasThumbnail: thumbSet.has(thumbName.toLowerCase()),
-      };
-    });
+    let thumbSet = new Set();
+    let thumbNames = [];
+    try {
+      const thumbList = fs.readdirSync(thumbsDir, { withFileTypes: true }).filter((d) => d.isFile());
+      thumbSet = new Set(thumbList.map((d) => d.name.toLowerCase()));
+      thumbNames = thumbList.map((d) => d.name).sort((a, b) => a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' }));
+    } catch {
+      // no thumbnails
+    }
+
+    const files =
+      originals.length > 0
+        ? originals.map((name) => {
+            const base = name.replace(/\.[^.]+$/, '');
+            const thumbName = `${base}.jpg`;
+            return { name, thumbName, hasThumbnail: thumbSet.has(thumbName.toLowerCase()) };
+          })
+        : thumbNames.map((thumbName) => {
+            const base = thumbName.replace(/\.[^.]+$/, '');
+            const name = `${base}.png`;
+            return { name, thumbName, hasThumbnail: true };
+          });
 
     return res.status(200).json({
       count: files.length,

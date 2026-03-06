@@ -107,6 +107,13 @@ function openOthersideModal(index) {
   modalImage.onload = () => {
     modalImage.style.opacity = '1';
   };
+  modalImage.dataset.thumb = thumbSrc(file.thumbName);
+  modalImage.onerror = function () {
+    if (this.dataset.thumb) {
+      this.src = this.dataset.thumb;
+      this.onerror = null;
+    }
+  };
   modalImage.src = originalSrc(file.name);
 
   modal.classList.add('active');
