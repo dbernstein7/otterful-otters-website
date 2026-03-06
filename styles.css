@@ -1918,10 +1918,6 @@ body::before {
         margin-top: -8px;
     }
 
-    .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon {
-        margin-top: 0;
-    }
-
     .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon::before,
     .nav-menu-btn[aria-expanded="true"] .nav-menu-btn-icon::after {
         top: 6px;
