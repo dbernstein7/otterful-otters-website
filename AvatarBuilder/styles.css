@@ -76,7 +76,23 @@ html.embed-viewer #canvas-container {
 
 html.embed-viewer .randomize-btn {
     right: 18px;
-    bottom: 18px;
+    bottom: 13px;
+}
+
+/* Mobile: no scroll on viewer (avatar) window; only gallery iframe scrolls */
+@media (max-width: 768px) {
+    html.embed-viewer html,
+    html.embed-viewer body {
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    html.embed-viewer .main-content,
+    html.embed-viewer .viewer-container {
+        overflow: hidden;
+    }
+    html.embed-viewer .randomize-btn {
+        bottom: 115px !important;
+    }
 }
 
 /* Gallery embed: sidebar becomes full width, viewer hidden */
