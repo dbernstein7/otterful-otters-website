@@ -1289,6 +1289,42 @@ body::before {
     align-items: center;
 }
 
+/* Embedded app pages (3D Builder / Otter Bros) */
+.page-embed {
+    margin-top: 30px;
+    width: 100%;
+}
+
+.page-embed-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 22px;
+    background: rgba(79, 214, 165, 0.12);
+    border: 1px solid var(--border-glow);
+    border-radius: 18px;
+    backdrop-filter: blur(10px);
+    color: var(--text-secondary);
+    font-size: 16px;
+    margin-bottom: 16px;
+}
+
+.page-embed-link.action-btn {
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+.page-embed-frame {
+    width: 100%;
+    height: min(1100px, calc(100vh - 320px));
+    min-height: 70vh;
+    border: 1px solid rgba(90, 255, 180, 0.35);
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 40px rgba(79, 214, 165, 0.15);
+}
+
 .nifty-gallery-section .section-title {
     font-size: 75px;
     font-weight: 800;
@@ -1942,6 +1978,16 @@ body::before {
     .container {
         padding: 28px 15px 40px;
         min-height: calc(100vh - 120px);
+    }
+
+    .page-embed-note {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .page-embed-frame {
+        height: calc(100vh - 280px);
+        border-radius: 18px;
     }
 
     .header-logo {
