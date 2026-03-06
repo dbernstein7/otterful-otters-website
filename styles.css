@@ -2200,6 +2200,37 @@ body::before {
         font-size: 16px;
     }
 
+    .analytics-card {
+        padding: 20px 18px;
+        margin-bottom: 28px;
+        border-radius: 18px;
+    }
+
+    .analytics-card h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .analytics-content {
+        gap: 18px;
+    }
+
+    .analytics-item {
+        gap: 8px;
+    }
+
+    .analytics-label {
+        font-size: 12px;
+    }
+
+    .analytics-bar {
+        height: 8px;
+    }
+
+    .analytics-values {
+        font-size: 12px;
+    }
+
     .info-grid {
         grid-template-columns: 1fr;
         gap: 16px;
@@ -2270,17 +2301,6 @@ body::before {
     .action-btn .icon {
         width: 24px;
         height: 24px;
-    }
-
-    .rarity-rank-fields {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .rarity-input {
-        width: 100%;
-    }
-    .rarity-input--wide {
-        width: 100%;
     }
 
     .gallery-grid {
@@ -2528,69 +2548,6 @@ body::before {
 
 .info-card:nth-child(1) { animation-delay: 0.5s; }
 .info-card:nth-child(2) { animation-delay: 0.6s; }
-
-/* Rarity Rank Viewer */
-.rarity-rank-viewer {
-    margin-top: 24px;
-}
-.rarity-rank-desc {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-    margin-bottom: 18px;
-}
-.rarity-rank-form {
-    margin-bottom: 16px;
-}
-.rarity-rank-fields {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 12px 20px;
-}
-.rarity-label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-}
-.rarity-input {
-    width: 100px;
-    padding: 10px 12px;
-    font-size: 0.95rem;
-    border: 1px solid var(--border-soft);
-    border-radius: 12px;
-    background: rgba(10, 26, 15, 0.6);
-    color: var(--text-primary);
-}
-.rarity-input--wide {
-    width: 280px;
-    font-family: monospace;
-}
-.rarity-rank-result {
-    padding: 16px;
-    background: rgba(79, 214, 165, 0.15);
-    border: 1px solid var(--border-glow);
-    border-radius: 14px;
-    font-size: 0.95rem;
-    color: var(--text-primary);
-}
-.rarity-rank-result .rarity-rank-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 6px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.rarity-rank-result .rarity-rank-row:last-child { border-bottom: none; }
-.rarity-rank-error {
-    padding: 12px;
-    background: rgba(255, 159, 46, 0.15);
-    border: 1px solid var(--highlight-orange);
-    border-radius: 12px;
-    color: var(--highlight-orange);
-    font-size: 0.9rem;
-}
 
 .analytics-card {
     animation-delay: 0.7s;
