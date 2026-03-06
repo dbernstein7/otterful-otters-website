@@ -104,13 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (err) {
             console.error('Error setting up data updates:', err);
         }
-
-        // Rarity Rank Viewer
-        try {
-            setupRarityRankViewer();
-        } catch (err) {
-            console.error('Error setting up Rarity Rank Viewer:', err);
-        }
     } catch (error) {
         console.error('Critical error during initialization:', error);
         alert('Error loading page. Please check the browser console (F12) for details.');
@@ -160,76 +153,6 @@ function handleInitialHashNavigation() {
 
     // Let layout settle before scrolling (images/fonts can shift heights).
     setTimeout(() => scrollTargets[key](), 50);
-}
-
-function setupRarityRankViewer() {
-    const form = document.getElementById('rarityRankForm');
-    const resultEl = document.getElementById('rarityRankResult');
-    const errorEl = document.getElementById('rarityRankError');
-    const btn = document.getElementById('rarityLookupBtn');
-    if (!form || !resultEl || !errorEl || !btn) return;
-
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        errorEl.hidden = true;
-        resultEl.hidden = true;
-        const chain = (document.getElementById('rarity-chain') || {}).value.trim() || 'ape_chain';
-        const contract = (document.getElementById('rarity-contract') || {}).value.trim();
-        const tokenId = (document.getElementById('rarity-token-id') || {}).value.trim();
-        if (!contract || !tokenId) {
-            errorEl.textContent = 'Please enter contract and token ID.';
-            errorEl.hidden = false;
-            return;
-        }
-
-        const originalLabel = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = 'Loading…';
-        try {
-            const url = `/api/nft-rarity?chain=${encodeURIComponent(chain)}&contract=${encodeURIComponent(contract)}&token_id=${encodeURIComponent(tokenId)}`;
-            const res = await fetch(url);
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                errorEl.textContent = data.error || data.message || `Request failed (${res.status}).`;
-                if (data.help) errorEl.textContent += ' ' + data.help;
-                errorEl.hidden = false;
-                return;
-            }
-            // Display result: common fields for rarity/rank APIs
-            const rank = data.rarityRank ?? data.rank ?? data.rarity?.rank ?? data.rarityRank;
-            const score = data.rarityScore ?? data.rarity?.score ?? data.score;
-            const rows = [];
-            if (rank != null) rows.push({ label: 'Rarity Rank', value: String(rank) });
-            if (score != null) rows.push({ label: 'Rarity Score', value: String(score) });
-            if (data.name) rows.push({ label: 'Name', value: data.name });
-            if (data.token_id != null) rows.push({ label: 'Token ID', value: String(data.token_id) });
-            if (data.contract) rows.push({ label: 'Contract', value: data.contract });
-            // Fallback: show a few top-level keys
-            if (rows.length === 0 && typeof data === 'object') {
-                Object.keys(data).slice(0, 10).forEach(function (k) {
-                    const v = data[k];
-                    if (v != null && typeof v !== 'object') rows.push({ label: k, value: String(v) });
-                });
-            }
-            if (rows.length === 0) rows.push({ label: 'Response', value: JSON.stringify(data).slice(0, 200) });
-            resultEl.innerHTML = rows.map(function (r) {
-                return '<div class="rarity-rank-row"><span>' + escapeHtml(r.label) + '</span><strong>' + escapeHtml(r.value) + '</strong></div>';
-            }).join('');
-            resultEl.hidden = false;
-        } catch (err) {
-            errorEl.textContent = 'Network error: ' + (err.message || 'Failed to fetch.');
-            errorEl.hidden = false;
-        } finally {
-            btn.disabled = false;
-            btn.textContent = originalLabel;
-        }
-    });
-}
-
-function escapeHtml(s) {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
 }
 
 function initAnimations() {
@@ -741,14 +664,6 @@ function initGallery() {
     
     console.log(`Total otters: ${totalOtters}, Displayed: ${displayedOtters.length}`);
     
-    // Setup search
-    const searchInput = document.getElementById('otterSearch');
-    if (searchInput) {
-        searchInput.addEventListener('input', handleSearch);
-    } else {
-        console.error('Search input not found!');
-    }
-    
     // Setup load more button
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     if (loadMoreBtn) {
@@ -794,33 +709,6 @@ function initGallery() {
     }).catch(err => {
         console.error('Error testing metadata loading:', err);
     });
-}
-
-async function handleSearch(e) {
-    const searchTerm = e.target.value.trim();
-    
-    if (searchTerm === '') {
-        displayedOtters = [...allOtters];
-    } else {
-        // Parse search term (could be single number or range like "1-100")
-        if (searchTerm.includes('-')) {
-            const [start, end] = searchTerm.split('-').map(n => parseInt(n.trim()));
-            if (!isNaN(start) && !isNaN(end) && start > 0 && end <= totalOtters && start <= end) {
-                displayedOtters = Array.from({ length: end - start + 1 }, (_, i) => start + i);
-            } else {
-                displayedOtters = [];
-            }
-        } else {
-            const num = parseInt(searchTerm);
-            if (!isNaN(num) && num > 0 && num <= totalOtters) {
-                displayedOtters = [num];
-            } else {
-                displayedOtters = [];
-            }
-        }
-    }
-    
-    await updateGalleryDisplay();
 }
 
 async function loadOtters(otterNumbers) {

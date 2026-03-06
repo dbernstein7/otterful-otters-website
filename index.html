@@ -190,24 +190,6 @@
             </div>
         </div>
 
-        <div class="info-card rarity-rank-viewer" id="rarityRankViewer">
-            <h2>Rarity Rank Viewer</h2>
-            <p class="rarity-rank-desc">Enter an NFT token ID to look up rarity and rank for this collection.</p>
-            <form class="rarity-rank-form" id="rarityRankForm" aria-label="Look up NFT rarity">
-                <div class="rarity-rank-fields">
-                    <label for="rarity-chain" class="rarity-label">Chain</label>
-                    <input type="text" id="rarity-chain" class="rarity-input" value="ape_chain" placeholder="e.g. ape_chain">
-                    <label for="rarity-contract" class="rarity-label">Contract</label>
-                    <input type="text" id="rarity-contract" class="rarity-input rarity-input--wide" value="0x4e5913922b7ddf916c8d27d1016827f799687e66" placeholder="0x...">
-                    <label for="rarity-token-id" class="rarity-label">Token ID</label>
-                    <input type="number" id="rarity-token-id" class="rarity-input" min="1" max="2222" placeholder="1–2222" required>
-                    <button type="submit" class="action-btn primary" id="rarityLookupBtn">Look up</button>
-                </div>
-            </form>
-            <div id="rarityRankResult" class="rarity-rank-result" aria-live="polite" hidden></div>
-            <div id="rarityRankError" class="rarity-rank-error" aria-live="assertive" hidden></div>
-        </div>
-
         <div class="analytics-card" id="marketAnalytics">
             <h2>Market Analytics</h2>
             <div class="analytics-content">
@@ -272,13 +254,6 @@
             <div class="gallery-header">
                 <h2>Collection Gallery</h2>
                 <div class="gallery-controls">
-                    <div class="search-box">
-                        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.35-4.35"/>
-                        </svg>
-                        <input type="text" id="otterSearch" placeholder="Search by number (e.g., 1-2221)" class="search-input">
-                    </div>
                     <div class="gallery-stats">
                         <span id="galleryCount">Showing 0 / 2,221</span>
                     </div>
