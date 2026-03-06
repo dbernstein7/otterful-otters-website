@@ -68,17 +68,18 @@ def create_thumbnails_for_folder(folder_path, thumbnail_folder=None, max_size=(5
             total_original += original_size
             total_thumbnail += new_size
             processed += 1
-            print(f"✓ {filename}: {original_size/1024:.1f}KB → {new_size/1024:.1f}KB ({reduction:.1f}% reduction)")
+            print(f"[OK] {filename}: {original_size/1024:.1f}KB -> {new_size/1024:.1f}KB ({reduction:.1f}% reduction)")
         else:
             failed += 1
-            print(f"✗ {filename}: Failed - {result[4] if len(result) > 4 else 'Unknown error'}")
+            print(f"[FAIL] {filename}: Failed - {result[4] if len(result) > 4 else 'Unknown error'}")
     
     print("-" * 60)
     print(f"Processed: {processed} images")
     print(f"Failed: {failed} images")
     print(f"Total original size: {total_original/1024/1024:.2f}MB")
     print(f"Total thumbnail size: {total_thumbnail/1024/1024:.2f}MB")
-    print(f"Total reduction: {((total_original - total_thumbnail) / total_original * 100):.1f}%")
+    if total_original > 0:
+        print(f"Total reduction: {((total_original - total_thumbnail) / total_original * 100):.1f}%")
     print(f"\nThumbnails saved to: {thumbnail_folder}")
 
 if __name__ == "__main__":
