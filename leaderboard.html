@@ -95,6 +95,8 @@
             </div>
 
             <div class="leaderboard-list-wrap">
+                <p class="leaderboard-loading" id="leaderboardLoading">Loading top holders…</p>
+                <p class="leaderboard-error" id="leaderboardError" style="display:none;"></p>
                 <ul class="leaderboard-list" id="leaderboardList">
                     <!-- Rows 4+ injected by script -->
                 </ul>
@@ -137,44 +139,64 @@
     </script>
     <script>
       (function () {
-        // Placeholder top holders (replace with API data)
-        var topHolders = [
-          { rank: 1, address: '0x5678...wxyz', count: 89 },
-          { rank: 2, address: '0x1234...abcd', count: 42 },
-          { rank: 3, address: '0x9abc...def0', count: 28 },
-          { rank: 4, address: '0x1111...1111', count: 22 },
-          { rank: 5, address: '0x2222...2222', count: 18 },
-          { rank: 6, address: '0x3333...3333', count: 15 },
-          { rank: 7, address: '0x4444...4444', count: 12 },
-          { rank: 8, address: '0x5555...5555', count: 11 },
-          { rank: 9, address: '0x6666...6666', count: 10 },
-          { rank: 10, address: '0x7777...7777', count: 9 }
-        ];
+        var loadingEl = document.getElementById('leaderboardLoading');
+        var errorEl = document.getElementById('leaderboardError');
+        var listEl = document.getElementById('leaderboardList');
 
-        // Fill top 3 in podium (already in HTML; optionally sync from data)
-        [1, 2, 3].forEach(function (r) {
-          var h = topHolders.find(function (x) { return x.rank === r; });
-          if (h) {
-            var addrEl = document.getElementById('holder-' + r + '-address');
-            var countEl = document.getElementById('holder-' + r + '-count');
-            if (addrEl) addrEl.textContent = h.address;
-            if (countEl) countEl.textContent = h.count;
+        function showError(msg) {
+          if (loadingEl) loadingEl.style.display = 'none';
+          if (errorEl) {
+            errorEl.textContent = msg || 'Could not load top holders.';
+            errorEl.style.display = 'block';
           }
-        });
-
-        // Fill list 4+
-        var list = document.getElementById('leaderboardList');
-        if (list) {
-          topHolders.filter(function (h) { return h.rank >= 4; }).forEach(function (h) {
-            var li = document.createElement('li');
-            li.className = 'leaderboard-list-item';
-            li.innerHTML =
-              '<span class="leaderboard-list-rank">' + h.rank + '</span>' +
-              '<span class="leaderboard-list-address">' + h.address + '</span>' +
-              '<span class="leaderboard-list-count">' + h.count + ' <span class="leaderboard-list-label">Otters</span></span>';
-            list.appendChild(li);
-          });
+          if (listEl) listEl.innerHTML = '';
         }
+
+        function render(holders) {
+          if (loadingEl) loadingEl.style.display = 'none';
+          if (errorEl) errorEl.style.display = 'none';
+          if (!Array.isArray(holders) || holders.length === 0) {
+            showError('No holder data available.');
+            return;
+          }
+
+          [1, 2, 3].forEach(function (r) {
+            var h = holders.find(function (x) { return x.rank === r; });
+            if (h) {
+              var addrEl = document.getElementById('holder-' + r + '-address');
+              var countEl = document.getElementById('holder-' + r + '-count');
+              if (addrEl) addrEl.textContent = h.address || '—';
+              if (countEl) countEl.textContent = h.count != null ? h.count : '—';
+            }
+          });
+
+          if (listEl) {
+            listEl.innerHTML = '';
+            holders.filter(function (h) { return h.rank >= 4; }).forEach(function (h) {
+              var li = document.createElement('li');
+              li.className = 'leaderboard-list-item';
+              li.innerHTML =
+                '<span class="leaderboard-list-rank">' + (h.rank || '') + '</span>' +
+                '<span class="leaderboard-list-address">' + (h.address || '—') + '</span>' +
+                '<span class="leaderboard-list-count">' + (h.count != null ? h.count : '—') + ' <span class="leaderboard-list-label">Otters</span></span>';
+              listEl.appendChild(li);
+            });
+          }
+        }
+
+        fetch('/api/top-holders')
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var holders = data.holders;
+            if (holders && holders.length > 0) {
+              render(holders);
+            } else {
+              showError(data.error || 'No holder data returned.');
+            }
+          })
+          .catch(function (err) {
+            showError(err.message || 'Failed to load leaderboard.');
+          });
       })();
     </script>
 </body>

@@ -1453,6 +1453,17 @@ body::before {
     margin: 0 auto;
 }
 
+.leaderboard-loading,
+.leaderboard-error {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-muted);
+}
+
+.leaderboard-error {
+    color: var(--highlight-orange);
+}
+
 .leaderboard-list {
     list-style: none;
     padding: 0;
