@@ -36,8 +36,7 @@
 
 /* ---------- Embed modes (used by Otterful website wrapper) ---------- */
 html.embed-viewer body,
-html.embed-gallery body,
-html.embed-nft-search body {
+html.embed-gallery body {
     margin: 0;
     padding: 0;
 }
@@ -48,40 +47,6 @@ html.embed-gallery .container {
     padding: 0;
     margin: 0;
     height: 100vh;
-}
-
-/* NFT search embed: only the search bar (used in iframe below viewer on 3D Builder page) */
-html.embed-nft-search .container {
-    max-width: none;
-    padding: 0;
-    margin: 0;
-    height: auto;
-    min-height: auto;
-}
-
-html.embed-nft-search header {
-    display: block;
-    padding: 10px 14px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border-color, rgba(255,255,255,0.12));
-}
-
-html.embed-nft-search .logo-title {
-    display: none;
-}
-
-html.embed-nft-search .header-content {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-html.embed-nft-search .main-content {
-    display: none;
-}
-
-html.embed-nft-search #nft-search-error {
-    margin-top: 6px;
 }
 
 html.embed-viewer header,

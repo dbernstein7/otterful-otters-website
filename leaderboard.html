@@ -184,11 +184,20 @@
           }
         }
 
-        var placeholderHolders = [
-          { rank: 1, address: '—', count: 0 },
-          { rank: 2, address: '—', count: 0 },
-          { rank: 3, address: '—', count: 0 }
-        ];
+        function showUnavailableState() {
+          if (loadingEl) loadingEl.style.display = 'none';
+          if (errorEl) {
+            errorEl.textContent = 'Live holder data is temporarily unavailable. Check back soon.';
+            errorEl.style.display = 'block';
+          }
+          [1, 2, 3].forEach(function (r) {
+            var addrEl = document.getElementById('holder-' + r + '-address');
+            var countEl = document.getElementById('holder-' + r + '-count');
+            if (addrEl) addrEl.textContent = '—';
+            if (countEl) countEl.textContent = '—';
+          });
+          if (listEl) listEl.innerHTML = '';
+        }
 
         fetch('/api/top-holders')
           .then(function (res) {
@@ -206,17 +215,26 @@
             if (holders && holders.length > 0) {
               render(holders);
             } else {
-              showError(data.error || 'No holder data returned. Add RESERVOIR_API_KEY in Vercel for live data.');
-              render(placeholderHolders);
+              showUnavailableState();
             }
           })
           .catch(function (err) {
             var msg = err.message || 'Could not load leaderboard.';
             if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
-              msg = 'Network error. The leaderboard API may be unavailable.';
+              msg = 'Live holder data is temporarily unavailable. Check back soon.';
             }
-            showError(msg);
-            render(placeholderHolders);
+            if (errorEl) {
+              errorEl.textContent = msg;
+              errorEl.style.display = 'block';
+            }
+            if (loadingEl) loadingEl.style.display = 'none';
+            [1, 2, 3].forEach(function (r) {
+              var addrEl = document.getElementById('holder-' + r + '-address');
+              var countEl = document.getElementById('holder-' + r + '-count');
+              if (addrEl) addrEl.textContent = '—';
+              if (countEl) countEl.textContent = '—';
+            });
+            if (listEl) listEl.innerHTML = '';
           });
       })();
     </script>

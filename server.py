@@ -12,16 +12,6 @@ import urllib.request
 import urllib.parse
 import json
 
-# Load .env if present (OPENSEA_API_KEY etc.) — file is gitignored
-_env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
-if os.path.isfile(_env_path):
-    with open(_env_path) as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and '=' in line:
-                k, _, v = line.partition('=')
-                os.environ.setdefault(k.strip(), v.strip())
-
 PORT = 8000
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -29,8 +19,6 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         # Handle API endpoints
         if self.path.startswith('/api/opensea-stats'):
             self.handle_opensea_stats()
-        elif self.path.startswith('/api/live-sales'):
-            self.handle_live_sales()
         elif self.path.startswith('/api/otherside-manifest'):
             self.handle_otherside_manifest()
         else:
@@ -89,88 +77,6 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
             self.wfile.write(json.dumps({'error': str(e)}).encode())
-
-    def handle_live_sales(self):
-        """Fetch last 10 sales via OpenSea v2 (uses OPENSEA_API_KEY from env) or v1 fallback"""
-        contract_address = '0x4e5913922b7ddf916c8d27d1016827f799687e66'
-        collection_slug = 'otterful-otters'
-        api_key = os.environ.get('OPENSEA_API_KEY')
-
-        try:
-            if api_key:
-                # OpenSea v2 (requires x-api-key)
-                url = f'https://api.opensea.io/api/v2/events?collection_slug={collection_slug}&event_type=sale&limit=10'
-                req = urllib.request.Request(url)
-                req.add_header('Accept', 'application/json')
-                req.add_header('x-api-key', api_key)
-                req.add_header('User-Agent', 'otterful-otters-dashboard/1.0')
-                with urllib.request.urlopen(req, timeout=12) as resp:
-                    data = json.loads(resp.read().decode())
-                events = data.get('events') or data.get('asset_events') or []
-            else:
-                events = []
-
-            sales = []
-            for evt in events:
-                try:
-                    # SaleEvent: seller + buyer strings
-                    seller = evt.get('seller') or evt.get('maker')
-                    if isinstance(seller, dict):
-                        seller = seller.get('address', '—')
-                    seller = seller or '—'
-                    if isinstance(seller, str) and len(seller) > 12:
-                        seller = seller[:6] + '…' + seller[-4:]
-                    buyer = evt.get('buyer') or evt.get('taker')
-                    if isinstance(buyer, dict):
-                        buyer = buyer.get('address', '—')
-                    buyer = buyer or '—'
-                    if isinstance(buyer, str) and len(buyer) > 12:
-                        buyer = buyer[:6] + '…' + buyer[-4:]
-
-                    # SaleEvent: payment.quantity (string), payment.decimals, payment.symbol
-                    price_val = 0
-                    symbol = 'APE'
-                    payment = evt.get('payment') or {}
-                    qty = payment.get('quantity')
-                    if qty is not None:
-                        dec = int(payment.get('decimals', 18))
-                        price_val = int(qty) / (10 ** dec)
-                    symbol = (payment.get('symbol') or 'APE').upper()
-
-                    # SaleEvent: nft.identifier (token_id), nft.opensea_url
-                    nft = evt.get('nft') or evt.get('asset') or {}
-                    token_id = nft.get('identifier') or nft.get('token_id')
-                    permalink = nft.get('opensea_url') or nft.get('permalink') or ''
-                    if not permalink and token_id:
-                        permalink = f'https://opensea.io/assets/ape_chain/{contract_address}/{token_id}'
-                    sales.append({
-                        'seller': seller,
-                        'buyer': buyer,
-                        'price': round(price_val, 4),
-                        'symbol': symbol,
-                        'link': permalink,
-                        'token_id': token_id,
-                    })
-                except (KeyError, TypeError, ZeroDivisionError):
-                    continue
-
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({'sales': sales[:10]}).encode())
-        except urllib.error.HTTPError as e:
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({'sales': [], 'error': str(e.code)}).encode())
-        except Exception as e:
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({'sales': [], 'error': str(e)}).encode())
 
     def handle_otherside_manifest(self):
         """Return list of Otherside photos and thumbnails for the gallery"""

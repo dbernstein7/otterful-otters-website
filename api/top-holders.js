@@ -26,19 +26,37 @@ module.exports = async (req, res) => {
 
   try {
     const apiKey = process.env.RESERVOIR_API_KEY || '';
-    const path = `/owners/v2?collection=${encodeURIComponent(CONTRACT)}&limit=${MAX_HOLDERS}`;
-    const opts = {
-      hostname: 'api.reservoir.tools',
-      path,
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'otterful-otters-dashboard/1.0',
-      },
-    };
-    if (apiKey) opts.headers['x-api-key'] = apiKey;
+    // Try ApeChain-prefixed collection id first (Reservoir multi-chain format)
+    const collectionIds = [
+      `apechain:${CONTRACT}`,
+      CONTRACT,
+    ];
+    let data = null;
+    let lastError = null;
 
-    const data = await fetchJson(opts);
+    for (const cid of collectionIds) {
+      try {
+        const path = `/owners/v2?collection=${encodeURIComponent(cid)}&limit=${MAX_HOLDERS}`;
+        const opts = {
+          hostname: 'api.reservoir.tools',
+          path,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'otterful-otters-dashboard/1.0',
+          },
+        };
+        if (apiKey) opts.headers['x-api-key'] = apiKey;
+        data = await fetchJson(opts);
+        if (data && (data.owners?.length || (Array.isArray(data) && data.length))) break;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    if (!data) {
+      throw lastError || new Error('Reservoir returned no data');
+    }
     const rawOwners = data.owners || (Array.isArray(data) ? data : []);
     if (!Array.isArray(rawOwners)) {
       return res.status(200).json({
@@ -75,6 +93,7 @@ module.exports = async (req, res) => {
   } catch (error) {
     console.error('top-holders error:', error);
     sendError(error);
+    return;
   }
 };
 
