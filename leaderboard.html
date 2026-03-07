@@ -184,18 +184,39 @@
           }
         }
 
+        var placeholderHolders = [
+          { rank: 1, address: '—', count: 0 },
+          { rank: 2, address: '—', count: 0 },
+          { rank: 3, address: '—', count: 0 }
+        ];
+
         fetch('/api/top-holders')
-          .then(function (res) { return res.json(); })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              if (!res.ok) {
+                var err = new Error(data.error || 'API error ' + res.status);
+                err.data = data;
+                throw err;
+              }
+              return data;
+            });
+          })
           .then(function (data) {
             var holders = data.holders;
             if (holders && holders.length > 0) {
               render(holders);
             } else {
-              showError(data.error || 'No holder data returned.');
+              showError(data.error || 'No holder data returned. Add RESERVOIR_API_KEY in Vercel for live data.');
+              render(placeholderHolders);
             }
           })
           .catch(function (err) {
-            showError(err.message || 'Failed to load leaderboard.');
+            var msg = err.message || 'Could not load leaderboard.';
+            if (msg.indexOf('Failed to fetch') !== -1 || msg.indexOf('NetworkError') !== -1) {
+              msg = 'Network error. The leaderboard API may be unavailable.';
+            }
+            showError(msg);
+            render(placeholderHolders);
           });
       })();
     </script>
