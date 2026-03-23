@@ -1099,7 +1099,6 @@ async function openModal(otterNum) {
     const modalTitle = document.getElementById('modalTitle');
     const modalTraits = document.getElementById('modalTraits');
     const modalOpenSea = document.getElementById('modalOpenSea');
-    const modalMagicEden = document.getElementById('modalMagicEden');
     
     if (!modal || !modalImage) return;
     
@@ -1111,8 +1110,6 @@ async function openModal(otterNum) {
     const contractAddress = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
     // OpenSea format: https://opensea.io/item/ape_chain/ADDRESS/TOKEN_ID
     modalOpenSea.href = `https://opensea.io/item/ape_chain/${contractAddress}/${otterNum}`;
-    // Magic Eden format: https://magiceden.us/item-details/apechain/ADDRESS/TOKEN_ID
-    modalMagicEden.href = `https://magiceden.us/item-details/apechain/${contractAddress}/${otterNum}`;
     
     // Load and display traits
     modalTraits.innerHTML = '<div class="modal-traits-loading">Loading traits...</div>';
