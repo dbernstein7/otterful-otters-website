@@ -6,6 +6,7 @@ const CONTRACT = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
 const OPENSEA_SLUG = 'otterful-otters';
 const MAX_HOLDERS = 50;
 const MAX_NFT_SCAN = 3000;
+let lastSuccessfulPayload = null;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,29 +23,46 @@ module.exports = async (req, res) => {
       if (/ENOTFOUND|getaddrinfo|reservoir\.tools/i.test(message)) {
         message = 'Data provider temporarily unreachable. Try again later.';
       }
-      res.status(code).json({
+      const fallbackPayload = lastSuccessfulPayload || {
         error: message,
         holders: [],
         fetchedAt: new Date().toISOString(),
+        source: 'unavailable',
+      };
+      // Return HTTP 200 so frontend doesn't break on transient provider outages.
+      res.status(200).json({
+        ...fallbackPayload,
+        error: message,
+        stale: !!lastSuccessfulPayload,
       });
     } catch (e) {
-      res.status(500).end();
+      res.status(200).json({
+        error: 'Failed to fetch top holders',
+        holders: [],
+        fetchedAt: new Date().toISOString(),
+        source: 'unavailable',
+      });
     }
   };
 
   try {
     // 1) Try OpenSea collection NFTs and aggregate owners.
-    try {
+    const openSeaApiKey = process.env.OPENSEA_API_KEY || '';
+    if (openSeaApiKey) {
+      try {
       const holders = await fetchOpenSeaTopHolders();
       if (holders.length > 0) {
-        return res.status(200).json({
+        const payload = {
           holders,
           fetchedAt: new Date().toISOString(),
           source: 'opensea',
-        });
+        };
+        lastSuccessfulPayload = payload;
+        return res.status(200).json(payload);
       }
-    } catch (_) {
+      } catch (_) {
       // fall through to Reservoir fallback
+      }
     }
 
     // 2) Try Reservoir fallback
@@ -97,11 +115,13 @@ module.exports = async (req, res) => {
       count: h.count,
     }));
 
-    return res.status(200).json({
+    const payload = {
       holders,
       fetchedAt: new Date().toISOString(),
       source: 'reservoir',
-    });
+    };
+    lastSuccessfulPayload = payload;
+    return res.status(200).json(payload);
   } catch (error) {
     console.error('top-holders error:', error);
     sendError(error);
