@@ -132,10 +132,6 @@ function handleInitialHashNavigation() {
             const el = document.getElementById('exploreSection');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         },
-        shop: function () {
-            const el = document.getElementById('shopSection');
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        },
         team: function () {
             const el = document.getElementById('teamSection');
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -216,11 +212,6 @@ function setupNavigation() {
                 if (explore) {
                     explore.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-            } else if (pillText === 'Shop') {
-                const shop = document.getElementById('shopSection');
-                if (shop) {
-                    shop.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
             } else if (pillText === 'Team') {
                 const team = document.getElementById('teamSection');
                 if (team) {
@@ -267,7 +258,6 @@ function setupMobileNav() {
         analytics: function () { document.getElementById('collectionOverview') && document.getElementById('collectionOverview').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
         collection: function () { var el = document.querySelector('.gallery-section'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
         explore: function () { document.getElementById('exploreSection') && document.getElementById('exploreSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
-        shop: function () { document.getElementById('shopSection') && document.getElementById('shopSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); },
         team: function () { document.getElementById('teamSection') && document.getElementById('teamSection').scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     };
 

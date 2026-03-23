@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
+    <title>Shop • Otterful Otters</title>
+    <link rel="icon" type="image/png" href="fishy-log.png.png">
+    <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="embed-page">
+    <div class="stars"></div>
+
+    <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-menu-btn-icon"></span>
+    </button>
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" aria-hidden="true"></div>
+    <nav class="top-nav" id="topNav">
+        <a href="index.html#home" class="nav-pill">Home</a>
+        <a href="index.html#analytics" class="nav-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-pill">Collection</a>
+        <a href="index.html#explore" class="nav-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
+        <a href="3d-builder.html" class="nav-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
+        <a href="shop.html" class="nav-pill active" aria-current="page">Shop</a>
+        <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-pill">Team</a>
+    </nav>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <a href="index.html#home" class="nav-drawer-pill">Home</a>
+        <a href="index.html#analytics" class="nav-drawer-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
+        <a href="index.html#explore" class="nav-drawer-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
+        <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
+        <a href="shop.html" class="nav-drawer-pill active" aria-current="page">Shop</a>
+        <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
+        <a href="https://otherside-events.nightglyders.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-drawer-pill">Team</a>
+    </aside>
+
+    <div class="top-right-icons">
+        <a href="https://magiceden.us/collections/apechain/0x4e5913922b7ddf916c8d27d1016827f799687e66" target="_blank" class="magic-eden-icon">
+            <img src="me icon.png" alt="Magic Eden" class="me-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+        </header>
+
+        <div class="page-embed">
+            <iframe
+                class="page-embed-frame"
+                src="https://shop.otterfulotters.xyz"
+                title="Otterful Shop"
+                loading="eager"
+                referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+            <div class="page-embed-note">
+                Browse merch without leaving the Otterful layout. If this panel fails to load, open the shop directly.
+                <a class="action-btn primary page-embed-link" href="https://shop.otterfulotters.xyz" target="_blank" rel="noopener noreferrer">Open Shop</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      (function () {
+        const menuBtn = document.querySelector('.nav-menu-btn');
+        const drawer = document.getElementById('navDrawer');
+        const overlay = document.getElementById('navDrawerOverlay');
+        if (!menuBtn || !drawer || !overlay) return;
+
+        function openDrawer() {
+          drawer.classList.add('is-open');
+          overlay.classList.add('is-open');
+          menuBtn.setAttribute('aria-expanded', 'true');
+          drawer.setAttribute('aria-hidden', 'false');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+          drawer.classList.remove('is-open');
+          overlay.classList.remove('is-open');
+          menuBtn.setAttribute('aria-expanded', 'false');
+          drawer.setAttribute('aria-hidden', 'true');
+          overlay.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+
+        menuBtn.addEventListener('click', function () {
+          if (drawer.classList.contains('is-open')) closeDrawer();
+          else openDrawer();
+        });
+
+        overlay.addEventListener('click', closeDrawer);
+        document.querySelectorAll('.nav-drawer-pill').forEach((pill) => pill.addEventListener('click', closeDrawer));
+      })();
+    </script>
+</body>
+</html>
