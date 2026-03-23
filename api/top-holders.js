@@ -7,6 +7,8 @@ const OPENSEA_SLUG = 'otterful-otters';
 const MAX_HOLDERS = 50;
 const MAX_NFT_SCAN = 3000;
 let lastSuccessfulPayload = null;
+const CACHE_TTL_MS = 2 * 60 * 1000;
+let cacheUntil = 0;
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,6 +48,11 @@ module.exports = async (req, res) => {
   };
 
   try {
+    const now = Date.now();
+    if (lastSuccessfulPayload && now < cacheUntil) {
+      return res.status(200).json({ ...lastSuccessfulPayload, cached: true });
+    }
+
     // 1) Try OpenSea collection NFTs and aggregate owners.
     const openSeaApiKey = process.env.OPENSEA_API_KEY || '';
     if (openSeaApiKey) {
@@ -58,6 +65,7 @@ module.exports = async (req, res) => {
           source: 'opensea',
         };
         lastSuccessfulPayload = payload;
+        cacheUntil = now + CACHE_TTL_MS;
         return res.status(200).json(payload);
       }
       } catch (_) {
@@ -121,6 +129,7 @@ module.exports = async (req, res) => {
       source: 'reservoir',
     };
     lastSuccessfulPayload = payload;
+    cacheUntil = now + CACHE_TTL_MS;
     return res.status(200).json(payload);
   } catch (error) {
     console.error('top-holders error:', error);
@@ -160,57 +169,77 @@ function fetchJson(opts) {
 async function fetchOpenSeaTopHolders() {
   const apiKey = process.env.OPENSEA_API_KEY || '';
   const ownerCounts = new Map();
-  let next = null;
-  let scanned = 0;
+  const endpoints = [
+    // Prefer contract+chain endpoint for better consistency.
+    `/api/v2/chain/ape_chain/contract/${encodeURIComponent(CONTRACT)}/nfts?limit=200`,
+    // Fallback slug route.
+    `/api/v2/collection/${encodeURIComponent(OPENSEA_SLUG)}/nfts?limit=200`,
+  ];
 
-  while (scanned < MAX_NFT_SCAN) {
-    let path = `/api/v2/collection/${encodeURIComponent(OPENSEA_SLUG)}/nfts?limit=200`;
-    if (next) path += `&next=${encodeURIComponent(next)}`;
+  for (const basePath of endpoints) {
+    let next = null;
+    let scanned = 0;
+    ownerCounts.clear();
 
-    const headers = { 'Accept': 'application/json', 'User-Agent': 'otterful-otters-dashboard/1.0' };
-    if (apiKey) headers['x-api-key'] = apiKey;
-    const data = await fetchJson({ hostname: 'api.opensea.io', path, method: 'GET', headers });
+    while (scanned < MAX_NFT_SCAN) {
+      let path = basePath;
+      if (next) path += `&next=${encodeURIComponent(next)}`;
 
-    const nfts = Array.isArray(data && data.nfts) ? data.nfts : [];
-    if (nfts.length === 0) break;
+      const headers = { 'Accept': 'application/json', 'User-Agent': 'otterful-otters-dashboard/1.0' };
+      if (apiKey) headers['x-api-key'] = apiKey;
+      const data = await fetchJson({ hostname: 'api.opensea.io', path, method: 'GET', headers });
 
-    for (const nft of nfts) {
-      const owners = Array.isArray(nft && nft.owners) ? nft.owners : [];
+      const nfts = Array.isArray(data && data.nfts) ? data.nfts : [];
+      if (nfts.length === 0) break;
 
-      // Most responses provide owners[].address and owners[].quantity.
-      if (owners.length > 0) {
-        for (const ownerEntry of owners) {
-          const address = String(ownerEntry && ownerEntry.address || '').toLowerCase();
-          if (!address) continue;
-          const rawQty = ownerEntry.quantity ?? ownerEntry.count ?? 1;
-          const qty = typeof rawQty === 'number' ? rawQty : parseInt(String(rawQty), 10) || 1;
-          ownerCounts.set(address, (ownerCounts.get(address) || 0) + Math.max(1, qty));
+      for (const nft of nfts) {
+        const owners = Array.isArray(nft && nft.owners) ? nft.owners : [];
+
+        if (owners.length > 0) {
+          for (const ownerEntry of owners) {
+            const address = String(
+              (ownerEntry && (ownerEntry.address || ownerEntry.owner_address)) ||
+              (ownerEntry && ownerEntry.owner && ownerEntry.owner.address) ||
+              ''
+            ).toLowerCase();
+            if (!address) continue;
+            const rawQty = ownerEntry.quantity ?? ownerEntry.count ?? ownerEntry.token_count ?? 1;
+            const qty = typeof rawQty === 'number' ? rawQty : parseInt(String(rawQty), 10) || 1;
+            ownerCounts.set(address, (ownerCounts.get(address) || 0) + Math.max(1, qty));
+          }
+        } else {
+          // Defensive fallback if owner appears as a single field.
+          const singleOwner = String(
+            (nft && nft.owner && nft.owner.address) ||
+            (nft && nft.owner) ||
+            (nft && nft.creator && nft.creator.address) ||
+            ''
+          ).toLowerCase();
+          if (singleOwner) ownerCounts.set(singleOwner, (ownerCounts.get(singleOwner) || 0) + 1);
         }
-      } else {
-        // Defensive fallback if owner appears as a single field.
-        const singleOwner = String((nft && nft.owner && nft.owner.address) || nft && nft.owner || '').toLowerCase();
-        if (singleOwner) ownerCounts.set(singleOwner, (ownerCounts.get(singleOwner) || 0) + 1);
       }
+
+      scanned += nfts.length;
+      next = data && data.next;
+      if (!next) break;
     }
 
-    scanned += nfts.length;
-    next = data && data.next;
-    if (!next) break;
+    const sorted = Array.from(ownerCounts.entries())
+      .map(([address, count]) => ({ address, count }))
+      .filter((x) => x.address && x.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, MAX_HOLDERS)
+      .map((h, i) => ({
+        rank: i + 1,
+        address: shortenAddress(h.address),
+        addressFull: h.address,
+        count: h.count,
+      }));
+
+    if (sorted.length > 0) return sorted;
   }
 
-  const sorted = Array.from(ownerCounts.entries())
-    .map(([address, count]) => ({ address, count }))
-    .filter((x) => x.address && x.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, MAX_HOLDERS)
-    .map((h, i) => ({
-      rank: i + 1,
-      address: shortenAddress(h.address),
-      addressFull: h.address,
-      count: h.count,
-    }));
-
-  return sorted;
+  return [];
 }
 
 function shortenAddress(addr) {
