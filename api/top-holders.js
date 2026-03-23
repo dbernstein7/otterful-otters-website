@@ -171,9 +171,9 @@ async function fetchOpenSeaTopHolders() {
   const ownerCounts = new Map();
   const endpoints = [
     // Prefer contract+chain endpoint for better consistency.
-    `/api/v2/chain/ape_chain/contract/${encodeURIComponent(CONTRACT)}/nfts?limit=200`,
+    `/api/v2/chain/ape_chain/contract/${encodeURIComponent(CONTRACT)}/nfts?limit=50&include=owners`,
     // Fallback slug route.
-    `/api/v2/collection/${encodeURIComponent(OPENSEA_SLUG)}/nfts?limit=200`,
+    `/api/v2/collection/${encodeURIComponent(OPENSEA_SLUG)}/nfts?limit=50&include=owners`,
   ];
 
   for (const basePath of endpoints) {
