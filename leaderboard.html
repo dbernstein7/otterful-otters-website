@@ -109,6 +109,14 @@
         const drawer = document.getElementById('navDrawer');
         const overlay = document.getElementById('navDrawerOverlay');
         if (menuBtn && drawer && overlay) {
+          function resetDrawerState() {
+            drawer.classList.remove('is-open');
+            overlay.classList.remove('is-open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            drawer.setAttribute('aria-hidden', 'true');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+          }
           function openDrawer() {
             drawer.classList.add('is-open');
             overlay.classList.add('is-open');
@@ -118,20 +126,20 @@
             document.body.style.overflow = 'hidden';
           }
           function closeDrawer() {
-            drawer.classList.remove('is-open');
-            overlay.classList.remove('is-open');
-            menuBtn.setAttribute('aria-expanded', 'false');
-            drawer.setAttribute('aria-hidden', 'true');
-            overlay.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
+            resetDrawerState();
           }
+          resetDrawerState();
+          window.addEventListener('pageshow', resetDrawerState);
           menuBtn.addEventListener('click', function () {
             if (drawer.classList.contains('is-open')) closeDrawer();
             else openDrawer();
           });
           overlay.addEventListener('click', closeDrawer);
           document.querySelectorAll('.nav-drawer-pill').forEach(function (pill) {
-            pill.addEventListener('click', closeDrawer);
+            pill.addEventListener('click', function () {
+              closeDrawer();
+              setTimeout(resetDrawerState, 0);
+            });
           });
         }
       })();

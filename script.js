@@ -228,6 +228,15 @@ function setupMobileNav() {
     const overlay = document.getElementById('navDrawerOverlay');
     if (!menuBtn || !drawer || !overlay) return;
 
+    function resetDrawerState() {
+        drawer.classList.remove('is-open');
+        overlay.classList.remove('is-open');
+        menuBtn.setAttribute('aria-expanded', 'false');
+        drawer.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+    }
+
     function openDrawer() {
         drawer.classList.add('is-open');
         overlay.classList.add('is-open');
@@ -238,13 +247,12 @@ function setupMobileNav() {
     }
 
     function closeDrawer() {
-        drawer.classList.remove('is-open');
-        overlay.classList.remove('is-open');
-        menuBtn.setAttribute('aria-expanded', 'false');
-        drawer.setAttribute('aria-hidden', 'true');
-        overlay.setAttribute('aria-hidden', 'true');
-        document.body.style.overflow = '';
+        resetDrawerState();
     }
+
+    // Reset stale drawer state after back/forward cache restores.
+    resetDrawerState();
+    window.addEventListener('pageshow', resetDrawerState);
 
     menuBtn.addEventListener('click', function () {
         if (drawer.classList.contains('is-open')) closeDrawer();
@@ -270,6 +278,8 @@ function setupMobileNav() {
                 scrollTargets[scrollKey]();
             } else if (this.tagName === 'A') {
                 closeDrawer();
+                // Ensure state is clean even if browser navigates immediately.
+                setTimeout(resetDrawerState, 0);
             }
         });
     });
