@@ -69,6 +69,18 @@
         });
       })();
     </script>
+    <script>
+      (function () {
+        // Mobile wallet browsers sometimes inject the provider only on the top window,
+        // not inside iframes. Since this game is same-origin when embedded on
+        // otterfulotters.xyz, we can safely alias it.
+        try {
+          if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
+            window.ethereum = window.top.ethereum;
+          }
+        } catch {}
+      })();
+    </script>
     <script type="module" crossorigin src="./assets/index-DmFcgjEh.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-Dd7xpdsL.css">
   </head>
