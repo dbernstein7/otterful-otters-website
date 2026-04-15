@@ -1,30 +1,15 @@
 // Leaderboard for the embedded Shell Rush game.
 //
-// Persists scores in Vercel KV / Redis (Upstash) when available.
+// Persists scores in Vercel KV / Redis when available.
 // Supported env var sets:
 // - KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV integration)
-// - KV_REDIS_URL (Vercel Storage Redis; we derive REST creds from URL password)
+// - KV_REDIS_URL (Vercel Storage Redis; connects via TCP using `redis` client)
 
 const KEY = "shellrush:leaderboard";
 
 function getKvRestConfig() {
   if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
     return { url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN };
-  }
-
-  // Vercel Storage Redis exposes a single connection URL like:
-  // rediss://default:<password>@<host>:<port>
-  // Upstash REST accepts the password as the Bearer token.
-  const redisUrl = process.env.KV_REDIS_URL;
-  if (redisUrl) {
-    try {
-      const u = new URL(redisUrl);
-      const token = u.password || "";
-      const host = u.hostname || "";
-      if (token && host) {
-        return { url: `https://${host}`, token };
-      }
-    } catch {}
   }
 
   return null;
@@ -45,6 +30,23 @@ async function kvCommand(command, args) {
   }
   const json = await res.json();
   return json && Object.prototype.hasOwnProperty.call(json, "result") ? json.result : null;
+}
+
+let redisClientPromise = null;
+async function getRedisClient() {
+  if (!process.env.KV_REDIS_URL) return null;
+  if (!redisClientPromise) {
+    const { createClient } = require("redis");
+    const client = createClient({ url: process.env.KV_REDIS_URL });
+    redisClientPromise = client
+      .connect()
+      .then(() => client)
+      .catch((e) => {
+        redisClientPromise = null;
+        throw e;
+      });
+  }
+  return redisClientPromise;
 }
 
 function shortWallet(w) {
@@ -70,7 +72,7 @@ module.exports = async (req, res) => {
   const limitRaw = typeof req.query?.limit === "string" ? req.query.limit : "";
   const limit = Math.min(50, Math.max(3, Number.isFinite(Number(limitRaw)) ? Math.floor(Number(limitRaw)) : 10));
 
-  if (!getKvRestConfig()) {
+  if (!getKvRestConfig() && !process.env.KV_REDIS_URL) {
     return res.status(200).json({
       ok: true,
       configured: false,
@@ -79,14 +81,30 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // ZREVRANGE key 0 limit-1 WITHSCORES
-    const raw = await kvCommand("zrevrange", [KEY, "0", String(limit - 1), "WITHSCORES"]);
     const rows = [];
-    if (Array.isArray(raw)) {
-      for (let i = 0; i < raw.length; i += 2) {
-        const wallet = String(raw[i] || "");
-        const points = Number(raw[i + 1] || 0);
-        rows.push({ wallet, walletShort: shortWallet(wallet), points, shells: points });
+    const restCfg = getKvRestConfig();
+    if (restCfg) {
+      // ZREVRANGE key 0 limit-1 WITHSCORES
+      const raw = await kvCommand("zrevrange", [KEY, "0", String(limit - 1), "WITHSCORES"]);
+      if (Array.isArray(raw)) {
+        for (let i = 0; i < raw.length; i += 2) {
+          const wallet = String(raw[i] || "");
+          const points = Number(raw[i + 1] || 0);
+          rows.push({ wallet, walletShort: shortWallet(wallet), points, shells: points });
+        }
+      }
+    } else {
+      const client = await getRedisClient();
+      if (!client) {
+        return res.status(200).json({ ok: true, configured: false, rows: [] });
+      }
+      const raw = await client.sendCommand(["ZREVRANGE", KEY, "0", String(limit - 1), "WITHSCORES"]);
+      if (Array.isArray(raw)) {
+        for (let i = 0; i < raw.length; i += 2) {
+          const wallet = String(raw[i] || "");
+          const points = Number(raw[i + 1] || 0);
+          rows.push({ wallet, walletShort: shortWallet(wallet), points, shells: points });
+        }
       }
     }
     return res.status(200).json({ ok: true, configured: true, rows });

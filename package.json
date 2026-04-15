@@ -1,0 +1,10 @@
+{
+  "name": "otterful-otters-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Static Otterful Otters dashboard with Vercel serverless APIs",
+  "dependencies": {
+    "redis": "^5.8.0"
+  }
+}
+

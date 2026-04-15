@@ -22,13 +22,24 @@ module.exports = async (req, res) => {
 
   function getKvRest() {
     if (kvUrl && kvToken) return { url: kvUrl, token: kvToken };
-    if (kvRedisUrl) {
-      try {
-        const u = new URL(kvRedisUrl);
-        if (u.hostname && u.password) return { url: `https://${u.hostname}`, token: u.password };
-      } catch {}
-    }
     return null;
+  }
+
+  let clientPromise = null;
+  async function getRedisClient() {
+    if (!kvRedisUrl) return null;
+    if (!clientPromise) {
+      const { createClient } = require("redis");
+      const client = createClient({ url: kvRedisUrl });
+      clientPromise = client
+        .connect()
+        .then(() => client)
+        .catch((e) => {
+          clientPromise = null;
+          throw e;
+        });
+    }
+    return clientPromise;
   }
 
   try {
@@ -44,16 +55,16 @@ module.exports = async (req, res) => {
     // Best-effort: if KV is configured and the request looks like a valid award, track it locally.
     try {
       const kv = getKvRest();
-      if (kv) {
-        const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
-        const shellsRaw =
-          typeof bodyObj.shells === "number"
-            ? bodyObj.shells
-            : typeof bodyObj.points === "number"
-              ? bodyObj.points
-              : 0;
-        const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
-        if (wallet && shells > 0) {
+      const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
+      const shellsRaw =
+        typeof bodyObj.shells === "number"
+          ? bodyObj.shells
+          : typeof bodyObj.points === "number"
+            ? bodyObj.points
+            : 0;
+      const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
+      if (wallet && shells > 0) {
+        if (kv) {
           const zIncrUrl = `${kv.url}/zincrby/${encodeURIComponent(leaderboardKey)}/${encodeURIComponent(
             String(shells),
           )}/${encodeURIComponent(wallet)}`;
@@ -61,6 +72,11 @@ module.exports = async (req, res) => {
             method: "GET",
             headers: { Authorization: `Bearer ${kv.token}` },
           }).catch(() => {});
+        } else if (kvRedisUrl) {
+          const client = await getRedisClient();
+          if (client) {
+            await client.sendCommand(["ZINCRBY", leaderboardKey, String(shells), wallet]).catch(() => {});
+          }
         }
       }
     } catch {}
