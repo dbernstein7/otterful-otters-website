@@ -14,12 +14,13 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  const expected = process.env.LEADERBOARD_RESET_TOKEN || "";
+  const expected = String(process.env.LEADERBOARD_RESET_TOKEN || "").trim();
   const provided =
     (typeof req.query?.token === "string" ? req.query.token : "") ||
     (typeof req.headers["x-reset-token"] === "string" ? req.headers["x-reset-token"] : "");
+  const providedTrim = String(provided || "").trim();
 
-  if (!expected || provided !== expected) {
+  if (!expected || !providedTrim || providedTrim !== expected) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
 
