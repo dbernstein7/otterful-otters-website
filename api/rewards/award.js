@@ -18,7 +18,8 @@ module.exports = async (req, res) => {
   const kvUrl = process.env.KV_REST_API_URL;
   const kvToken = process.env.KV_REST_API_TOKEN;
   const kvRedisUrl = process.env.KV_REDIS_URL;
-  const leaderboardKey = "shellrush:leaderboard";
+  const pointsKey = "shellrush:leaderboard:points";
+  const shellsKey = "shellrush:leaderboard:shells";
 
   function getKvRest() {
     if (kvUrl && kvToken) return { url: kvUrl, token: kvToken };
@@ -56,26 +57,42 @@ module.exports = async (req, res) => {
     try {
       const kv = getKvRest();
       const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
-      const shellsRaw =
-        typeof bodyObj.shells === "number"
-          ? bodyObj.shells
+
+      const shellsRaw = typeof bodyObj.shells === "number" ? bodyObj.shells : 0;
+      const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
+
+      const pointsRaw =
+        typeof bodyObj.score === "number"
+          ? bodyObj.score
           : typeof bodyObj.points === "number"
             ? bodyObj.points
-            : 0;
-      const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
-      if (wallet && shells > 0) {
+            : shells;
+      const points = Number.isFinite(Number(pointsRaw)) ? Math.max(0, Math.floor(Number(pointsRaw))) : 0;
+
+      if (wallet && (shells > 0 || points > 0)) {
         if (kv) {
-          const zIncrUrl = `${kv.url}/zincrby/${encodeURIComponent(leaderboardKey)}/${encodeURIComponent(
-            String(shells),
-          )}/${encodeURIComponent(wallet)}`;
-          await fetch(zIncrUrl, {
-            method: "GET",
-            headers: { Authorization: `Bearer ${kv.token}` },
-          }).catch(() => {});
+          const headers = { Authorization: `Bearer ${kv.token}` };
+          if (points > 0) {
+            const url = `${kv.url}/zincrby/${encodeURIComponent(pointsKey)}/${encodeURIComponent(
+              String(points),
+            )}/${encodeURIComponent(wallet)}`;
+            await fetch(url, { method: "GET", headers }).catch(() => {});
+          }
+          if (shells > 0) {
+            const url = `${kv.url}/zincrby/${encodeURIComponent(shellsKey)}/${encodeURIComponent(
+              String(shells),
+            )}/${encodeURIComponent(wallet)}`;
+            await fetch(url, { method: "GET", headers }).catch(() => {});
+          }
         } else if (kvRedisUrl) {
           const client = await getRedisClient();
           if (client) {
-            await client.sendCommand(["ZINCRBY", leaderboardKey, String(shells), wallet]).catch(() => {});
+            const cmds = [];
+            if (points > 0) cmds.push(["ZINCRBY", pointsKey, String(points), wallet]);
+            if (shells > 0) cmds.push(["ZINCRBY", shellsKey, String(shells), wallet]);
+            for (const c of cmds) {
+              await client.sendCommand(c).catch(() => {});
+            }
           }
         }
       }
