@@ -5,7 +5,19 @@
   "routes": [
     { "handle": "filesystem" },
     {
-      "src": "/([^/]+\\.(?:glb|fbx|png|jpe?g|webp|gif|bin))$",
+      "src": "/branding/(.*)$",
+      "dest": "/games/shell-snag/branding/$1"
+    },
+    {
+      "src": "/mixamo/(.*)$",
+      "dest": "/games/shell-snag/mixamo/$1"
+    },
+    {
+      "src": "/models/(.*)$",
+      "dest": "/games/shell-snag/models/$1"
+    },
+    {
+      "src": "/([^/]+\\.(?:glb|fbx|bin))$",
       "dest": "/games/shell-snag/$1"
     },
     {
