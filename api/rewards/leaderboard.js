@@ -1,21 +1,43 @@
 // Leaderboard for the embedded Shell Rush game.
 //
-// Persists scores in Vercel KV (Upstash Redis) when available.
-// Required env vars (set by Vercel KV integration):
-// - KV_REST_API_URL
-// - KV_REST_API_TOKEN
+// Persists scores in Vercel KV / Redis (Upstash) when available.
+// Supported env var sets:
+// - KV_REST_API_URL + KV_REST_API_TOKEN (Vercel KV integration)
+// - KV_REDIS_URL (Vercel Storage Redis; we derive REST creds from URL password)
 
 const KEY = "shellrush:leaderboard";
 
-function kvConfigured() {
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+function getKvRestConfig() {
+  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+    return { url: process.env.KV_REST_API_URL, token: process.env.KV_REST_API_TOKEN };
+  }
+
+  // Vercel Storage Redis exposes a single connection URL like:
+  // rediss://default:<password>@<host>:<port>
+  // Upstash REST accepts the password as the Bearer token.
+  const redisUrl = process.env.KV_REDIS_URL;
+  if (redisUrl) {
+    try {
+      const u = new URL(redisUrl);
+      const token = u.password || "";
+      const host = u.hostname || "";
+      if (token && host) {
+        return { url: `https://${host}`, token };
+      }
+    } catch {}
+  }
+
+  return null;
 }
 
 async function kvCommand(command, args) {
-  const url = `${process.env.KV_REST_API_URL}/${command}/${args.map(encodeURIComponent).join("/")}`;
+  const cfg = getKvRestConfig();
+  if (!cfg) throw new Error("KV not configured.");
+
+  const url = `${cfg.url}/${command}/${args.map(encodeURIComponent).join("/")}`;
   const res = await fetch(url, {
     method: "GET",
-    headers: { Authorization: `Bearer ${process.env.KV_REST_API_TOKEN}` },
+    headers: { Authorization: `Bearer ${cfg.token}` },
   });
   if (!res.ok) {
     const text = await res.text();
@@ -48,7 +70,7 @@ module.exports = async (req, res) => {
   const limitRaw = typeof req.query?.limit === "string" ? req.query.limit : "";
   const limit = Math.min(50, Math.max(3, Number.isFinite(Number(limitRaw)) ? Math.floor(Number(limitRaw)) : 10));
 
-  if (!kvConfigured()) {
+  if (!getKvRestConfig()) {
     return res.status(200).json({
       ok: true,
       configured: false,

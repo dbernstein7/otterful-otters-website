@@ -17,7 +17,19 @@ module.exports = async (req, res) => {
   const upstream = "https://shell-rush-otterful-otters.vercel.app/api/rewards/award";
   const kvUrl = process.env.KV_REST_API_URL;
   const kvToken = process.env.KV_REST_API_TOKEN;
+  const kvRedisUrl = process.env.KV_REDIS_URL;
   const leaderboardKey = "shellrush:leaderboard";
+
+  function getKvRest() {
+    if (kvUrl && kvToken) return { url: kvUrl, token: kvToken };
+    if (kvRedisUrl) {
+      try {
+        const u = new URL(kvRedisUrl);
+        if (u.hostname && u.password) return { url: `https://${u.hostname}`, token: u.password };
+      } catch {}
+    }
+    return null;
+  }
 
   try {
     const bodyObj = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
@@ -31,7 +43,8 @@ module.exports = async (req, res) => {
 
     // Best-effort: if KV is configured and the request looks like a valid award, track it locally.
     try {
-      if (kvUrl && kvToken) {
+      const kv = getKvRest();
+      if (kv) {
         const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
         const shellsRaw =
           typeof bodyObj.shells === "number"
@@ -41,12 +54,12 @@ module.exports = async (req, res) => {
               : 0;
         const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
         if (wallet && shells > 0) {
-          const zIncrUrl = `${kvUrl}/zincrby/${encodeURIComponent(leaderboardKey)}/${encodeURIComponent(
+          const zIncrUrl = `${kv.url}/zincrby/${encodeURIComponent(leaderboardKey)}/${encodeURIComponent(
             String(shells),
           )}/${encodeURIComponent(wallet)}`;
           await fetch(zIncrUrl, {
             method: "GET",
-            headers: { Authorization: `Bearer ${kvToken}` },
+            headers: { Authorization: `Bearer ${kv.token}` },
           }).catch(() => {});
         }
       }
