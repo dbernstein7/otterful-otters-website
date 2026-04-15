@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
-    <title>Shop • Otterful Otters</title>
+    <title>Shell Snag • Otterful Otters</title>
     <link rel="icon" type="image/png" href="fishy-log.png.png">
     <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,8 +27,8 @@
         <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
         <a href="3d-builder.html" class="nav-pill">3D Builder</a>
         <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
-        <a href="shop.html" class="nav-pill active" aria-current="page">Shop</a>
-        <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
+        <a href="shop.html" class="nav-pill">Shop</a>
+        <a href="shell-snag.html" class="nav-pill active" aria-current="page">Shell Snag</a>
         <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
         <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
         <a href="index.html#team" class="nav-pill">Team</a>
@@ -41,8 +41,8 @@
         <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
         <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
         <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
-        <a href="shop.html" class="nav-drawer-pill active" aria-current="page">Shop</a>
-        <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
+        <a href="shop.html" class="nav-drawer-pill">Shop</a>
+        <a href="shell-snag.html" class="nav-drawer-pill active" aria-current="page">Shell Snag</a>
         <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
         <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
         <a href="index.html#team" class="nav-drawer-pill">Team</a>
@@ -68,15 +68,16 @@
 
         <div class="page-embed">
             <iframe
+                id="shellSnagFrame"
                 class="page-embed-frame"
-                src="https://shop.otterfulotters.xyz"
-                title="Otterful Shop"
+                src="games/shell-snag/index.html"
+                title="Shell Snag"
                 loading="eager"
-                referrerpolicy="no-referrer-when-downgrade"
+                referrerpolicy="no-referrer"
             ></iframe>
             <div class="page-embed-note">
-                Browse merch without leaving the Otterful layout. If this panel fails to load, open the shop directly.
-                <a class="action-btn primary page-embed-link" href="https://shop.otterfulotters.xyz" target="_blank" rel="noopener noreferrer">Open Shop</a>
+                If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
+                <a class="action-btn primary page-embed-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open Shell Snag</a>
             </div>
         </div>
     </div>
@@ -127,5 +128,35 @@
         });
       })();
     </script>
+    <script>
+      (function () {
+        const iframe = document.getElementById('shellSnagFrame');
+        if (!iframe) return;
+
+        function clampHeight(px) {
+          const min = 560;
+          const max = Math.max(min, window.innerHeight - 230);
+          return Math.max(min, Math.min(px, max));
+        }
+
+        function requestSize() {
+          try {
+            iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
+          } catch {}
+        }
+
+        window.addEventListener('message', function (event) {
+          if (!event || !event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
+          const h = Number(event.data.height);
+          if (!Number.isFinite(h) || h <= 0) return;
+          iframe.style.height = clampHeight(h) + 'px';
+        });
+
+        window.addEventListener('load', requestSize);
+        window.addEventListener('resize', requestSize);
+        setTimeout(requestSize, 300);
+      })();
+    </script>
 </body>
 </html>
+

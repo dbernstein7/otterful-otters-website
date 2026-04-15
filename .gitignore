@@ -27,6 +27,12 @@ desktop.ini
 *.swo
 *~
 
+# Cursor
+.cursor/
+
+# Local-only working folders
+_otter-bros-repo3/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -47,3 +53,6 @@ ENV/
 # Avatar Builder (handled separately)
 AvatarBuilder/.git
 
+
+.vercel
+.env*.local
