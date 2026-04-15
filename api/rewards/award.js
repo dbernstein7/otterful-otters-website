@@ -69,29 +69,53 @@ module.exports = async (req, res) => {
             : shells;
       const points = Number.isFinite(Number(pointsRaw)) ? Math.max(0, Math.floor(Number(pointsRaw))) : 0;
 
+      async function getBestRest(key) {
+        const headers = { Authorization: `Bearer ${kv.token}` };
+        const url = `${kv.url}/zscore/${encodeURIComponent(key)}/${encodeURIComponent(wallet)}`;
+        const r = await fetch(url, { method: "GET", headers });
+        if (!r.ok) return null;
+        const j = await r.json().catch(() => null);
+        return j && Object.prototype.hasOwnProperty.call(j, "result") ? j.result : null;
+      }
+
+      async function setBestRest(key, value) {
+        const headers = { Authorization: `Bearer ${kv.token}` };
+        const url = `${kv.url}/zadd/${encodeURIComponent(key)}/${encodeURIComponent(String(value))}/${encodeURIComponent(
+          wallet,
+        )}`;
+        await fetch(url, { method: "GET", headers }).catch(() => {});
+      }
+
       if (wallet && (shells > 0 || points > 0)) {
         if (kv) {
-          const headers = { Authorization: `Bearer ${kv.token}` };
-          if (points > 0) {
-            const url = `${kv.url}/zincrby/${encodeURIComponent(pointsKey)}/${encodeURIComponent(
-              String(points),
-            )}/${encodeURIComponent(wallet)}`;
-            await fetch(url, { method: "GET", headers }).catch(() => {});
-          }
-          if (shells > 0) {
-            const url = `${kv.url}/zincrby/${encodeURIComponent(shellsKey)}/${encodeURIComponent(
-              String(shells),
-            )}/${encodeURIComponent(wallet)}`;
-            await fetch(url, { method: "GET", headers }).catch(() => {});
+          const bestPointsRaw = await getBestRest(pointsKey).catch(() => null);
+          const bestShellsRaw = await getBestRest(shellsKey).catch(() => null);
+          const bestPoints = bestPointsRaw != null ? Number(bestPointsRaw) : 0;
+          const bestShells = bestShellsRaw != null ? Number(bestShellsRaw) : 0;
+
+          const shouldUpdate =
+            (Number.isFinite(bestPoints) ? points > bestPoints : points > 0) ||
+            (points === bestPoints && shells > (Number.isFinite(bestShells) ? bestShells : 0));
+
+          if (shouldUpdate) {
+            if (points > 0) await setBestRest(pointsKey, points);
+            if (shells > 0) await setBestRest(shellsKey, shells);
           }
         } else if (kvRedisUrl) {
           const client = await getRedisClient();
           if (client) {
-            const cmds = [];
-            if (points > 0) cmds.push(["ZINCRBY", pointsKey, String(points), wallet]);
-            if (shells > 0) cmds.push(["ZINCRBY", shellsKey, String(shells), wallet]);
-            for (const c of cmds) {
-              await client.sendCommand(c).catch(() => {});
+            const bestPointsRaw = await client.sendCommand(["ZSCORE", pointsKey, wallet]).catch(() => null);
+            const bestShellsRaw = await client.sendCommand(["ZSCORE", shellsKey, wallet]).catch(() => null);
+            const bestPoints = bestPointsRaw != null ? Number(bestPointsRaw) : 0;
+            const bestShells = bestShellsRaw != null ? Number(bestShellsRaw) : 0;
+
+            const shouldUpdate =
+              (Number.isFinite(bestPoints) ? points > bestPoints : points > 0) ||
+              (points === bestPoints && shells > (Number.isFinite(bestShells) ? bestShells : 0));
+
+            if (shouldUpdate) {
+              if (points > 0) await client.sendCommand(["ZADD", pointsKey, String(points), wallet]).catch(() => {});
+              if (shells > 0) await client.sendCommand(["ZADD", shellsKey, String(shells), wallet]).catch(() => {});
             }
           }
         }
