@@ -80,6 +80,32 @@
                 <a class="action-btn primary page-embed-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open Shell Snag</a>
             </div>
         </div>
+
+        <section class="info-card" style="margin-top: 18px;">
+            <h2>Shell Rush Leaderboard</h2>
+            <div class="info-item">
+                <span class="info-label">Status</span>
+                <span class="info-value" id="shellRushLbStatus">Loading…</span>
+            </div>
+            <div style="margin-top: 12px; overflow-x: auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="text-align:left; opacity:0.9;">
+                            <th style="padding:10px 8px;">Rank</th>
+                            <th style="padding:10px 8px;">Wallet</th>
+                            <th style="padding:10px 8px;">Points</th>
+                            <th style="padding:10px 8px;">Shells</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shellRushLbRows">
+                        <tr><td style="padding:10px 8px;" colspan="4">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 12px; opacity:0.85;">
+                Tip: this leaderboard updates as players submit signed run results.
+            </div>
+        </section>
     </div>
 
     <script>
@@ -155,6 +181,59 @@
         window.addEventListener('load', requestSize);
         window.addEventListener('resize', requestSize);
         setTimeout(requestSize, 300);
+      })();
+    </script>
+    <script>
+      (function () {
+        const statusEl = document.getElementById('shellRushLbStatus');
+        const rowsEl = document.getElementById('shellRushLbRows');
+        if (!statusEl || !rowsEl) return;
+
+        function esc(s) {
+          return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+        }
+
+        async function loadLb() {
+          try {
+            statusEl.textContent = 'Loading…';
+            const res = await fetch('/api/rewards/leaderboard?limit=15', { cache: 'no-store' });
+            const data = await res.json().catch(() => ({}));
+            const rows = Array.isArray(data.rows) ? data.rows : [];
+            if (data.configured === false) {
+              statusEl.textContent = 'Leaderboard storage not configured yet.';
+              rowsEl.innerHTML = '<tr><td style="padding:10px 8px;" colspan="4">No rows yet.</td></tr>';
+              return;
+            }
+            statusEl.textContent = rows.length ? 'Live' : 'No entries yet';
+            rowsEl.innerHTML = rows
+              .map((r, idx) => {
+                const rank = idx + 1;
+                const wallet = r.walletShort || r.wallet || '—';
+                const points = r.points != null ? r.points : '—';
+                const shells = r.shells != null ? r.shells : points;
+                return (
+                  '<tr>' +
+                  `<td style="padding:10px 8px;">${rank}</td>` +
+                  `<td style="padding:10px 8px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">${esc(wallet)}</td>` +
+                  `<td style="padding:10px 8px;">${esc(points)}</td>` +
+                  `<td style="padding:10px 8px;">${esc(shells)}</td>` +
+                  '</tr>'
+                );
+              })
+              .join('') || '<tr><td style="padding:10px 8px;" colspan="4">No rows yet.</td></tr>';
+          } catch (e) {
+            statusEl.textContent = 'Error loading leaderboard.';
+            rowsEl.innerHTML = '<tr><td style="padding:10px 8px;" colspan="4">Could not load.</td></tr>';
+          }
+        }
+
+        loadLb();
+        setInterval(loadLb, 15000);
       })();
     </script>
 </body>

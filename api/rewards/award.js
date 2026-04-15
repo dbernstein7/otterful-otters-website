@@ -15,14 +15,42 @@ module.exports = async (req, res) => {
   }
 
   const upstream = "https://shell-rush-otterful-otters.vercel.app/api/rewards/award";
+  const kvUrl = process.env.KV_REST_API_URL;
+  const kvToken = process.env.KV_REST_API_TOKEN;
+  const leaderboardKey = "shellrush:leaderboard";
 
   try {
+    const bodyObj = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+
     const upstreamRes = await fetch(upstream, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: typeof req.body === "string" ? req.body : JSON.stringify(req.body || {}),
+      body: JSON.stringify(bodyObj),
     });
     const text = await upstreamRes.text();
+
+    // Best-effort: if KV is configured and the request looks like a valid award, track it locally.
+    try {
+      if (kvUrl && kvToken) {
+        const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
+        const shellsRaw =
+          typeof bodyObj.shells === "number"
+            ? bodyObj.shells
+            : typeof bodyObj.points === "number"
+              ? bodyObj.points
+              : 0;
+        const shells = Number.isFinite(Number(shellsRaw)) ? Math.max(0, Math.floor(Number(shellsRaw))) : 0;
+        if (wallet && shells > 0) {
+          const zIncrUrl = `${kvUrl}/zincrby/${encodeURIComponent(leaderboardKey)}/${encodeURIComponent(
+            String(shells),
+          )}/${encodeURIComponent(wallet)}`;
+          await fetch(zIncrUrl, {
+            method: "GET",
+            headers: { Authorization: `Bearer ${kvToken}` },
+          }).catch(() => {});
+        }
+      }
+    } catch {}
 
     res.status(upstreamRes.status);
     res.setHeader("Content-Type", upstreamRes.headers.get("content-type") || "application/json");
