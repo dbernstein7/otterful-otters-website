@@ -1,8 +1,5 @@
 // Vercel serverless function used by the embedded Shell Snag game.
-// The upstream game expects POST /api/rewards/check to exist.
-//
-// If DRIP integration isn't configured on this site, we return a benign
-// "skipped" response so the game can continue without crashing.
+// Proxies to the dedicated Shell Rush deployment so the iframe behaves identically.
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -17,7 +14,25 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
-  // Future: wire this up to DRIP if you want live rewards on otterfulotters.xyz.
-  return res.status(200).json({ ok: true, skipped: "not_configured" });
+  const upstream = "https://shell-rush-otterful-otters.vercel.app/api/rewards/check";
+
+  try {
+    const upstreamRes = await fetch(upstream, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: typeof req.body === "string" ? req.body : JSON.stringify(req.body || {}),
+    });
+    const text = await upstreamRes.text();
+
+    res.status(upstreamRes.status);
+    res.setHeader("Content-Type", upstreamRes.headers.get("content-type") || "application/json");
+    return res.send(text);
+  } catch (e) {
+    return res.status(200).json({
+      ok: true,
+      skipped: "upstream_unreachable",
+      message: e && e.message ? e.message : "Could not reach upstream rewards service.",
+    });
+  }
 };
 
