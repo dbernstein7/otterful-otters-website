@@ -17,7 +17,7 @@
       "dest": "/games/shell-snag/models/$1"
     },
     {
-      "src": "/([^/]+\\.(?:glb|fbx|bin))$",
+      "src": "/([^/]+\\.(?:glb|fbx|bin|mp3|wav|ogg|m4a))$",
       "dest": "/games/shell-snag/$1"
     },
     {
