@@ -35,18 +35,18 @@ module.exports = async (req, res) => {
       // no thumbnails
     }
 
-    const files =
-      originals.length > 0
-        ? originals.map((name) => {
-            const base = name.replace(/\.[^.]+$/, '');
-            const thumbName = `${base}.jpg`;
-            return { name, thumbName, hasThumbnail: thumbSet.has(thumbName.toLowerCase()) };
-          })
-        : thumbNames.map((thumbName) => {
-            const base = thumbName.replace(/\.[^.]+$/, '');
-            const name = `${base}.png`;
-            return { name, thumbName, hasThumbnail: true };
-          });
+    const originalBaseSet = new Set(originals.map((name) => name.replace(/\.[^.]+$/, '').toLowerCase()));
+    const files = originals.map((name) => {
+      const base = name.replace(/\.[^.]+$/, '');
+      const thumbName = `${base}.jpg`;
+      return { name, thumbName, hasThumbnail: thumbSet.has(thumbName.toLowerCase()) };
+    });
+
+    thumbNames.forEach((thumbName) => {
+      const base = thumbName.replace(/\.[^.]+$/, '');
+      if (originalBaseSet.has(base.toLowerCase())) return;
+      files.push({ name: `${base}.png`, thumbName, hasThumbnail: true });
+    });
 
     return res.status(200).json({
       count: files.length,

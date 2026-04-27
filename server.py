@@ -101,21 +101,22 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 thumb_set = {f.lower() for f in thumb_list}
                 thumb_list = sorted(thumb_list, key=lambda x: x.lower())
 
-            if originals:
-                files = []
-                for name in originals:
-                    base, _ = os.path.splitext(name)
-                    thumb_name = base + '.jpg'
-                    files.append({
-                        'name': name,
-                        'thumbName': thumb_name,
-                        'hasThumbnail': thumb_name.lower() in thumb_set,
-                    })
-            else:
-                files = []
-                for thumb_name in thumb_list:
-                    base, _ = os.path.splitext(thumb_name)
-                    files.append({'name': base + '.png', 'thumbName': thumb_name, 'hasThumbnail': True})
+            original_base_set = {os.path.splitext(name)[0].lower() for name in originals}
+            files = []
+            for name in originals:
+                base, _ = os.path.splitext(name)
+                thumb_name = base + '.jpg'
+                files.append({
+                    'name': name,
+                    'thumbName': thumb_name,
+                    'hasThumbnail': thumb_name.lower() in thumb_set,
+                })
+
+            for thumb_name in thumb_list:
+                base, _ = os.path.splitext(thumb_name)
+                if base.lower() in original_base_set:
+                    continue
+                files.append({'name': base + '.png', 'thumbName': thumb_name, 'hasThumbnail': True})
 
             result = {'count': len(files), 'files': files}
             self.send_response(200)
