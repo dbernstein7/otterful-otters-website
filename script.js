@@ -1165,6 +1165,30 @@ function closeModal() {
 let othersideImageList = [];
 let currentOthersideIndex = 0;
 
+function encodeGalleryPath(pathStr) {
+    return pathStr
+        .split('/')
+        .map(part => encodeURIComponent(part))
+        .join('/');
+}
+
+function getOthersideOriginalSrc(file) {
+    return encodeGalleryPath(`Otherside Otter Photos/${file.name}`);
+}
+
+function getOthersideThumbSrc(file) {
+    return encodeGalleryPath(`Otherside Otter Photos_thumbnails/${file.thumbName}`);
+}
+
+async function loadOthersideManifest() {
+    const response = await fetch('/api/otherside-manifest');
+    if (!response.ok) {
+        throw new Error(`Otherside manifest failed with ${response.status}`);
+    }
+    const data = await response.json();
+    return data.files || [];
+}
+
 async function initOthersideGallery() {
     const gallery = document.getElementById('othersideGallery');
     if (!gallery) {
@@ -1172,100 +1196,61 @@ async function initOthersideGallery() {
         return;
     }
 
-    // List of images from the folder
-    const imageFiles = [
-        'Screenshot 2025-10-30 110514.png',
-        'Screenshot 2025-10-30 202638.png',
-        'Screenshot 2025-11-01 110411.png',
-        'Screenshot 2025-11-01 143637.png',
-        'Screenshot 2025-11-01 145222.png',
-        'Screenshot 2025-11-01 151327.png',
-        'Screenshot 2025-11-05 122105.png',
-        'Screenshot 2025-11-05 122409 - Copy.png',
-        'Screenshot 2025-11-05 123324 - Copy.png',
-        'Screenshot 2025-11-06 183604.png',
-        'Screenshot 2025-11-07 121735.png',
-        'Screenshot 2025-11-08 123604.png',
-        'Screenshot 2025-11-08 125933.png',
-        'Screenshot 2025-11-08 145240.png',
-        'Screenshot 2025-11-09 090244.png',
-        'Screenshot 2025-11-12 145142.png',
-        'Screenshot 2025-11-12 145935.png',
-        'Screenshot 2025-11-12 160831.png',
-        'Screenshot 2025-11-12 172340.png',
-        'Screenshot 2025-11-12 172758.png',
-        'Screenshot 2025-11-12 172816.png',
-        'Screenshot 2025-11-12 172852.png',
-        'Screenshot 2025-11-12 173612.png',
-        'Screenshot 2025-11-12 174106.png',
-        'Screenshot 2025-11-12 184405.png',
-        'Screenshot 2025-11-12 203535.png',
-        'Screenshot 2025-11-13 001140.png',
-        'Screenshot 2025-11-13 024558.png',
-        'Screenshot 2025-11-18 014002.png',
-        'Screenshot 2025-11-18 023048.png',
-        'Screenshot 2025-11-18 025102.png',
-        'Screenshot 2025-11-18 043941.png',
-        'Screenshot 2025-11-18 044008.png',
-        'Screenshot 2025-11-20 035947.png',
-        'Screenshot 2025-11-21 023614.png',
-        'Screenshot 2025-11-23 160102.png',
-        'Screenshot 2025-11-26 160332.png',
-        'Screenshot 2025-11-29 051555.png',
-        'Screenshot 2025-12-05 053820.png',
-        'Screenshot 2025-12-06 174602.png',
-        'Screenshot 2025-12-07 154029.png',
-        'Screenshot 2025-12-17 171344.png',
-        'Screenshot 2025-12-17 175901.png',
-        'Screenshot 2025-12-19 083420.png',
-        'Screenshot 2025-12-26 041208.png',
-        'Screenshot 2026-01-03 152902.png',
-        'Screenshot 2026-01-04 154518.png',
-        'Screenshot 2026-01-05 172504.png',
-        'Screenshot 2026-01-06 115911.png'
-    ];
+    let imageFiles = [];
+    try {
+        imageFiles = await loadOthersideManifest();
+    } catch (error) {
+        console.error('Failed to load Otherside gallery manifest:', error);
+        return;
+    }
 
     // Randomize the order
     const shuffledFiles = [...imageFiles].sort(() => Math.random() - 0.5);
 
     // Store the image list for navigation (only unique images, not duplicated)
-    othersideImageList = shuffledFiles.map(filename => `Otherside Otter Photos/${filename}`);
+    othersideImageList = shuffledFiles.map(file => {
+        const fullSrc = getOthersideOriginalSrc(file);
+        const thumbSrc = file.hasThumbnail ? getOthersideThumbSrc(file) : fullSrc;
+        return {
+            fullSrc,
+            thumbSrc,
+            displaySrc: thumbSrc
+        };
+    });
 
     // Duplicate images for seamless loop (create 2 sets)
-    const duplicatedFiles = [...shuffledFiles, ...shuffledFiles];
+    const duplicatedFiles = [...othersideImageList, ...othersideImageList];
     
     // Create scroll wrapper
     const scrollWrapper = document.createElement('div');
     scrollWrapper.className = 'otherside-gallery-scroll';
+    scrollWrapper.style.animationDuration = `${Math.max(120, shuffledFiles.length * 2.45)}s`;
     
     // Create image elements with progressive loading
-    duplicatedFiles.forEach((filename, index) => {
+    duplicatedFiles.forEach((image, index) => {
         const imageItem = document.createElement('div');
         imageItem.className = 'otherside-image-item';
         
         const img = document.createElement('img');
         img.alt = `Otherside Otter ${index + 1}`;
         img.className = 'otherside-image';
-        
-        // Use thumbnails for carousel (much smaller KB files), full images in modal
-        const originalPath = `Otherside Otter Photos/${filename}`;
-        const thumbnailPath = `Otherside Otter Photos_thumbnails/${filename.replace('.png', '.jpg')}`;
-        
+
         // Store paths
-        img.dataset.full = originalPath; // Store full quality path for modal
+        img.dataset.full = image.fullSrc; // Store full quality path for modal
+        img.dataset.thumb = image.thumbSrc;
         img.style.opacity = '0.7';
         
         // Use thumbnail for carousel (KB size), fallback to original if thumbnail doesn't exist
-        img.dataset.src = thumbnailPath;
+        img.dataset.src = image.displaySrc;
         
         // Set up error handler - fallback to original if thumbnail doesn't exist
         img.onerror = function() {
-            if (this.src === thumbnailPath || this.src.includes('_thumbnails')) {
+            if (this.src && this.src.includes('_thumbnails') && this.src !== this.dataset.full) {
                 // Thumbnail failed, try original
-                this.src = originalPath;
+                this.src = this.dataset.full;
             } else {
                 // Both failed
-                console.warn(`Failed to load image: ${filename}`);
+                console.warn(`Failed to load image: ${this.dataset.full}`);
                 this.style.display = 'none';
             }
         };
@@ -1274,10 +1259,9 @@ async function initOthersideGallery() {
         // Find the index in the unique list (not duplicated)
         // Since we have duplicated files, we need to find the original index
         const uniqueIndex = index % shuffledFiles.length;
-        const imagePath = `Otherside Otter Photos/${filename}`;
         img.addEventListener('click', () => {
             currentOthersideIndex = uniqueIndex;
-            openOthersideModal(imagePath, uniqueIndex);
+            openOthersideModal(image.fullSrc, uniqueIndex, image.thumbSrc);
         });
         
         // Handle successful image load
@@ -1347,7 +1331,7 @@ async function initOthersideGallery() {
     }
 }
 
-function openOthersideModal(imageSrc, index = null) {
+function openOthersideModal(imageSrc, index = null, fallbackSrc = null) {
     const modal = document.getElementById('othersideModal');
     const modalImage = document.getElementById('othersideModalImage');
     
@@ -1355,6 +1339,13 @@ function openOthersideModal(imageSrc, index = null) {
         if (index !== null) {
             currentOthersideIndex = index;
         }
+        modalImage.onerror = function() {
+            if (fallbackSrc && this.src !== fallbackSrc) {
+                this.src = fallbackSrc;
+                return;
+            }
+            this.onerror = null;
+        };
         modalImage.src = imageSrc;
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
@@ -1375,7 +1366,15 @@ function navigateOthersideModal(direction) {
     
     const modalImage = document.getElementById('othersideModalImage');
     if (modalImage) {
-        modalImage.src = othersideImageList[currentOthersideIndex];
+        const image = othersideImageList[currentOthersideIndex];
+        modalImage.onerror = function() {
+            if (image.thumbSrc && this.src !== image.thumbSrc) {
+                this.src = image.thumbSrc;
+                return;
+            }
+            this.onerror = null;
+        };
+        modalImage.src = image.fullSrc;
     }
 }
 
@@ -1559,6 +1558,23 @@ function initElectricBorder() {
 let niftyImageList = [];
 let currentNiftyIndex = 0;
 
+function getNiftyOriginalSrc(file) {
+    return encodeGalleryPath(`Nifty Photos/${file.name}`);
+}
+
+function getNiftyThumbSrc(file) {
+    return encodeGalleryPath(`Nifty Photos_thumbnails/${file.thumbName}`);
+}
+
+async function loadNiftyManifest() {
+    const response = await fetch('/api/nifty-manifest');
+    if (!response.ok) {
+        throw new Error(`Nifty manifest failed with ${response.status}`);
+    }
+    const data = await response.json();
+    return data.files || [];
+}
+
 async function initNiftyGallery() {
     const gallery = document.getElementById('niftyGallery');
     if (!gallery) {
@@ -1566,120 +1582,71 @@ async function initNiftyGallery() {
         return;
     }
 
-    // List of images from the folder
-    const imageFiles = [
-        'Screenshot 2024-12-11 002145.png',
-        'Screenshot 2024-12-19 021349.png',
-        'Screenshot 2024-12-21 205103.png',
-        'Screenshot 2024-12-24 012628.png',
-        'Screenshot 2024-12-27 081141.png',
-        'Screenshot 2024-12-28 023204.png',
-        'Screenshot 2024-12-31 013507.png',
-        'Screenshot 2025-01-01 042900.png',
-        'Screenshot 2025-01-02 093516.png',
-        'Screenshot 2025-01-03 084646.png',
-        'Screenshot 2025-01-12 035251.png',
-        'Screenshot 2025-01-12 053645.png',
-        'Screenshot 2025-01-31 120537.png',
-        'Screenshot 2025-02-04 000723.png',
-        'Screenshot 2025-02-19 020525.png',
-        'Screenshot 2025-03-13 202617.png',
-        'Screenshot 2025-03-18 002916.png',
-        'Screenshot 2025-03-22 233557.png',
-        'Screenshot 2025-04-05 213153.png',
-        'Screenshot 2025-04-20 195231.png',
-        'Screenshot 2025-04-26 224329.png',
-        'Screenshot 2025-04-26 225219.png',
-        'Screenshot 2025-05-12 073248.png',
-        'Screenshot 2025-07-02 083124.png',
-        'Screenshot 2025-07-08 152229.png',
-        'Screenshot 2025-08-07 221004.png',
-        'Screenshot 2025-08-09 193856.png',
-        'Screenshot 2025-08-30 192618.png',
-        'Screenshot 2025-10-23 181037.png',
-        'Screenshot 2025-11-16 140400.png',
-        'Screenshot 2025-12-14 140810.png',
-        'Screenshot 2025-12-21 140609.png',
-        'Screenshot 2026-01-04 142756.png'
-    ];
+    let imageFiles = [];
+    try {
+        imageFiles = await loadNiftyManifest();
+    } catch (error) {
+        console.error('Failed to load Nifty gallery manifest:', error);
+        return;
+    }
 
-    // Randomize the order
     const shuffledFiles = [...imageFiles].sort(() => Math.random() - 0.5);
 
-    // Store the image list for navigation (only unique images, not duplicated)
-    niftyImageList = shuffledFiles.map(filename => {
-        const path = `Nifty Photos/${filename}`;
-        // Return path as-is (browser will handle encoding)
-        return path;
+    niftyImageList = shuffledFiles.map(file => {
+        const fullSrc = getNiftyOriginalSrc(file);
+        const thumbSrc = file.hasThumbnail ? getNiftyThumbSrc(file) : fullSrc;
+        return {
+            fullSrc,
+            thumbSrc,
+            displaySrc: thumbSrc
+        };
     });
 
-    // Duplicate images for seamless loop (create 2 sets)
-    const duplicatedFiles = [...shuffledFiles, ...shuffledFiles];
-    
-    // Create scroll wrapper
+    const duplicatedFiles = [...niftyImageList, ...niftyImageList];
+
     const scrollWrapper = document.createElement('div');
     scrollWrapper.className = 'nifty-gallery-scroll';
-    
-    // Create image elements
-    duplicatedFiles.forEach((filename, index) => {
+    scrollWrapper.style.animationDuration = `${Math.max(120, shuffledFiles.length * 2.45)}s`;
+
+    duplicatedFiles.forEach((image, index) => {
         const imageItem = document.createElement('div');
         imageItem.className = 'nifty-image-item';
-        
+
         const img = document.createElement('img');
-        img.alt = `Nifty Photo ${index + 1}`;
+        img.alt = `Nifty Island ${index + 1}`;
         img.className = 'nifty-image';
-        
-        // Use thumbnails for carousel (much smaller KB files), full images in modal
-        const imagePath = `Nifty Photos/${filename}`;
-        const thumbnailPath = `Nifty Photos_thumbnails/${filename.replace('.png', '.jpg')}`;
-        
-        // Store paths
-        img.dataset.full = imagePath; // Store full quality path for modal
+
+        img.dataset.full = image.fullSrc;
+        img.dataset.thumb = image.thumbSrc;
         img.style.opacity = '0.7';
-        
-        // Use thumbnail for carousel (KB size), fallback to original if thumbnail doesn't exist
-        img.dataset.src = thumbnailPath;
-        
-        // Set up error handler - fallback to original if thumbnail doesn't exist
-        let errorCount = 0;
+        img.dataset.src = image.displaySrc;
+
         img.onerror = function() {
-            errorCount++;
-            if (errorCount === 1) {
-                // Thumbnail failed, try original image
-                if (this.src === thumbnailPath || this.src.includes('_thumbnails')) {
-                    this.src = imagePath;
-                } else {
-                    // Try with encoded spaces
-                    const encodedPath = imagePath.replace(/ /g, '%20');
-                    this.src = encodedPath;
-                }
+            if (this.src && this.src.includes('_thumbnails') && this.src !== this.dataset.full) {
+                this.src = this.dataset.full;
             } else {
-                // All attempts failed
-                console.error(`Failed to load image: ${filename}`);
+                console.warn(`Failed to load image: ${this.dataset.full}`);
                 this.style.display = 'none';
             }
         };
-        
-        // Add click handler to show full-size image
+
         const uniqueIndex = index % shuffledFiles.length;
         img.addEventListener('click', () => {
             currentNiftyIndex = uniqueIndex;
-            openNiftyModal(imagePath, uniqueIndex);
+            openNiftyModal(image.fullSrc, uniqueIndex, image.thumbSrc);
         });
-        
-        // Handle successful image load
+
         img.onload = function() {
             this.style.opacity = '1';
             this.style.transition = 'opacity 0.2s ease-in';
         };
-        
+
         imageItem.appendChild(img);
         scrollWrapper.appendChild(imageItem);
     });
-    
+
     gallery.appendChild(scrollWrapper);
 
-    // Use Intersection Observer for efficient lazy loading
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1691,40 +1658,35 @@ async function initNiftyGallery() {
             }
         });
     }, {
-        rootMargin: '300px' // Start loading 300px before image enters viewport
+        rootMargin: '300px'
     });
-    
-    // Load first 6 images immediately for better initial experience
+
     const images = scrollWrapper.querySelectorAll('.nifty-image');
     images.forEach((img, index) => {
         if (index < 6 && img.dataset.src) {
-            // Load first 6 immediately
             img.src = img.dataset.src;
-        } else if (img.dataset.src) {
-            // Lazy load the rest
+        } else {
             observer.observe(img);
         }
     });
 
-
-    // Setup modal close handler and navigation buttons
     const modal = document.getElementById('niftyModal');
     const closeBtn = document.querySelector('.nifty-modal-close');
     const prevBtn = document.querySelector('.nifty-modal-prev');
     const nextBtn = document.querySelector('.nifty-modal-next');
-    
+
     if (closeBtn) {
         closeBtn.addEventListener('click', closeNiftyModal);
     }
-    
+
     if (prevBtn) {
         prevBtn.addEventListener('click', () => navigateNiftyModal('prev'));
     }
-    
+
     if (nextBtn) {
         nextBtn.addEventListener('click', () => navigateNiftyModal('next'));
     }
-    
+
     if (modal) {
         modal.addEventListener('click', function(e) {
             if (e.target === modal) {
@@ -1734,35 +1696,49 @@ async function initNiftyGallery() {
     }
 }
 
-function openNiftyModal(imageSrc, index = null) {
+function openNiftyModal(imageSrc, index = null, fallbackSrc = null) {
     const modal = document.getElementById('niftyModal');
     const modalImage = document.getElementById('niftyModalImage');
-    
+
     if (modal && modalImage) {
         if (index !== null) {
             currentNiftyIndex = index;
         }
+        modalImage.onerror = function() {
+            if (fallbackSrc && this.src !== fallbackSrc) {
+                this.src = fallbackSrc;
+                return;
+            }
+            this.onerror = null;
+        };
         modalImage.src = imageSrc;
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        
-        // Setup keyboard navigation
+
         setupNiftyKeyboardNav();
     }
 }
 
 function navigateNiftyModal(direction) {
     if (niftyImageList.length === 0) return;
-    
+
     if (direction === 'next') {
         currentNiftyIndex = (currentNiftyIndex + 1) % niftyImageList.length;
     } else if (direction === 'prev') {
         currentNiftyIndex = (currentNiftyIndex - 1 + niftyImageList.length) % niftyImageList.length;
     }
-    
+
     const modalImage = document.getElementById('niftyModalImage');
     if (modalImage) {
-        modalImage.src = niftyImageList[currentNiftyIndex];
+        const image = niftyImageList[currentNiftyIndex];
+        modalImage.onerror = function() {
+            if (image.thumbSrc && this.src !== image.thumbSrc) {
+                this.src = image.thumbSrc;
+                return;
+            }
+            this.onerror = null;
+        };
+        modalImage.src = image.fullSrc;
     }
 }
 

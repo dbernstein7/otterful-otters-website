@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
-    <title>Otter Bros • Otterful Otters</title>
+    <title>Nifty Island Photo Gallery • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="embed-page">
+<body>
     <div class="stars"></div>
-    
+
     <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
         <span class="nav-menu-btn-icon"></span>
     </button>
@@ -23,10 +23,9 @@
         <a href="index.html#collection" class="nav-pill">Collection</a>
         <a href="index.html#explore" class="nav-pill">Explore</a>
         <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
-        <a href="nifty-island-gallery.html" class="nav-pill">Nifty Island Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-pill active" aria-current="page">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-pill">3D Builder</a>
-        <a href="otter-bros.html" class="nav-pill active" aria-current="page">Otter Bros</a>
-        <a href="shop.html" class="nav-pill">Shop</a>
+        <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
         <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
@@ -38,16 +37,15 @@
         <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
         <a href="index.html#explore" class="nav-drawer-pill">Explore</a>
         <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
-        <a href="nifty-island-gallery.html" class="nav-drawer-pill">Nifty Island Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-drawer-pill active" aria-current="page">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
-        <a href="otter-bros.html" class="nav-drawer-pill active" aria-current="page">Otter Bros</a>
-        <a href="shop.html" class="nav-drawer-pill">Shop</a>
+        <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
         <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
         <a href="index.html#team" class="nav-drawer-pill">Team</a>
     </aside>
-    
+
     <div class="top-right-icons">
         <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
             <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
@@ -63,70 +61,27 @@
     <div class="container">
         <header class="header-section">
             <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
-            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+            <div class="section-title otherside-page-title">Nifty Island Photo Gallery</div>
+            <div class="otherside-page-subtitle">
+                <span id="niftyIslandGalleryCount">Loading photos…</span>
+            </div>
         </header>
 
-        <div class="page-embed">
-            <iframe
-                class="page-embed-frame"
-                src="https://otterfulotterbros.netlify.app"
-                title="Otter Bros"
-                loading="eager"
-                referrerpolicy="no-referrer"
-            ></iframe>
-            <div class="page-embed-note">
-                If the embed doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
-                <a class="action-btn primary page-embed-link" href="https://otterfulotterbros.netlify.app">Open Otter Bros</a>
+        <div class="otherside-full-gallery">
+            <div id="niftyIslandFullGallery" class="otherside-grid"></div>
+            <div class="load-more-container">
+                <button id="niftyIslandLoadMore" class="action-btn secondary" style="display:none;">Load More</button>
             </div>
+        </div>
+
+        <div id="niftyIslandModal" class="otherside-modal">
+            <span class="otherside-modal-close">&times;</span>
+            <button class="otherside-modal-nav otherside-modal-prev" aria-label="Previous image">‹</button>
+            <img id="niftyIslandModalImage" src="" alt="Nifty Island">
+            <button class="otherside-modal-nav otherside-modal-next" aria-label="Next image">›</button>
         </div>
     </div>
 
-    <script>
-      (function () {
-        const menuBtn = document.querySelector('.nav-menu-btn');
-        const drawer = document.getElementById('navDrawer');
-        const overlay = document.getElementById('navDrawerOverlay');
-        if (!menuBtn || !drawer || !overlay) return;
-
-        function resetDrawerState() {
-          drawer.classList.remove('is-open');
-          overlay.classList.remove('is-open');
-          menuBtn.setAttribute('aria-expanded', 'false');
-          drawer.setAttribute('aria-hidden', 'true');
-          overlay.setAttribute('aria-hidden', 'true');
-          document.body.style.overflow = '';
-        }
-
-        function openDrawer() {
-          drawer.classList.add('is-open');
-          overlay.classList.add('is-open');
-          menuBtn.setAttribute('aria-expanded', 'true');
-          drawer.setAttribute('aria-hidden', 'false');
-          overlay.setAttribute('aria-hidden', 'false');
-          document.body.style.overflow = 'hidden';
-        }
-
-        function closeDrawer() {
-          resetDrawerState();
-        }
-
-        resetDrawerState();
-        window.addEventListener('pageshow', resetDrawerState);
-
-        menuBtn.addEventListener('click', function () {
-          if (drawer.classList.contains('is-open')) closeDrawer();
-          else openDrawer();
-        });
-
-        overlay.addEventListener('click', closeDrawer);
-        document.querySelectorAll('.nav-drawer-pill').forEach((pill) => {
-          pill.addEventListener('click', () => {
-            closeDrawer();
-            setTimeout(resetDrawerState, 0);
-          });
-        });
-      })();
-    </script>
+    <script src="nifty-island-gallery.js"></script>
 </body>
 </html>
-

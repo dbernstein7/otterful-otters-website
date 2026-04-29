@@ -21,6 +21,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.handle_opensea_stats()
         elif self.path.startswith('/api/otherside-manifest'):
             self.handle_otherside_manifest()
+        elif self.path.startswith('/api/nifty-manifest'):
+            self.handle_nifty_manifest()
         else:
             # Serve static files
             super().do_GET()
@@ -84,6 +86,59 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             base_dir = os.path.dirname(os.path.abspath(__file__))
             originals_dir = os.path.join(base_dir, 'Otherside Otter Photos')
             thumbs_dir = os.path.join(base_dir, 'Otherside Otter Photos_thumbnails')
+            image_exts = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
+
+            originals = []
+            if os.path.isdir(originals_dir):
+                originals = sorted(
+                    [f for f in os.listdir(originals_dir)
+                     if os.path.isfile(os.path.join(originals_dir, f)) and f.lower().endswith(image_exts)],
+                    key=lambda x: x.lower()
+                )
+
+            thumb_set = set()
+            thumb_list = []
+            if os.path.isdir(thumbs_dir):
+                thumb_list = [f for f in os.listdir(thumbs_dir) if os.path.isfile(os.path.join(thumbs_dir, f))]
+                thumb_set = {f.lower() for f in thumb_list}
+                thumb_list = sorted(thumb_list, key=lambda x: x.lower())
+
+            original_base_set = {os.path.splitext(name)[0].lower() for name in originals}
+            files = []
+            for name in originals:
+                base, _ = os.path.splitext(name)
+                thumb_name = base + '.jpg'
+                files.append({
+                    'name': name,
+                    'thumbName': thumb_name,
+                    'hasThumbnail': thumb_name.lower() in thumb_set,
+                })
+
+            for thumb_name in thumb_list:
+                base, _ = os.path.splitext(thumb_name)
+                if base.lower() in original_base_set:
+                    continue
+                files.append({'name': base + '.png', 'thumbName': thumb_name, 'hasThumbnail': True})
+
+            result = {'count': len(files), 'files': files}
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps(result).encode())
+        except Exception as e:
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({'error': str(e)}).encode())
+
+    def handle_nifty_manifest(self):
+        """Return list of Nifty Island photos and thumbnails for the gallery"""
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            originals_dir = os.path.join(base_dir, 'Nifty Photos')
+            thumbs_dir = os.path.join(base_dir, 'Nifty Photos_thumbnails')
             image_exts = ('.png', '.jpg', '.jpeg', '.webp', '.gif')
 
             originals = []
