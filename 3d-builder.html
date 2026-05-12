@@ -326,7 +326,7 @@
             const r = await fetch(docUrl);
             if (!r.ok) throw new Error(String(r.status));
             const html = await r.text();
-            const m = html.match(/<m-character[\s\S]*?\bsrc="([^"]+)"/i);
+            const m = html.match(/<m-character[\s\S]*?\bsrc\s*=\s*["']([^"']+)["']/i);
             if (!m) {
               animWrap.hidden = true;
               animIframe.removeAttribute('src');

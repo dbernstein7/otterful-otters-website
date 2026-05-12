@@ -52,6 +52,7 @@
       font-size: 0.85rem;
       background: rgba(80,0,0,0.25);
     }
+    #stage {
       position: relative;
       z-index: 0;
       flex: 1 1 auto;
@@ -99,7 +100,12 @@
       showErr('Missing ?url= with an absolute https link to a .glb file.');
       throw new Error('no url');
     }
-    const glbUrl = decodeURIComponent(raw.trim());
+    let glbUrl = raw.trim();
+    try {
+      glbUrl = decodeURIComponent(glbUrl);
+    } catch (_) {
+      /* URLSearchParams already decoded; avoid double-decode errors */
+    }
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a22);
