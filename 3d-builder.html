@@ -116,7 +116,8 @@
                 <ol class="builder-mml-callout-list">
                     <li><strong>Your Firebase <code>.glb</code></strong> is only the 3D model file. It is <em>not</em> an MML “document.” Pasting it in the box below will stay blank.</li>
                     <li><strong>An MML document</strong> is a normal <code>.html</code> page whose job is to point at that GLB (for example with <code>&lt;m-character src="…glb…"&gt;</code>).</li>
-                    <li>After your site has the latest update: click <strong>Try sample Otter document</strong> (third button), then <strong>Load in viewer</strong>. Or paste your live URL to <code>mml/MMLOtter-preview.html</code> — not the <code>.glb</code>.</li>
+                    <li><strong>Per-otter from metadata:</strong> use <strong>Build MML from metadata</strong> below (NFT #). That hits <code>/api/mml?id=…</code>, reads the same <code>metadata/&lt;#&gt;.json</code> as the 3D builder, and points wearables at <code>WEARABLES/Furs|Hats|Shirts|Eyes/…</code> — host those files on Firebase with the same paths (see <code>api/mml.js</code> env vars) or under <code>/AvatarBuilder/</code> on this site.</li>
+                    <li>Or click <strong>Try sample Otter document</strong>, then <strong>Load in viewer</strong>, or paste your <code>mml/MMLOtter-preview.html</code> URL — not a raw <code>.glb</code>.</li>
                 </ol>
             </div>
             <p class="mml-viewer-lede mml-viewer-lede--inline">
@@ -141,6 +142,16 @@
                     <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
                     <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn">Open in new tab</button>
                     <button type="button" id="builder-mml-sample-btn" class="mml-viewer-btn" title="Loads mml/MMLOtter-preview.html from this site">Try sample Otter document</button>
+                </div>
+            </div>
+
+            <div class="mml-viewer-panel mml-viewer-panel--metadata">
+                <span class="mml-viewer-label">Build from collection metadata</span>
+                <p class="mml-viewer-hint">Same trait rules as the 3D builder (<code>Fur</code>, <code>Hats</code>/<code>Hat</code>, <code>Shirt</code>, <code>Eyes</code>). Uses <code>metadata/&lt;#&gt;.json</code> on this domain. Optional: use the same # as <strong>Load NFT</strong> on the Otter tab.</p>
+                <div class="mml-viewer-metadata-row">
+                    <label for="builder-mml-nft-input" class="mml-viewer-sr-only">NFT number</label>
+                    <input type="number" id="builder-mml-nft-input" class="mml-viewer-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1 to 2222">
+                    <button type="button" id="builder-mml-from-nft-btn" class="mml-viewer-btn mml-viewer-btn--primary">Build MML from metadata</button>
                 </div>
             </div>
 
@@ -382,6 +393,22 @@
             } catch (_) {
               input.value = window.location.origin + '/mml/MMLOtter-preview.html';
             }
+            apply();
+          });
+        }
+
+        const fromNftBtn = document.getElementById('builder-mml-from-nft-btn');
+        const mmlNftInput = document.getElementById('builder-mml-nft-input');
+        const otterNftInput = document.getElementById('builder-nft-input');
+        if (fromNftBtn) {
+          fromNftBtn.addEventListener('click', function () {
+            const raw = (mmlNftInput && mmlNftInput.value.trim()) || (otterNftInput && otterNftInput.value.trim()) || '';
+            const num = parseInt(raw, 10);
+            if (!raw || isNaN(num) || num < 1 || num > 2222) {
+              setStatus('Enter an NFT number between 1 and 2222 (MML tab field or Load NFT on Otter tab).', true);
+              return;
+            }
+            input.value = `${window.location.origin}/api/mml?id=${num}`;
             apply();
           });
         }

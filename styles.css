@@ -1794,6 +1794,39 @@ body::before {
     gap: 10px;
 }
 
+.mml-viewer-panel--metadata {
+    margin-top: 12px;
+}
+
+.mml-viewer-metadata-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.mml-viewer-nft-input {
+    width: 100px;
+    padding: 8px 12px;
+    font-size: 1rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background: rgba(10, 26, 15, 0.85);
+    color: var(--text-primary);
+}
+
+.mml-viewer-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .mml-viewer-label {
     font-size: 0.95rem;
     font-weight: 600;
