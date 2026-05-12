@@ -138,7 +138,7 @@
                 <div class="mml-playground-anim-row">
                     <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb) — optional</label>
                     <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb — paste full link, then Preview or Run" autocomplete="off" spellcheck="false">
-                    <p class="mml-playground-anim-hint">One link = one movement file. Change the link to switch walk / run / idle, then <strong>Preview</strong> (otter #) or <strong>Run</strong> (code). The clip must be rigged for <strong>your</strong> body (same bones as the fur GLB).</p>
+                    <p class="mml-playground-anim-hint">Do <strong>not</strong> use <code>public.mml.io/character-*-animation.glb</code> on the otter — those clips are for MML’s tall demo mannequin only. One link = one movement file for <strong>your</strong> rig; change the link, then <strong>Preview</strong> or <strong>Run</strong>.</p>
                 </div>
 
                 <div class="mml-playground-body">
@@ -410,6 +410,38 @@
           }
         }
 
+        function parseFirstMCharacterAttrs(html) {
+          const m = html.match(/<\s*m-character([^>]*)>/i);
+          if (!m) return { src: '', anim: '' };
+          const tag = m[1];
+          const srcM = tag.match(/\ssrc\s*=\s*"([^"]*)"/i);
+          const animM = tag.match(/\sanim\s*=\s*"([^"]*)"/i);
+          return { src: srcM ? srcM[1] : '', anim: animM ? animM[1] : '' };
+        }
+
+        function isMmlPublicDemoCharacterAnim(animUrl) {
+          const u = (animUrl || '').toLowerCase();
+          if (u.indexOf('public.mml.io') === -1) return false;
+          return /\/character-[a-z0-9_-]*-animation\.glb/.test(u);
+        }
+
+        function isPublicMmlDemoBody(bodyUrl) {
+          const u = (bodyUrl || '').toLowerCase();
+          return u.indexOf('public.mml.io') !== -1 && u.indexOf('character-body') !== -1;
+        }
+
+        /** @returns {string} */
+        function mmlDemoAnimOnWrongBodyMessage(html) {
+          const { src, anim } = parseFirstMCharacterAttrs(html);
+          if (!anim || !isMmlPublicDemoCharacterAnim(anim)) return '';
+          if (isPublicMmlDemoBody(src)) return '';
+          return (
+            'Wrong animation pack: that public.mml.io file is for MML’s demo humanoid (tall rig), not your otter. '
+            + 'Tracks target bones your model does not have, so you get a stretched pose and console “No target node” warnings. '
+            + 'Use a movement .glb made for this otter’s skeleton (or embed clips in the body GLB).'
+          );
+        }
+
         function ensureHeroPreview() {
           if (heroPreviewLoaded || !heroIframe) return;
           heroPreviewLoaded = true;
@@ -540,7 +572,9 @@
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
-          setStatus('', false);
+          const mismatch = mmlDemoAnimOnWrongBodyMessage(bodyText);
+          if (mismatch) setStatus(mismatch, 'warn');
+          else setStatus('', false);
 
           if (!options.skipHistory) {
             try {
@@ -579,9 +613,12 @@
           if (viewVis) viewVis.value = viewerUrl || '';
         }
 
-        function setStatus(msg, isError) {
+        function setStatus(msg, mode) {
           statusEl.textContent = msg || '';
-          statusEl.classList.toggle('is-error', !!isError);
+          const err = mode === true || mode === 'error';
+          const warn = mode === 'warn';
+          statusEl.classList.toggle('is-error', err);
+          statusEl.classList.toggle('is-warn', warn && !err);
         }
 
         function copyFrom(el, emptyMsg) {
@@ -629,7 +666,15 @@
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
-          setStatus('Running editor in viewer (inline). If the frame stays blank, use Load with your hosted URL.', false);
+          const mismatch = mmlDemoAnimOnWrongBodyMessage(html);
+          if (mismatch) {
+            setStatus(
+              mismatch + ' (Still opened the preview — swap anim= to a clip that matches your otter.)',
+              'warn'
+            );
+          } else {
+            setStatus('Running editor in viewer (inline). If the frame stays blank, use Load with your hosted URL.', false);
+          }
         }
 
         function resetEditorToFetched() {
