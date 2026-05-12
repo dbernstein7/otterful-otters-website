@@ -112,7 +112,7 @@
 
         <div id="builder-panel-mml" class="builder-page-panel" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
             <p class="mml-viewer-lede mml-viewer-lede--inline">
-                Paste your <strong>MML document</strong> URL (<code>https://…</code> static HTML, or <code>wss://…</code> from the MML editor). Uses the official <a href="https://viewer.mml.io/" target="_blank" rel="noopener noreferrer">viewer.mml.io</a> embed — not a raw <code>.glb</code> link; the document should reference your GLB inside MML.
+                <strong>Important:</strong> paste the URL of an <strong>MML <code>.html</code> document</strong> (or <code>wss://…</code> from the MML editor). Pasting your Firebase <code>.glb</code> link here will <strong>not</strong> work — the GLB must be referenced <em>inside</em> an HTML file (see <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer"><code>m-character</code></a>). The blank viewer + Issues tab “eval” warning is often a browser extension; the usual fix for a blank scene is using an HTML document URL, not the model file.
             </p>
 
             <div class="mml-viewer-panel">
@@ -132,6 +132,7 @@
                 <div class="mml-viewer-actions">
                     <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
                     <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn">Open in new tab</button>
+                    <button type="button" id="builder-mml-sample-btn" class="mml-viewer-btn" title="Loads mml/MMLOtter-preview.html from this site">Try sample Otter document</button>
                 </div>
             </div>
 
@@ -288,9 +289,15 @@
         const statusEl = document.getElementById('builder-mml-status');
         const loadBtn = document.getElementById('builder-mml-load-btn');
         const openTabBtn = document.getElementById('builder-mml-open-tab-btn');
+        const sampleBtn = document.getElementById('builder-mml-sample-btn');
         const noUi = document.getElementById('builder-mml-opt-no-ui');
         const fit = document.getElementById('builder-mml-opt-fit');
         if (!input || !iframe || !docOut || !viewerOut || !statusEl || !loadBtn || !openTabBtn || !noUi || !fit) return;
+
+        function looksLikeRawModelUrl(s) {
+          const t = s.trim().toLowerCase();
+          return /\.glb(\?|#|$)/i.test(t) || /\.gltf(\?|#|$)/i.test(t);
+        }
 
         function parseQueryUrl() {
           const params = new URLSearchParams(window.location.search);
@@ -329,6 +336,10 @@
             setStatus('Enter a full URL starting with https:// or wss://', true);
             return;
           }
+          if (looksLikeRawModelUrl(docUrl)) {
+            setStatus('That URL is a 3D model file (.glb / .gltf), not an MML document. Click "Try sample Otter document" or host an .html page that wraps your model in <m-character>.', true);
+            return;
+          }
           const viewerUrl = buildViewerUrl(docUrl);
           docOut.textContent = docUrl;
           viewerOut.textContent = viewerUrl;
@@ -344,12 +355,28 @@
 
         loadBtn.addEventListener('click', apply);
         openTabBtn.addEventListener('click', function () {
-          if (!looksLikeMmlUrl(input.value.trim())) {
+          const docUrl = input.value.trim();
+          if (!looksLikeMmlUrl(docUrl)) {
             setStatus('Enter a valid MML document URL first.', true);
             return;
           }
-          window.open(buildViewerUrl(input.value.trim()), '_blank', 'noopener,noreferrer');
+          if (looksLikeRawModelUrl(docUrl)) {
+            setStatus('Use an MML .html document URL, not a direct .glb link.', true);
+            return;
+          }
+          window.open(buildViewerUrl(docUrl), '_blank', 'noopener,noreferrer');
         });
+
+        if (sampleBtn) {
+          sampleBtn.addEventListener('click', function () {
+            try {
+              input.value = new URL('mml/MMLOtter-preview.html', window.location.href).href;
+            } catch (_) {
+              input.value = window.location.origin + '/mml/MMLOtter-preview.html';
+            }
+            apply();
+          });
+        }
 
         document.querySelectorAll('#builder-panel-mml .mml-viewer-copy').forEach(function (btn) {
           btn.addEventListener('click', function () {
