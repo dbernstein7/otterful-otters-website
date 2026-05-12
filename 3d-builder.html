@@ -31,7 +31,7 @@
         <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
         <a href="index.html#team" class="nav-pill">Team</a>
     </nav>
-    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true" inert>
         <a href="index.html#home" class="nav-drawer-pill">Home</a>
         <a href="index.html#analytics" class="nav-drawer-pill">Analytics</a>
         <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
@@ -114,7 +114,7 @@
             <div class="mml-doc-workbench-bar">
                 <div class="mml-doc-workbench-bar-main">
                     <h2 class="mml-doc-workbench-title">MML playground</h2>
-                    <p class="mml-doc-workbench-sub"><strong>Preview</strong> loads <code>/api/mml?id=…</code> from your otter #. Use the box below to point at a different movement <strong>.glb</strong> (full <code>https://</code> link). <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
+                    <p class="mml-doc-workbench-sub"><strong>Two flows:</strong> <strong>Preview</strong> (otter #) loads <code>/api/mml?id=…</code>. <strong>Load</strong> (under More options) fetches whatever MML <strong>document URL</strong> is in the box — e.g. sample <code>/mml/MMLOtter-preview.html</code> or any <code>https://…</code> page. Movement override: full <code>https://…</code> <code>.glb</code> link below. <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
                 </div>
                 <div class="mml-doc-workbench-bar-actions">
                     <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
@@ -134,6 +134,13 @@
                     </div>
                 </div>
                 <p id="builder-mml-status" class="mml-playground-status" role="status" aria-live="polite"></p>
+
+                <div class="mml-playground-resolved" aria-label="Active document and viewer links">
+                    <label class="mml-playground-label mml-playground-resolved-label" for="builder-mml-doc-visible">Resolved document URL</label>
+                    <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="Load or Preview to fill">
+                    <label class="mml-playground-label mml-playground-resolved-label" for="builder-mml-viewer-visible">Viewer URL</label>
+                    <input type="text" id="builder-mml-viewer-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="Load or Preview to fill">
+                </div>
 
                 <div class="mml-playground-anim-row">
                     <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb) — optional</label>
@@ -179,10 +186,6 @@
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
                     <p class="mml-playground-checks-hint">Fit zooms the orbit camera to the model bounds. If the otter looks <strong>too small</strong> with Fit off, turn Fit on, or add <code>sx</code>/<code>sy</code>/<code>sz</code> on <code>m-character</code> (see docs). If it feels too tight, turn Fit off again.</p>
-                    <label class="mml-playground-label" for="builder-mml-doc-visible">Resolved document URL</label>
-                    <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
-                    <label class="mml-playground-label" for="builder-mml-viewer-visible">Viewer URL</label>
-                    <input type="text" id="builder-mml-viewer-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
                         <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
@@ -220,6 +223,7 @@
           overlay.classList.remove('is-open');
           menuBtn.setAttribute('aria-expanded', 'false');
           drawer.setAttribute('aria-hidden', 'true');
+          drawer.setAttribute('inert', '');
           overlay.setAttribute('aria-hidden', 'true');
           document.body.style.overflow = '';
         }
@@ -229,6 +233,7 @@
           overlay.classList.add('is-open');
           menuBtn.setAttribute('aria-expanded', 'true');
           drawer.setAttribute('aria-hidden', 'false');
+          drawer.removeAttribute('inert');
           overlay.setAttribute('aria-hidden', 'false');
           document.body.style.overflow = 'hidden';
         }
@@ -487,7 +492,13 @@
           if (!t) return false;
           try {
             const u = new URL(t, window.location.href);
-            return u.protocol === 'https:' || u.protocol === 'wss:';
+            if (u.protocol === 'https:' || u.protocol === 'wss:') return true;
+            /* Same-origin http (e.g. localhost) — otherwise apply() never runs and the editor stays empty. */
+            if (u.protocol === 'http:') {
+              const here = new URL(window.location.href);
+              return u.origin === here.origin;
+            }
+            return false;
           } catch {
             return false;
           }
@@ -516,7 +527,10 @@
           options = options || {};
           const docUrl = absoluteDocUrl(input.value);
           if (!looksLikeMmlUrl(docUrl)) {
-            setStatus('Enter a full URL starting with https:// or wss:// (open More options).', true);
+            setStatus(
+              'Document URL must be https:// or wss:// (or same-site http, e.g. localhost). Open More options and paste a full MML page URL.',
+              true
+            );
             setOuts('', '');
             return;
           }
@@ -563,7 +577,15 @@
           }
 
           lastFetchedSource = bodyText;
-          if (docUrl.indexOf('https:') === 0) lastHttpsDocUrl = docUrl;
+          try {
+            const du = new URL(docUrl);
+            const here = new URL(window.location.href);
+            if (du.protocol === 'https:' || (du.protocol === 'http:' && du.origin === here.origin)) {
+              lastHttpsDocUrl = docUrl;
+            }
+          } catch (_) {
+            if (docUrl.indexOf('https:') === 0) lastHttpsDocUrl = docUrl;
+          }
           editor.value = bodyText;
           syncGutter();
           extractAnimFromMmlApiUrl(docUrl);
