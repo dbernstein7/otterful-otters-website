@@ -2,8 +2,10 @@
  * Vercel serverless: returns a static MML HTML document for an Otterful token,
  * using the same metadata paths and WEARABLES/... layout as AvatarBuilder.
  *
- * Env (optional):
- *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES — bone names for m-model socket on m-character (omit wearables if unset)
+ * Env (optional — override default bone names on the fur rig):
+ *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
+ *   If unset, defaults are Mixamo-style: mixamorig:Head (hat, eyes), mixamorig:Spine2 (shirt).
+ *   MML_BONE_SCHEME — `mixamo` (default: mixamorig:Head / mixamorig:Spine2) or `short` (Head / Spine2 / Head) if your rig omits the mixamorig: prefix
  *   WEARABLE_ASSET_ORIGIN — absolute base where GLBs are hosted (default: same host + /AvatarBuilder/)
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
@@ -66,6 +68,22 @@ function escAttr(s) {
     .replace(/</g, '&lt;');
 }
 
+function defaultSockets() {
+  const scheme = (process.env.MML_BONE_SCHEME || 'mixamo').toLowerCase();
+  if (scheme === 'short' || scheme === 'head') {
+    return {
+      hat: process.env.MML_SOCKET_HAT || 'Head',
+      shirt: process.env.MML_SOCKET_SHIRT || 'Spine2',
+      eyes: process.env.MML_SOCKET_EYES || 'Head',
+    };
+  }
+  return {
+    hat: process.env.MML_SOCKET_HAT || 'mixamorig:Head',
+    shirt: process.env.MML_SOCKET_SHIRT || 'mixamorig:Spine2',
+    eyes: process.env.MML_SOCKET_EYES || 'mixamorig:Head',
+  };
+}
+
 function buildHtml({ id, traits, urls, sockets }) {
   const parts = [
     '<!DOCTYPE html>',
@@ -81,13 +99,13 @@ function buildHtml({ id, traits, urls, sockets }) {
 
   parts.push('<m-character', ` id="otter-${id}"`, ` src="${escAttr(urls.fur)}"`, ' y="0"', ' ry="12"', '>');
 
-  if (sockets.hat && urls.hat) {
+  if (urls.hat) {
     parts.push(`  <m-model src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
   }
-  if (sockets.shirt && urls.shirt) {
+  if (urls.shirt) {
     parts.push(`  <m-model src="${escAttr(urls.shirt)}" socket="${escAttr(sockets.shirt)}" />`);
   }
-  if (sockets.eyes && urls.eyes) {
+  if (urls.eyes) {
     parts.push(`  <m-model src="${escAttr(urls.eyes)}" socket="${escAttr(sockets.eyes)}" />`);
   }
 
@@ -140,11 +158,7 @@ module.exports = async (req, res) => {
   if (traits.shirt) urls.shirt = buildWearableUrl(origin, `WEARABLES/Shirts/${traits.shirt}.glb`);
   if (traits.eyes) urls.eyes = buildWearableUrl(origin, `WEARABLES/Eyes/${traits.eyes}.glb`);
 
-  const sockets = {
-    hat: process.env.MML_SOCKET_HAT || '',
-    shirt: process.env.MML_SOCKET_SHIRT || '',
-    eyes: process.env.MML_SOCKET_EYES || '',
-  };
+  const sockets = defaultSockets();
 
   const html = buildHtml({ id, traits, urls, sockets });
 

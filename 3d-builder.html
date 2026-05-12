@@ -147,7 +147,7 @@
 
             <div class="mml-viewer-panel mml-viewer-panel--metadata">
                 <span class="mml-viewer-label">Build from collection metadata</span>
-                <p class="mml-viewer-hint">Same trait rules as the 3D builder (<code>Fur</code>, <code>Hats</code>/<code>Hat</code>, <code>Shirt</code>, <code>Eyes</code>). Uses <code>metadata/&lt;#&gt;.json</code> on this domain. Optional: use the same # as <strong>Load NFT</strong> on the Otter tab.</p>
+                <p class="mml-viewer-hint">Same trait rules as the 3D builder (<code>Fur</code>, <code>Hats</code>/<code>Hat</code>, <code>Shirt</code>, <code>Eyes</code>). Uses <code>metadata/&lt;#&gt;.json</code> on this domain. Wearables attach with default bone sockets (<code>mixamorig:Head</code> / <code>mixamorig:Spine2</code>); if pieces are missing or offset, set Vercel env <code>MML_BONE_SCHEME=short</code> or <code>MML_SOCKET_*</code> — see <code>api/mml.js</code>.</p>
                 <div class="mml-viewer-metadata-row">
                     <label for="builder-mml-nft-input" class="mml-viewer-sr-only">NFT number</label>
                     <input type="number" id="builder-mml-nft-input" class="mml-viewer-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1 to 2222">
