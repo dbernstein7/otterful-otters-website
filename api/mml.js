@@ -16,10 +16,11 @@
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *
- * Optional separate animation file (same idea as many viewers: body GLB + linked anim GLB):
- *   MML_CHARACTER_ANIM — URL or storage path (like WEARABLES/Animations/Idle.glb) for m-character's anim= attribute. Omitted when unset.
- *   Metadata: optional trait type "MML Anim" (case-insensitive) with a full https URL or a storage path string; overrides MML_CHARACTER_ANIM for that token.
- *   Same for trait type "MML_Anim" on metadata.
+ * Optional separate animation file (body GLB + linked anim GLB):
+ *   ?anim= on this endpoint — full https://…glb or a wearable path (e.g. WEARABLES/Animations/Walk.glb). Easiest way to try walk/run/idle without editing metadata.
+ *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
+ *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
+ *   Priority: ?anim= > trait > MML_CHARACTER_ANIM.
  */
 
 function siteOriginFromRequest(req) {
@@ -183,8 +184,7 @@ function buildHtml({ id, traits, urls, sockets }) {
   parts.push('<!-- Body: m-character @src = fur GLB for this token; wearables: m-model + socket -->');
   if (!urls.anim) {
     parts.push(
-      '<!-- No anim= yet: add metadata trait "MML Anim" (https clip or storage path), or set server env MML_CHARACTER_ANIM. '
-        + 'anim must be a GLB whose animations target the same skeleton as src (see m-character docs). -->'
+      '<!-- No anim=: add ?anim=https://…/clip.glb to this page URL, or metadata "MML Anim", or env MML_CHARACTER_ANIM. Clip must match this body’s skeleton. -->'
     );
   }
   parts.push(charOpen.join(''));
@@ -261,11 +261,17 @@ module.exports = async (req, res) => {
     }
   }
 
-  const animRaw = (traits.mmlAnim || process.env.MML_CHARACTER_ANIM || '').trim();
-  if (animRaw) {
-    const u = resolveLinkedAssetUrl(origin, animRaw);
-    if (u) urls.anim = u;
+  const animQuery = getQueryParam(req, 'anim');
+  let animResolved = '';
+  if (animQuery) {
+    const uq = resolveLinkedAssetUrl(origin, animQuery.trim());
+    if (uq) animResolved = uq;
   }
+  if (!animResolved) {
+    const animRaw = (traits.mmlAnim || process.env.MML_CHARACTER_ANIM || '').trim();
+    if (animRaw) animResolved = resolveLinkedAssetUrl(origin, animRaw) || '';
+  }
+  if (animResolved) urls.anim = animResolved;
 
   const sockets = defaultSockets();
 

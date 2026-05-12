@@ -114,7 +114,7 @@
             <div class="mml-doc-workbench-bar">
                 <div class="mml-doc-workbench-bar-main">
                     <h2 class="mml-doc-workbench-title">MML playground</h2>
-                    <p class="mml-doc-workbench-sub">Edit markup like the <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> docs — <strong>Preview</strong> loads your <code>/api/mml?id=…</code> page into the editor and viewer. <code>anim=</code> is documented there; it is <strong>not</strong> a drop-in “any public clip” on an arbitrary body (see below).</p>
+                    <p class="mml-doc-workbench-sub"><strong>Preview</strong> loads <code>/api/mml?id=…</code> from your otter #. Use the box below to point at a different movement <strong>.glb</strong> (full <code>https://</code> link). <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
                 </div>
                 <div class="mml-doc-workbench-bar-actions">
                     <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
@@ -135,14 +135,11 @@
                 </div>
                 <p id="builder-mml-status" class="mml-playground-status" role="status" aria-live="polite"></p>
 
-                <details class="mml-playground-anim-help">
-                    <summary>Animations — how <code>anim=</code> relates to the docs</summary>
-                    <div class="mml-playground-anim-help-body">
-                        <p>The <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> <code>anim</code> attribute is a URL to a <strong>second GLB</strong> whose <strong>glTF animations target the same skeleton / bone names</strong> as the body in <code>src</code>. The official example pairs <code>character-body.glb</code> with <code>character-idle-animation.glb</code> from <a href="https://public.mml.io/" target="_blank" rel="noopener noreferrer">public.mml.io</a> — those files were authored together, like a Blender body and its matching action export.</p>
-                        <p>There is <strong>no global “public animation library”</strong> that automatically rigs every character. Pasting e.g. <code>https://public.mml.io/character-idle-animation.glb</code> onto an otter body usually <strong>will not play</strong>, because the clip’s joints do not match your body GLB.</p>
-                        <p><strong>Otterful <code>/api/mml</code>:</strong> an <code>anim="…"</code> line is emitted when the token’s metadata has a trait <strong>MML Anim</strong> (or <strong>MML_Anim</strong>) whose value is a full <code>https://…</code> clip or a wearable-style path, <strong>or</strong> when the server sets env <code>MML_CHARACTER_ANIM</code> to your hosted clip (see <code>api/mml.js</code> header). <code>anim-enabled="true"</code> only turns playback on for clips that actually loaded from <code>src</code> / <code>anim</code>.</p>
-                    </div>
-                </details>
+                <div class="mml-playground-anim-row">
+                    <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb) — optional</label>
+                    <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb — paste full link, then Preview or Run" autocomplete="off" spellcheck="false">
+                    <p class="mml-playground-anim-hint">One link = one movement file. Change the link to switch walk / run / idle, then <strong>Preview</strong> (otter #) or <strong>Run</strong> (code). The clip must be rigged for <strong>your</strong> body (same bones as the fur GLB).</p>
+                </div>
 
                 <div class="mml-playground-body">
                     <div class="mml-playground-editor" aria-labelledby="builder-mml-playground-label">
@@ -356,6 +353,7 @@
         const otterNftInput = document.getElementById('builder-nft-input');
         const noUi = document.getElementById('builder-mml-opt-no-ui');
         const fit = document.getElementById('builder-mml-opt-fit');
+        const animOverrideInput = document.getElementById('builder-mml-anim-override');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
         const heroIframe = document.getElementById('builder-mml-hero-iframe');
@@ -365,6 +363,52 @@
         let lastFetchedSource = '';
         let lastHttpsDocUrl = '';
         let heroPreviewLoaded = false;
+
+        function escapeHtmlAttr(s) {
+          return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;');
+        }
+
+        function mergeAnimIntoMmlHtml(html, animUrl) {
+          const u = animUrl.trim();
+          if (!/^https:\/\//i.test(u)) {
+            return { html: html, error: 'Movement link must start with https:// (full URL to your .glb).' };
+          }
+          const esc = escapeHtmlAttr(u);
+          const re = /<m-character(\s[^>]*)>/i;
+          const m = html.match(re);
+          if (!m) return { html: html, error: null };
+          const inner = m[1];
+          const nextInner = /\sanim\s*=\s*"/i.test(inner)
+            ? inner.replace(/\sanim\s*=\s*"[^"]*"/i, ' anim="' + esc + '"')
+            : inner + ' anim="' + esc + '"';
+          return { html: html.replace(re, '<m-character' + nextInner + '>'), error: null };
+        }
+
+        function extractAnimFromMmlApiUrl(docUrl) {
+          if (!animOverrideInput || !docUrl) return;
+          try {
+            const u = new URL(docUrl, window.location.href);
+            const path = (u.pathname || '').replace(/\/+$/, '') || '/';
+            if (!path.endsWith('/api/mml')) return;
+            const a = u.searchParams.get('anim');
+            if (a) animOverrideInput.value = a;
+          } catch (_) { /* ignore */ }
+        }
+
+        function appendAnimToApiMmlUrl(baseUrl, animUrl) {
+          const trimmed = animUrl.trim();
+          if (!trimmed) return baseUrl;
+          try {
+            const out = new URL(baseUrl, window.location.href);
+            out.searchParams.set('anim', trimmed);
+            return out.href;
+          } catch (_) {
+            return baseUrl;
+          }
+        }
 
         function ensureHeroPreview() {
           if (heroPreviewLoaded || !heroIframe) return;
@@ -403,6 +447,7 @@
           const params = new URLSearchParams(window.location.search);
           const raw = params.get('url');
           if (raw) input.value = raw;
+          extractAnimFromMmlApiUrl(absoluteDocUrl(input.value));
         }
 
         function looksLikeMmlUrl(s) {
@@ -489,6 +534,7 @@
           if (docUrl.indexOf('https:') === 0) lastHttpsDocUrl = docUrl;
           editor.value = bodyText;
           syncGutter();
+          extractAnimFromMmlApiUrl(docUrl);
 
           const viewerUrlFinal = buildViewerUrl(docUrl);
           setOuts(docUrl, viewerUrlFinal);
@@ -552,7 +598,15 @@
         }
 
         function runFromEditor() {
-          const html = editor.value;
+          let html = editor.value;
+          if (animOverrideInput && animOverrideInput.value.trim()) {
+            const merged = mergeAnimIntoMmlHtml(html, animOverrideInput.value.trim());
+            if (merged.error) {
+              setStatus(merged.error, true);
+              return;
+            }
+            html = merged.html;
+          }
           if (!html.trim()) {
             setStatus('Editor is empty.', true);
             return;
@@ -636,7 +690,11 @@
             setStatus('MML preview only works on the live https site (not file://).', true);
             return;
           }
-          input.value = origin + '/api/mml?id=' + num;
+          let docUrl = origin + '/api/mml?id=' + num;
+          if (animOverrideInput && animOverrideInput.value.trim()) {
+            docUrl = appendAnimToApiMmlUrl(docUrl, animOverrideInput.value.trim());
+          }
+          input.value = docUrl;
           void apply();
         });
 
