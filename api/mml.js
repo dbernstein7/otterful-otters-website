@@ -25,7 +25,7 @@
  *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
  *   MML_CHARACTER_Y — vertical offset on m-character (default `-0.72` for viewer framing). Set to override; use MML_OMIT_CHARACTER_Y=1 to omit `y` entirely.
  *   MML_OMIT_CHARACTER_Y — if `1` or `true`, do not emit `y` on m-character.
- *   MML_HTML_TITLE — `<title>` text (default `MML` to match hand-authored preview pages).
+ *   MML_OMIT_VIEWER_BANNER — if `1` or `true`, do not emit the short “Open in MML viewer” note at the top of the HTML body.
  *   MML_EMIT_CHARACTER_IDS — if `1` or `true`, add `id` / `name` on m-character (default: omitted for minimal markup).
  *   MML_DEFAULT_CHARACTER_ANIM — idle clip URL when no ?anim=, metadata anim, or MML_CHARACTER_ANIM (default
  *   `https://public.mml.io/character-idle-animation.glb`). Prefer an otter-specific clip via metadata or MML_CHARACTER_ANIM when ready.
@@ -261,7 +261,7 @@ function getQueryParam(req, key) {
   }
 }
 
-function buildHtml({ id, traits, urls, sockets }) {
+function buildHtml({ id, traits, urls, sockets, documentUrl }) {
   const title = (process.env.MML_HTML_TITLE != null && String(process.env.MML_HTML_TITLE).trim() !== '')
     ? String(process.env.MML_HTML_TITLE).trim()
     : 'MML';
@@ -284,8 +284,20 @@ function buildHtml({ id, traits, urls, sockets }) {
     `<title>${escAttr(title)}</title>`,
     '</head>',
     '<body>',
-    '<m-character',
   ];
+
+  if (!truthyEnv(process.env.MML_OMIT_VIEWER_BANNER) && documentUrl) {
+    const viewerHref = `https://viewer.mml.io/main/v1/?url=${encodeURIComponent(documentUrl)}`;
+    parts.push(
+      '<p style="font-family:system-ui,sans-serif;margin:0;padding:0.85rem 1.1rem;background:#151922;color:#dce0ea;font-size:14px;line-height:1.45;border-bottom:1px solid #2a3142">'
+        + 'This URL is an <strong>MML document</strong> (HTML). A normal tab does not run the 3D viewer. '
+        + `<a href="${escAttr(viewerHref)}" style="color:#8ec5ff;font-weight:600">Open in MML viewer</a> · `
+        + '<a href="https://mml.io/docs/guides/get-started" style="color:#9aa3b5" target="_blank" rel="noopener noreferrer">Get started</a>'
+        + '</p>'
+    );
+  }
+
+  parts.push('<m-character');
 
   if (emitIds) {
     parts.push(`    id="otter-${id}"`);
@@ -339,6 +351,14 @@ module.exports = async (req, res) => {
   }
 
   const origin = siteOriginFromRequest(req);
+  const pathAndQuery = (() => {
+    const raw = String(req.url || '');
+    const q = raw.indexOf('?');
+    const path = (q >= 0 ? raw.slice(0, q) : raw) || '/api/mml';
+    const search = q >= 0 ? raw.slice(q) : `?id=${id}`;
+    return `${path}${search}`;
+  })();
+  const documentUrl = `${origin.replace(/\/$/, '')}${pathAndQuery}`;
   const metaUrl = `${origin}/metadata/${id}.json`;
 
   let metadata;
@@ -414,7 +434,7 @@ module.exports = async (req, res) => {
 
   const sockets = defaultSockets();
 
-  const html = buildHtml({ id, traits, urls, sockets });
+  const html = buildHtml({ id, traits, urls, sockets, documentUrl });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   return res.status(200).send(html);
