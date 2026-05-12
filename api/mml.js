@@ -15,6 +15,7 @@
  *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin). Ignored when FIREBASE_STORAGE_BUCKET is set (Firebase URLs are absolute).
  *   FIREBASE_STORAGE_BUCKET — required for Firebase URLs: bucket id (e.g. `otterful-otters.firebasestorage.app` or `project.appspot.com`). GLB paths are encoded as Storage object paths.
  *   FIREBASE_STORAGE_TOKEN — optional `&token=` for download URLs (Firebase file tokens). Omit if rules allow public read on those objects.
+ *   If downloads return 403: add Storage rules allowing read for `Furs/` (and other folders) or use tokens — see `firebase-storage.rules.example` in the repo root.
  *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *

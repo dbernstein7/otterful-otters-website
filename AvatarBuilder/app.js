@@ -1207,7 +1207,13 @@ class AvatarBuilder {
 
         } catch (error) {
             console.error('Error loading GLB:', error);
-            alert(`Error loading ${fileName}:\n\n${error.message}\n\nCheck Firebase (meta ottvatar-fur-prefix or otterful-fur-prefix), object path/case, and Storage read access.`);
+            alert(
+                `Error loading ${fileName}:\n\n${error.message}\n\n`
+                + `Check meta ottvatar-fur-prefix or otterful-fur-prefix, object path/case (Furs/${fileName}), and Storage read access.\n\n`
+                + (filePath.indexOf('firebasestorage.googleapis.com') !== -1
+                    ? 'If the Network tab shows 403: open Firebase Console → Storage → Rules and allow read for Furs/ (see firebase-storage.rules.example in the repo), OR add meta ottvatar-firebase-token with the file download token from the file details panel.'
+                    : '')
+            );
             if (manageLoadingScreen && placeholder) {
                 placeholder.style.display = 'flex';
             }
