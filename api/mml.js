@@ -8,15 +8,14 @@
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
  *   MML_BONE_SCHEME — `mixamo` (default: Otterful glTF names mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head /
  *   mixamorig:Spine2), or `short` (Head / Spine2 / Head).
- *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/…). Used when MML_*_STORAGE_PATH overrides are not set.
- *   MML_FUR_STORAGE_PATH — Firebase (or site) object folder for body GLBs, no leading slash (e.g. `Furs` → `Furs/OG.glb`). When unset, fur uses `${MML_WEARABLE_PREFIX}/Furs/<Fur trait>.glb`.
+ *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/… on the site only). Ignored for path segments when Firebase is active and default folders Furs/Hats/Shirts/Eyes apply.
+ *   MML_FUR_STORAGE_PATH — object folder for body GLBs (default `Furs` when using Firebase). Overrides auto folder when set.
  *   MML_HAT_STORAGE_PATH, MML_SHIRT_STORAGE_PATH, MML_EYES_STORAGE_PATH — same pattern (e.g. `Hats`, `Shirts`, `Eyes`) when those assets live at bucket root.
  *   MML_SKIP_SHIRT — if `1` or `true`, do not emit an m-model for shirt (use when the shirt is baked into the body GLB or you only want fur/hat/eyes).
  *   MML_SHIRT_OVERRIDE — if set (e.g. `Business`), always load that shirt filename and ignore the shirt trait (ignored when MML_SKIP_SHIRT is true).
- *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin). Ignored when FIREBASE_STORAGE_BUCKET is set (Firebase URLs are absolute).
- *   FIREBASE_STORAGE_BUCKET — set this (e.g. `otterful-otters.firebasestorage.app`) so all GLB `src` values use
- *   `https://firebasestorage.googleapis.com/...` paths. If unset, responses fall back to `/AvatarBuilder/WEARABLES/...`
- *   on your site origin — that is why Preview can show otterfulotters.xyz paths instead of Firebase until env is set.
+ *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin). Ignored when Firebase URLs are used (see below).
+ *   FIREBASE_STORAGE_BUCKET — Firebase bucket id (default in this repo: `otterful-otters.firebasestorage.app`). Set empty is not supported; use MML_USE_SITE_GLBS=1 to force site-hosted GLBs instead.
+ *   MML_USE_SITE_GLBS — if `1` or `true`, do not use Firebase: load from `/AvatarBuilder/WEARABLES/...` on your site (for local testing without Storage).
  *   FIREBASE_STORAGE_TOKEN — optional `&token=` for download URLs (Firebase file tokens). Omit if rules allow public read on those objects.
  *   If downloads return 403: add Storage rules allowing read for `Furs/` (and other folders) or use tokens — see `firebase-storage.rules.example` in the repo root.
  *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
@@ -73,7 +72,7 @@ function wearablesAssetBase(siteOrigin) {
 
 /** @param {string} storagePath e.g. WEARABLES/Furs/Robo-1.glb (slashes, not URL-encoded) */
 function buildWearableUrl(origin, storagePath) {
-  const bucket = process.env.FIREBASE_STORAGE_BUCKET;
+  const bucket = firebaseBucket();
   if (bucket) {
     const enc = encodeURIComponent(storagePath);
     const tok = process.env.FIREBASE_STORAGE_TOKEN || '';
@@ -91,8 +90,8 @@ function buildWearableUrl(origin, storagePath) {
 
 /** When the wearable prefix has no Eyes/ folder, load eyes from legacy AvatarBuilder/WEARABLES/Eyes. */
 function buildEyesWearableUrl(siteOrigin, eyeTraitName) {
-  const bucket = process.env.FIREBASE_STORAGE_BUCKET;
-  const path = `WEARABLES/Eyes/${eyeTraitName}.glb`;
+  const bucket = firebaseBucket();
+  const path = bucket ? `Eyes/${eyeTraitName}.glb` : `WEARABLES/Eyes/${eyeTraitName}.glb`;
   if (bucket) {
     const enc = encodeURIComponent(path);
     const tok = process.env.FIREBASE_STORAGE_TOKEN || '';
@@ -160,6 +159,17 @@ function truthyEnv(v) {
   return s === '1' || s === 'true' || s === 'yes';
 }
 
+/**
+ * Firebase bucket for MML GLBs. Defaults to Otterful production Storage so /api/mml works without dashboard setup.
+ * Set MML_USE_SITE_GLBS=1 to use /AvatarBuilder/WEARABLES/... on the site instead.
+ */
+function firebaseBucket() {
+  if (truthyEnv(process.env.MML_USE_SITE_GLBS)) return '';
+  const raw = process.env.FIREBASE_STORAGE_BUCKET;
+  if (raw != null && String(raw).trim() !== '') return String(raw).trim();
+  return 'otterful-otters.firebasestorage.app';
+}
+
 function wearablePrefix() {
   const raw = process.env.MML_WEARABLE_PREFIX;
   if (raw === '' || raw === undefined || raw === null) {
@@ -184,7 +194,13 @@ function storageFolderFromEnv(key) {
  * @param {string} traitValue filename stem from metadata
  */
 function glbObjectPath(envKey, wp, segment, traitValue) {
-  const folder = storageFolderFromEnv(envKey);
+  let folder = storageFolderFromEnv(envKey);
+  if (!folder && firebaseBucket()) {
+    if (envKey === 'MML_FUR_STORAGE_PATH') folder = 'Furs';
+    else if (envKey === 'MML_HAT_STORAGE_PATH') folder = 'Hats';
+    else if (envKey === 'MML_SHIRT_STORAGE_PATH') folder = 'Shirts';
+    else if (envKey === 'MML_EYES_STORAGE_PATH') folder = 'Eyes';
+  }
   if (folder) return `${folder}/${traitValue}.glb`;
   return `${wp}/${segment}/${traitValue}.glb`;
 }
@@ -328,6 +344,8 @@ module.exports = async (req, res) => {
     const eyesFolder = storageFolderFromEnv('MML_EYES_STORAGE_PATH');
     if (eyesFolder) {
       urls.eyes = buildWearableUrl(origin, `${eyesFolder}/${traits.eyes}.glb`);
+    } else if (firebaseBucket()) {
+      urls.eyes = buildWearableUrl(origin, `Eyes/${traits.eyes}.glb`);
     } else if (wp !== 'WEARABLES') {
       urls.eyes = buildEyesWearableUrl(origin, traits.eyes);
     } else {

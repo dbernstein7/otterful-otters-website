@@ -2,6 +2,13 @@
   "version": 2,
   "buildCommand": null,
   "outputDirectory": ".",
+  "env": {
+    "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",
+    "MML_FUR_STORAGE_PATH": "Furs",
+    "MML_HAT_STORAGE_PATH": "Hats",
+    "MML_SHIRT_STORAGE_PATH": "Shirts",
+    "MML_EYES_STORAGE_PATH": "Eyes"
+  },
   "headers": [
     {
       "source": "/mml/(.*)",
