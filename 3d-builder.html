@@ -169,9 +169,10 @@
                         <button type="button" id="builder-mml-sample-btn" class="mml-playground-btn">Sample otter</button>
                     </div>
                     <div class="mml-playground-checks">
-                        <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
+                        <label><input type="checkbox" id="builder-mml-opt-fit"> Fit camera to contents</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
+                    <p class="mml-playground-checks-hint">Fit zooms the orbit camera to the model bounds (can feel “in your face”). Leave it off for a calmer, Blender-like overview; turn it on when you want the frame tight on the asset.</p>
                     <label class="mml-playground-label" for="builder-mml-doc-visible">Resolved document URL</label>
                     <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
                     <label class="mml-playground-label" for="builder-mml-viewer-visible">Viewer URL</label>
@@ -500,11 +501,14 @@
           const v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
-          v.searchParams.set('cameraOrbitPitch', '55');
+          /* viewer.mml.io defaults: orbit distance 10, pitch 60, FOV 75, ambient 0 — tune for neutral “viewport” look */
+          v.searchParams.set('cameraOrbitPitch', '46');
           v.searchParams.set('cameraOrbitSpeed', '10');
-          v.searchParams.set('cameraFov', '72');
-          v.searchParams.set('ambientLight', '38');
-          v.searchParams.set('ambientLightColor', 'ffffff');
+          v.searchParams.set('cameraOrbitDistance', fit.checked ? '26' : '19');
+          v.searchParams.set('cameraFov', fit.checked ? '50' : '56');
+          v.searchParams.set('ambientLight', '5');
+          v.searchParams.set('ambientLightColor', 'cfd3dd');
+          v.searchParams.set('backgroundColor', 'e8eaef');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));
@@ -658,6 +662,22 @@
             copyFrom(docOut, 'Preview first, then copy.');
           });
         }
+
+        function reloadViewerKeepingDocument() {
+          if (!iframe || !iframe.src) return;
+          try {
+            const cur = new URL(iframe.src);
+            const doc = cur.searchParams.get('url');
+            if (!doc) return;
+            const next = buildViewerUrl(doc);
+            iframe.src = next;
+            if (viewerOut) viewerOut.textContent = next;
+            const viewVis = document.getElementById('builder-mml-viewer-visible');
+            if (viewVis) viewVis.value = next;
+          } catch (_) { /* ignore */ }
+        }
+        noUi.addEventListener('change', reloadViewerKeepingDocument);
+        fit.addEventListener('change', reloadViewerKeepingDocument);
 
         parseQueryUrl();
         if (!input.value.trim()) {

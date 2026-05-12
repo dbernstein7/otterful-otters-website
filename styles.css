@@ -2045,6 +2045,14 @@ body::before {
     cursor: pointer;
 }
 
+.mml-playground-checks-hint {
+    margin: 0 0 10px;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: rgba(165, 172, 188, 0.88);
+    max-width: 52em;
+}
+
 .mml-motion-sandbox-viewport {
     border-radius: 8px;
     overflow: hidden;
