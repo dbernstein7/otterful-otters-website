@@ -2440,14 +2440,11 @@ class AvatarBuilder {
                 return;
             }
 
-            // Attach eyes to head bone (similar to hats)
-            // Use the same positioning as hats for consistency
-            eyesGroup.position.set(-0.607745, 0.000000, 0.005627);
-            eyesGroup.scale.set(1.000000, 1.000000, 1.000000);
-            eyesGroup.rotation.set(0.000000, -0.000000, -1.570796);
-            eyesGroup.quaternion.set(0.000000, -0.000000, -0.707107, 0.707107);
-            
-            // Parent directly to bone
+            // Eyes: do NOT reuse hat hardcoded offsets (those are for crown geometry). Meshes above already
+            // carry world→local layout inside eyesGroup; parent with neutral group transform on the head bone.
+            eyesGroup.position.set(0, 0, 0);
+            eyesGroup.scale.set(1, 1, 1);
+            eyesGroup.quaternion.identity();
             headBone.add(eyesGroup);
 
             this.currentEyes = eyesGroup;
