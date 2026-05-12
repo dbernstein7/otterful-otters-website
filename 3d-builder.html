@@ -150,6 +150,17 @@
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     ></iframe>
                 </div>
+                <div id="builder-mml-anim-wrap" class="mml-simple-anim-wrap" hidden>
+                    <h3 class="mml-simple-anim-title">Body GLB — animation clips</h3>
+                    <p class="mml-simple-anim-lead">Switch clips on the <strong>fur / body</strong> model (same file MML uses for <code>m-character</code>). Full outfit + MML lighting stay in the viewer above.</p>
+                    <iframe
+                        id="builder-mml-anim-iframe"
+                        class="mml-simple-anim-iframe"
+                        title="GLB animation clip preview"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                    ></iframe>
+                </div>
             </div>
             <pre id="builder-mml-doc-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
             <pre id="builder-mml-viewer-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
@@ -294,7 +305,49 @@
         const fit = document.getElementById('builder-mml-opt-fit');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
+        const animWrap = document.getElementById('builder-mml-anim-wrap');
+        const animIframe = document.getElementById('builder-mml-anim-iframe');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit) return;
+
+        function decodeHtmlAttr(s) {
+          const t = document.createElement('textarea');
+          t.innerHTML = s;
+          return t.value;
+        }
+
+        async function updateAnimPreviewFromMmlDoc(docUrl) {
+          if (!animWrap || !animIframe) return;
+          if (!looksLikeMmlUrl(docUrl) || looksLikeRawModelUrl(docUrl)) {
+            animWrap.hidden = true;
+            animIframe.removeAttribute('src');
+            return;
+          }
+          try {
+            const r = await fetch(docUrl);
+            if (!r.ok) throw new Error(String(r.status));
+            const html = await r.text();
+            const m = html.match(/<m-character[\s\S]*?\bsrc="([^"]+)"/i);
+            if (!m) {
+              animWrap.hidden = true;
+              animIframe.removeAttribute('src');
+              return;
+            }
+            const glbAbs = decodeHtmlAttr(m[1]).trim();
+            if (!/\.glb(\?|#|$)/i.test(glbAbs)) {
+              animWrap.hidden = true;
+              animIframe.removeAttribute('src');
+              return;
+            }
+            const previewPage = new URL('glb-anim-preview.html', window.location.href);
+            previewPage.searchParams.set('url', glbAbs);
+            animIframe.removeAttribute('src');
+            animIframe.src = previewPage.toString();
+            animWrap.hidden = false;
+          } catch (_) {
+            animWrap.hidden = true;
+            animIframe.removeAttribute('src');
+          }
+        }
 
         function looksLikeRawModelUrl(s) {
           const t = s.trim().toLowerCase();
@@ -359,6 +412,7 @@
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
           setStatus('', false);
+          void updateAnimPreviewFromMmlDoc(docUrl);
 
           if (!options.skipHistory) {
             try {
