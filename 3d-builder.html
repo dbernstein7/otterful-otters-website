@@ -110,93 +110,49 @@
             </div>
         </div>
 
-        <div id="builder-panel-mml" class="builder-page-panel mml-debug" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
-            <details class="mml-debug-help">
-                <summary class="mml-debug-help-summary">How MML URLs work (read first)</summary>
-                <div class="builder-mml-callout mml-debug-callout" role="note">
-                    <strong class="builder-mml-callout-title">Two different links</strong>
-                    <ol class="builder-mml-callout-list">
-                        <li><strong>Firebase <code>.glb</code></strong> = the model file only — do not paste it as the MML document URL.</li>
-                        <li><strong>MML document</strong> = an <code>.html</code> page (or <code>/api/mml?id=…</code>) that references those GLBs.</li>
-                        <li><strong>Metadata:</strong> <strong>Build MML from metadata</strong> uses <code>metadata/&lt;#&gt;.json</code> + <code>WEARABLES/…</code> paths (see <code>api/mml.js</code>).</li>
-                        <li><strong>Sample:</strong> <strong>Try sample Otter document</strong> loads <code>mml/MMLOtter-preview.html</code>.</li>
-                    </ol>
+        <div id="builder-panel-mml" class="builder-page-panel mml-simple" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
+            <div class="mml-simple-stack">
+                <div class="mml-simple-toolbar">
+                    <h2 class="mml-simple-heading">MML preview</h2>
+                    <p class="mml-simple-lead">Type your otter number and press Preview. If this box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
+                    <div class="mml-simple-preview-row">
+                        <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
+                        <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
+                    </div>
+                    <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
+                    <details class="mml-simple-more">
+                        <summary>More options</summary>
+                        <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
+                        <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
+                        <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
+                        <div class="mml-simple-more-btns">
+                            <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
+                            <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
+                            <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
+                        </div>
+                        <div class="mml-simple-checks">
+                            <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
+                            <label><input type="checkbox" id="builder-mml-opt-no-ui"> Hide viewer controls</label>
+                        </div>
+                        <div class="mml-simple-copy-row">
+                            <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
+                            <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
+                        </div>
+                    </details>
                 </div>
-                <p class="mml-viewer-lede mml-debug-lede">Chrome “eval / CSP” in Issues is usually extensions or viewer.mml.io itself — not your paste. Animations: clips inside the GLB, or <code>m-character anim="…"</code>; in the viewer sidebar use <strong>Character</strong> (below Light).</p>
-            </details>
-
-            <div class="mml-debug-grid">
-                <aside class="mml-debug-sidebar" aria-label="MML preview controls">
-                    <div class="mml-debug-brand">
-                        <span class="mml-debug-brand-title">MML preview</span>
-                        <span class="mml-debug-brand-tag">viewer.mml.io</span>
-                    </div>
-
-                    <div class="mml-viewer-panel mml-debug-panel">
-                        <h3 class="mml-debug-section-title">Document URL</h3>
-                        <label for="builder-mml-doc-url" class="mml-viewer-sr-only">MML document URL</label>
-                        <input type="text" id="builder-mml-doc-url" class="mml-viewer-input mml-debug-input" placeholder="https://…/scene.html or wss://…" autocomplete="off" spellcheck="false" aria-describedby="builder-mml-doc-hint">
-                        <p id="builder-mml-doc-hint" class="mml-viewer-hint mml-debug-muted">Tip: <code>3d-builder.html#mml</code> or <code>?url=</code> to pre-fill.</p>
-                        <div class="mml-viewer-options mml-debug-options">
-                            <label class="mml-viewer-check mml-debug-check">
-                                <input type="checkbox" id="builder-mml-opt-no-ui">
-                                Hide viewer UI (<code>noUI</code>)
-                            </label>
-                            <label class="mml-viewer-check mml-debug-check">
-                                <input type="checkbox" id="builder-mml-opt-fit" checked>
-                                Frame content
-                            </label>
-                        </div>
-                        <p class="mml-viewer-hint mml-debug-muted mml-debug-hint-tight">Defaults: orbit camera, ambient 5, pitch 60°, FOV 75 (see viewer URL).</p>
-                        <div class="mml-viewer-actions mml-debug-actions">
-                            <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary mml-debug-btn mml-debug-btn--primary">Load preview</button>
-                            <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn mml-debug-btn">Open in new tab</button>
-                            <button type="button" id="builder-mml-sample-btn" class="mml-viewer-btn mml-debug-btn" title="Loads mml/MMLOtter-preview.html">Sample Otter</button>
-                        </div>
-                    </div>
-
-                    <div class="mml-viewer-panel mml-debug-panel mml-viewer-panel--metadata">
-                        <h3 class="mml-debug-section-title">From metadata</h3>
-                        <p class="mml-viewer-hint mml-debug-muted mml-debug-hint-tight">Same traits as 3D builder. Sockets: <code>mixamorig:Head</code> / <code>mixamorig:Spine2</code> (override via Vercel env).</p>
-                        <div class="mml-viewer-metadata-row mml-debug-metadata-row">
-                            <input type="number" id="builder-mml-nft-input" class="mml-viewer-nft-input mml-debug-input mml-debug-nft" placeholder="NFT #" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1 to 2222">
-                            <button type="button" id="builder-mml-from-nft-btn" class="mml-viewer-btn mml-viewer-btn--primary mml-debug-btn mml-debug-btn--primary mml-debug-btn--wide">Build from metadata</button>
-                        </div>
-                    </div>
-
-                    <div class="mml-debug-output">
-                        <h3 class="mml-debug-section-title">Output</h3>
-                        <div class="mml-viewer-links mml-debug-links">
-                            <div class="mml-viewer-link-block mml-debug-link-block">
-                                <div class="mml-viewer-link-head mml-debug-link-head">
-                                    <span class="mml-viewer-link-title">MML document</span>
-                                    <button type="button" class="mml-viewer-copy mml-debug-copy" data-copy-target="builder-mml-doc-out">Copy</button>
-                                </div>
-                                <pre id="builder-mml-doc-out" class="mml-viewer-pre mml-debug-pre" aria-live="polite">—</pre>
-                            </div>
-                            <div class="mml-viewer-link-block mml-debug-link-block">
-                                <div class="mml-viewer-link-head mml-debug-link-head">
-                                    <span class="mml-viewer-link-title">Viewer URL</span>
-                                    <button type="button" class="mml-viewer-copy mml-debug-copy" data-copy-target="builder-mml-viewer-out">Copy</button>
-                                </div>
-                                <pre id="builder-mml-viewer-out" class="mml-viewer-pre mml-debug-pre" aria-live="polite">—</pre>
-                            </div>
-                        </div>
-                        <p id="builder-mml-status" class="mml-viewer-status mml-debug-status" aria-live="polite"></p>
-                    </div>
-                </aside>
-
-                <div class="mml-debug-stage">
+                <div class="mml-simple-viewport">
                     <iframe
                         id="builder-mml-iframe"
-                        class="mml-debug-iframe"
-                        title="MML Viewer embed"
+                        class="mml-simple-iframe"
+                        title="MML preview"
                         loading="lazy"
                         referrerpolicy="no-referrer"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     ></iframe>
                 </div>
             </div>
+            <pre id="builder-mml-doc-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
+            <pre id="builder-mml-viewer-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
         </div>
     </div>
 
@@ -287,6 +243,13 @@
           panelOtter.toggleAttribute('hidden', isMml);
           panelMml.classList.toggle('is-active', isMml);
           panelMml.toggleAttribute('hidden', !isMml);
+          if (isMml) {
+            const o = document.getElementById('builder-nft-input');
+            const m = document.getElementById('builder-mml-nft-input');
+            if (o && m && !String(m.value || '').trim() && String(o.value || '').trim()) {
+              m.value = o.value.trim();
+            }
+          }
           try {
             if (isMml) {
               if (window.location.hash !== '#mml') window.history.replaceState(null, '', '3d-builder.html#mml');
@@ -323,9 +286,14 @@
         const loadBtn = document.getElementById('builder-mml-load-btn');
         const openTabBtn = document.getElementById('builder-mml-open-tab-btn');
         const sampleBtn = document.getElementById('builder-mml-sample-btn');
+        const previewBtn = document.getElementById('builder-mml-preview-btn');
+        const mmlNftInput = document.getElementById('builder-mml-nft-input');
+        const otterNftInput = document.getElementById('builder-nft-input');
         const noUi = document.getElementById('builder-mml-opt-no-ui');
         const fit = document.getElementById('builder-mml-opt-fit');
-        if (!input || !iframe || !docOut || !viewerOut || !statusEl || !loadBtn || !openTabBtn || !noUi || !fit) return;
+        const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
+        const copyDocBtn = document.getElementById('builder-mml-copy-doc');
+        if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit) return;
 
         function looksLikeRawModelUrl(s) {
           const t = s.trim().toLowerCase();
@@ -364,6 +332,11 @@
           return v.toString();
         }
 
+        function setOuts(docUrl, viewerUrl) {
+          if (docOut) docOut.textContent = docUrl;
+          if (viewerOut) viewerOut.textContent = viewerUrl;
+        }
+
         function setStatus(msg, isError) {
           statusEl.textContent = msg || '';
           statusEl.classList.toggle('is-error', !!isError);
@@ -373,42 +346,18 @@
           options = options || {};
           const docUrl = input.value.trim();
           if (!looksLikeMmlUrl(docUrl)) {
-            setStatus('Enter a full URL starting with https:// or wss://', true);
+            setStatus('Enter a full URL starting with https:// or wss:// (open More options).', true);
             return;
           }
           if (looksLikeRawModelUrl(docUrl)) {
-            setStatus('That URL is a 3D model file (.glb / .gltf), not an MML document. Click "Try sample Otter document" or host an .html page that wraps your model in <m-character>.', true);
+            setStatus('That is a model file (.glb), not an MML page. Use Preview with an otter #, or Sample otter.', true);
             return;
           }
           const viewerUrl = buildViewerUrl(docUrl);
-          docOut.textContent = docUrl;
-          viewerOut.textContent = viewerUrl;
+          setOuts(docUrl, viewerUrl);
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
-
-          function afterLoadMessage() {
-            if (options.fromMetadata) {
-              const lines = [
-                'Preview started with latest viewer settings.',
-                '',
-                'MML document:',
-                docUrl,
-                '',
-                'Full viewer.mml.io URL:',
-                viewerUrl,
-              ].join('\n');
-              setStatus(lines, false);
-              navigator.clipboard.writeText(viewerUrl).then(function () {
-                setStatus(lines + '\n\n✓ Copied full viewer URL to clipboard.', false);
-              }).catch(function () {
-                setStatus(lines + '\n\nClipboard blocked — use Copy next to “Full viewer.mml.io URL”.', true);
-              });
-            } else {
-              setStatus('Loaded.', false);
-            }
-          }
-
-          afterLoadMessage();
+          setStatus('', false);
 
           if (!options.skipHistory) {
             try {
@@ -420,17 +369,31 @@
           }
         }
 
+        function copyFrom(el, emptyMsg) {
+          const text = el && el.textContent && el.textContent !== '—' ? el.textContent.trim() : '';
+          if (!text) {
+            setStatus(emptyMsg || 'Preview first.', true);
+            return;
+          }
+          navigator.clipboard.writeText(text).then(function () {
+            setStatus('Copied.', false);
+          }).catch(function () {
+            setStatus('Copy failed — try Open in new tab and copy from the address bar.', true);
+          });
+        }
+
         loadBtn.addEventListener('click', function () {
           apply();
         });
+
         openTabBtn.addEventListener('click', function () {
           const docUrl = input.value.trim();
           if (!looksLikeMmlUrl(docUrl)) {
-            setStatus('Enter a valid MML document URL first.', true);
+            setStatus('Add a document URL under More options, or use Preview.', true);
             return;
           }
           if (looksLikeRawModelUrl(docUrl)) {
-            setStatus('Use an MML .html document URL, not a direct .glb link.', true);
+            setStatus('Use an MML .html document, not a direct .glb link.', true);
             return;
           }
           window.open(buildViewerUrl(docUrl), '_blank', 'noopener,noreferrer');
@@ -447,38 +410,33 @@
           });
         }
 
-        const fromNftBtn = document.getElementById('builder-mml-from-nft-btn');
-        const mmlNftInput = document.getElementById('builder-mml-nft-input');
-        const otterNftInput = document.getElementById('builder-nft-input');
-        if (fromNftBtn) {
-          fromNftBtn.addEventListener('click', function () {
-            const raw = (mmlNftInput && mmlNftInput.value.trim()) || (otterNftInput && otterNftInput.value.trim()) || '';
-            const num = parseInt(raw, 10);
-            if (!raw || isNaN(num) || num < 1 || num > 2222) {
-              setStatus('Enter an NFT number between 1 and 2222 (MML tab field or Load NFT on Otter tab).', true);
-              return;
-            }
-            input.value = `${window.location.origin}/api/mml?id=${num}`;
-            apply({ fromMetadata: true });
+        previewBtn.addEventListener('click', function () {
+          const raw = (mmlNftInput && mmlNftInput.value.trim()) || (otterNftInput && otterNftInput.value.trim()) || '';
+          const num = parseInt(raw, 10);
+          if (!raw || isNaN(num) || num < 1 || num > 2222) {
+            setStatus('Enter an otter number between 1 and 2222 (or use Load NFT on the Otter tab first).', true);
+            return;
+          }
+          input.value = window.location.origin + '/api/mml?id=' + num;
+          apply();
+        });
+
+        if (mmlNftInput) {
+          mmlNftInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') previewBtn.click();
           });
         }
 
-        document.querySelectorAll('#builder-panel-mml .mml-viewer-copy').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            const id = btn.getAttribute('data-copy-target');
-            const el = document.getElementById(id);
-            const text = el && el.textContent && el.textContent !== '—' ? el.textContent : '';
-            if (!text) {
-              setStatus('Load a document first.', true);
-              return;
-            }
-            navigator.clipboard.writeText(text).then(function () {
-              setStatus('Copied.', false);
-            }).catch(function () {
-              setStatus('Copy failed — select text manually.', true);
-            });
+        if (copyViewerBtn && viewerOut) {
+          copyViewerBtn.addEventListener('click', function () {
+            copyFrom(viewerOut, 'Preview first, then copy.');
           });
-        });
+        }
+        if (copyDocBtn && docOut) {
+          copyDocBtn.addEventListener('click', function () {
+            copyFrom(docOut, 'Preview first, then copy.');
+          });
+        }
 
         parseQueryUrl();
         if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(input.value.trim())) apply();

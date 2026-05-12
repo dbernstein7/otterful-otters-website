@@ -1628,299 +1628,221 @@ body::before {
     background: rgba(0, 0, 0, 0.35);
 }
 
-/* MML tab: sideload-style debug (narrow controls + full-height stage) */
-.mml-debug {
+/* MML tab: minimal flow (otter # + Preview); advanced URL & copy */
+.mml-simple {
     margin-top: 14px;
+    position: relative;
 }
 
-.mml-debug-help {
-    margin-bottom: 12px;
+.mml-simple-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border-soft, rgba(255, 255, 255, 0.12));
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(10, 10, 14, 0.95);
+}
+
+.mml-simple-toolbar {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(180deg, #14141a 0%, #101014 100%);
+}
+
+.mml-simple-heading {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #ececf0);
+}
+
+.mml-simple-lead {
+    margin: 0 0 12px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: rgba(200, 200, 210, 0.75);
+    max-width: 48em;
+}
+
+.mml-simple-preview-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.mml-simple-nft {
+    width: 120px;
+    max-width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    background: rgba(14, 14, 18, 0.95);
-    padding: 0 14px 4px;
+    background: #14141a;
+    color: #ececf0;
+    font-size: 0.95rem;
 }
 
-.mml-debug-help-summary {
+.mml-simple-preview {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #4fd6a5;
+    color: #0a1612;
+    font-weight: 700;
+    font-size: 0.9rem;
     cursor: pointer;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
+}
+
+.mml-simple-preview:hover {
+    filter: brightness(1.05);
+}
+
+.mml-simple-status {
+    min-height: 1.25em;
+    margin: 10px 0 0;
+    font-size: 0.8rem;
+    color: rgba(190, 200, 210, 0.9);
+}
+
+.mml-simple-status.is-error {
+    color: #ffb4b4;
+}
+
+.mml-simple-more {
+    margin-top: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0 12px 10px;
+    background: rgba(8, 8, 10, 0.65);
+}
+
+.mml-simple-more summary {
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.5);
-    padding: 12px 0;
+    color: rgba(255, 255, 255, 0.45);
+    padding: 10px 0;
     list-style: none;
 }
 
-.mml-debug-help summary::-webkit-details-marker {
+.mml-simple-more summary::-webkit-details-marker {
     display: none;
 }
 
-.mml-debug .builder-mml-callout.mml-debug-callout {
-    margin: 0 0 12px;
-    padding: 12px;
-    border-radius: 8px;
-    border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(22, 22, 28, 0.95);
-    box-shadow: none;
-}
-
-.mml-debug .builder-mml-callout-title {
-    color: rgba(255, 255, 255, 0.88);
+.mml-simple-tip {
     font-size: 0.78rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    color: rgba(185, 190, 200, 0.85);
+    margin: 0 0 10px;
+    line-height: 1.4;
 }
 
-.mml-debug .builder-mml-callout-list {
-    color: rgba(220, 220, 228, 0.88);
-    font-size: 0.8rem;
-}
-
-.mml-debug-lede {
-    margin: 0 0 14px;
-    font-size: 0.8rem;
-    line-height: 1.5;
-    color: rgba(200, 200, 210, 0.72);
-    max-width: none;
-}
-
-.mml-debug-lede code {
+.mml-simple-tip code {
+    font-size: 0.92em;
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
     background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.mml-debug-grid {
-    display: grid;
-    grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
-    grid-template-rows: minmax(520px, calc(100vh - 300px));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    overflow: hidden;
-    background: #0a0a0e;
-    box-shadow: 0 16px 56px rgba(0, 0, 0, 0.5);
+.mml-simple-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 6px;
 }
 
-.mml-debug-sidebar {
+.mml-simple-url {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #14141a;
+    color: #ececf0;
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+}
+
+.mml-simple-more-btns,
+.mml-simple-copy-row {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 14px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    overflow-y: auto;
-    background: linear-gradient(180deg, #13131a 0%, #0e0e12 100%);
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 
-.mml-debug-brand {
+.mml-simple-btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(32, 32, 40, 0.95);
+    color: rgba(242, 242, 248, 0.95);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mml-simple-btn:hover {
+    background: rgba(48, 48, 58, 0.98);
+}
+
+.mml-simple-btn--ghost {
+    background: transparent;
+}
+
+.mml-simple-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.8rem;
+    color: rgba(215, 215, 225, 0.85);
+    margin-bottom: 6px;
+}
+
+.mml-simple-checks label {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 6px;
+    cursor: pointer;
 }
 
-.mml-debug-brand-title {
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-.mml-debug-brand-tag {
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.38);
-    padding: 3px 8px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.mml-debug-section-title {
-    margin: 0 0 8px;
-    font-size: 0.65rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.42);
-}
-
-.mml-debug .mml-viewer-panel,
-.mml-debug-panel {
-    margin-top: 0 !important;
-    padding: 12px !important;
-    background: rgba(18, 18, 24, 0.92) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 8px !important;
-}
-
-.mml-debug-muted {
-    color: rgba(190, 190, 200, 0.65) !important;
-    font-size: 0.76rem !important;
-    line-height: 1.45;
-}
-
-.mml-debug-hint-tight {
-    margin-top: 6px !important;
-    margin-bottom: 0 !important;
-}
-
-.mml-debug-input,
-.mml-debug .mml-viewer-input {
-    background: #14141a !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    border-radius: 6px !important;
-    color: #ececf0 !important;
-    font-size: 0.78rem !important;
-    padding: 9px 10px !important;
-}
-
-.mml-debug-options {
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
-}
-
-.mml-debug-check {
-    font-size: 0.76rem !important;
-    color: rgba(215, 215, 225, 0.82) !important;
-}
-
-.mml-debug-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px !important;
-}
-
-.mml-debug-btn {
-    width: 100%;
-    border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
-    background: rgba(32, 32, 40, 0.95) !important;
-    color: rgba(242, 242, 248, 0.95) !important;
-    font-size: 0.78rem !important;
-    font-weight: 600 !important;
-    padding: 9px 12px !important;
-}
-
-.mml-debug-btn:hover {
-    background: rgba(48, 48, 58, 0.98) !important;
-    color: #fff !important;
-}
-
-.mml-debug .mml-viewer-btn--primary,
-.mml-debug-btn--primary {
-    border: none !important;
-    background: #f0f0f4 !important;
-    color: #0a0a0e !important;
-}
-
-.mml-debug .mml-viewer-btn--primary:hover,
-.mml-debug-btn--primary:hover {
-    filter: brightness(0.96);
-    color: #0a0a0e !important;
-}
-
-.mml-debug-metadata-row {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 8px;
-}
-
-.mml-debug-nft {
-    width: 92px !important;
-    flex-shrink: 0;
-}
-
-.mml-debug-metadata-row .mml-debug-btn--wide {
-    flex: 1;
-    min-width: 0;
-}
-
-.mml-debug-output {
-    margin-top: auto;
-    padding-top: 4px;
-}
-
-.mml-debug-links {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 8px !important;
-    margin-top: 0 !important;
-}
-
-.mml-debug-link-block {
-    border-radius: 6px !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    background: rgba(10, 10, 14, 0.7) !important;
-}
-
-.mml-debug-link-head {
-    padding: 6px 8px !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.mml-debug-link-head .mml-viewer-link-title {
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 0.62rem;
-}
-
-.mml-debug-copy {
-    font-size: 0.65rem !important;
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-    border-color: rgba(255, 255, 255, 0.14) !important;
-    background: rgba(26, 26, 34, 0.95) !important;
-    color: rgba(235, 235, 242, 0.92) !important;
-}
-
-.mml-debug-pre {
-    font-size: 0.65rem !important;
-    max-height: 76px;
-    padding: 8px !important;
-    color: rgba(195, 195, 208, 0.92) !important;
-}
-
-.mml-debug-status {
-    margin-top: 10px !important;
-    font-size: 0.72rem !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    background: rgba(6, 6, 8, 0.85) !important;
-    color: rgba(205, 205, 215, 0.88) !important;
-}
-
-.mml-debug-stage {
+.mml-simple-viewport {
     position: relative;
     background: #000;
-    min-height: 0;
-    display: flex;
+    min-height: min(65vh, 560px);
 }
 
-.mml-debug-iframe {
-    flex: 1;
+.mml-simple-iframe {
     width: 100%;
-    height: 100%;
-    min-height: 520px;
+    height: min(65vh, 560px);
+    min-height: 360px;
     border: none;
     display: block;
 }
 
-@media (max-width: 960px) {
-    .mml-debug-grid {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto minmax(380px, 52vh);
+.mml-simple-hidden-pre {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 640px) {
+    .mml-simple-preview-row {
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .mml-debug-sidebar {
-        border-right: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    .mml-simple-nft {
+        width: 100%;
     }
 }
 
