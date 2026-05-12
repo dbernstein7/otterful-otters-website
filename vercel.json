@@ -7,7 +7,9 @@
     "MML_FUR_STORAGE_PATH": "Furs",
     "MML_HAT_STORAGE_PATH": "Hats",
     "MML_SHIRT_STORAGE_PATH": "Shirts",
-    "MML_EYES_STORAGE_PATH": "Eyes"
+    "MML_EYES_STORAGE_PATH": "Eyes",
+    "MML_EYES_Y": "0.03",
+    "MML_EYES_Z": "0.07"
   },
   "headers": [
     {

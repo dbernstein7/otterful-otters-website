@@ -5,6 +5,8 @@
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
  *   If unset, defaults follow MML_BONE_SCHEME (see below).
+ *   Optional offsets on wearables (m-model transform group): MML_HAT_X … MML_HAT_SZ, MML_SHIRT_*, MML_EYES_* (suffixes
+ *   X Y Z RX RY RZ SX SY SZ in meters / degrees / scale per MML). Example for eyes forward on head: MML_EYES_Y, MML_EYES_Z.
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
  *   MML_BONE_SCHEME — `mixamo` (default: Otterful glTF names mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head /
  *   mixamorig:Spine2), or `short` (Head / Spine2 / Head).
@@ -127,6 +129,29 @@ function escAttr(s) {
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/</g, '&lt;');
+}
+
+/** Extra m-model attributes from env, e.g. `MML_EYES` → MML_EYES_X, MML_EYES_Z, … (MML transformable group). */
+function wearableExtraAttrs(prefix) {
+  const pairs = [
+    ['x', 'X'],
+    ['y', 'Y'],
+    ['z', 'Z'],
+    ['rx', 'RX'],
+    ['ry', 'RY'],
+    ['rz', 'RZ'],
+    ['sx', 'SX'],
+    ['sy', 'SY'],
+    ['sz', 'SZ'],
+  ];
+  let out = '';
+  for (const [attr, suf] of pairs) {
+    const key = `${prefix}_${suf}`;
+    const v = process.env[key];
+    if (v == null || String(v).trim() === '') continue;
+    out += ` ${attr}="${escAttr(String(v).trim())}"`;
+  }
+  return out;
 }
 
 function defaultSockets() {
@@ -265,13 +290,23 @@ function buildHtml({ id, traits, urls, sockets }) {
   parts.push('>');
 
   if (urls.hat) {
-    parts.push(`  <m-model socket="${escAttr(sockets.hat)}" src="${escAttr(urls.hat)}"></m-model>`);
+    parts.push(
+      `  <m-model socket="${escAttr(sockets.hat)}" src="${escAttr(urls.hat)}"${wearableExtraAttrs('MML_HAT')}></m-model>`
+    );
   }
   if (urls.shirt) {
-    parts.push(`  <m-model socket="${escAttr(sockets.shirt)}" src="${escAttr(urls.shirt)}"></m-model>`);
+    parts.push(
+      `  <m-model socket="${escAttr(sockets.shirt)}" src="${escAttr(urls.shirt)}"${wearableExtraAttrs(
+        'MML_SHIRT'
+      )}></m-model>`
+    );
   }
   if (urls.eyes) {
-    parts.push(`  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"></m-model>`);
+    parts.push(
+      `  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"${wearableExtraAttrs(
+        'MML_EYES'
+      )}></m-model>`
+    );
   }
 
   parts.push('</m-character>', '</body>', '</html>');
