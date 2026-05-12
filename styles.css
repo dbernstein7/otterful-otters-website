@@ -1691,6 +1691,32 @@ body::before {
     color: rgba(190, 195, 210, 0.75);
 }
 
+.mml-simple-mml-url-stack {
+    flex-shrink: 0;
+    padding: 0 12px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(10, 10, 14, 0.6);
+}
+
+.mml-simple-mml-url-stack .mml-simple-label {
+    margin-top: 8px;
+}
+
+.mml-simple-mml-url-stack .mml-simple-label:first-child {
+    margin-top: 0;
+}
+
+.mml-simple-url--display {
+    width: 100%;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    line-height: 1.35;
+    word-break: break-all;
+    cursor: default;
+    color: rgba(210, 215, 228, 0.92);
+    background: rgba(0, 0, 0, 0.45);
+}
+
 .mml-simple-viewport--split {
     flex: 1 1 auto;
     min-height: min(56vh, 520px);

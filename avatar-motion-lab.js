@@ -46,15 +46,18 @@ const EPIC_TO_MIXAMO_NAMES = {
 };
 
 const LIBRARY_CLIPS = [
-  { path: 'games/shell-snag/mixamo/idle-00.glb', label: 'Library: Idle (retargeted)' },
-  { path: 'games/shell-snag/mixamo/walk.glb', label: 'Library: Walk (retargeted)' },
-  { path: 'games/shell-snag/mixamo/run-medium.glb', label: 'Library: Run (retargeted)' },
+  { file: 'idle-00.glb', label: 'Library: Idle (retargeted)' },
+  { file: 'walk.glb', label: 'Library: Walk (retargeted)' },
+  { file: 'run-medium.glb', label: 'Library: Run (retargeted)' },
 ];
 
-/** Resolve static donor GLBs from site root (avoids wrong paths vs new URL(rel, './')). */
-function donorAssetHref(relPath) {
-  const path = String(relPath || '').replace(/^\/+/, '');
-  return new URL(path, `${window.location.origin}/`).href;
+/** Vercel routes /mixamo/* → games/shell-snag/mixamo/; also try direct /games/… for static hosts. */
+function donorUrlsForFile(file) {
+  const origin = `${window.location.origin}/`;
+  return [
+    new URL(`mixamo/${file}`, origin).href,
+    new URL(`games/shell-snag/mixamo/${file}`, origin).href,
+  ];
 }
 
 function showErr(msg) {
@@ -289,9 +292,24 @@ async function buildLibraryClips(targetMesh) {
   const out = [];
   let loadFailures = 0;
   for (const entry of LIBRARY_CLIPS) {
-    const donorUrl = donorAssetHref(entry.path);
+    const tryUrls = donorUrlsForFile(entry.file);
+    let donorGltf = null;
+    let lastErr = null;
+    for (const donorUrl of tryUrls) {
+      try {
+        donorGltf = await loader.loadAsync(donorUrl);
+        break;
+      } catch (e) {
+        lastErr = e;
+        console.warn('[avatar-motion-lab] donor try failed', donorUrl, e);
+      }
+    }
+    if (!donorGltf) {
+      loadFailures += 1;
+      if (lastErr) console.warn('[avatar-motion-lab] all donor URLs failed for', entry.file, lastErr);
+      continue;
+    }
     try {
-      const donorGltf = await loader.loadAsync(donorUrl);
       const donorMesh = findLargestSkinnedMesh(donorGltf.scene);
       const srcClip = donorGltf.animations && donorGltf.animations[0];
       if (!donorMesh || !donorMesh.skeleton || !srcClip) {
@@ -310,7 +328,7 @@ async function buildLibraryClips(targetMesh) {
           fps: 30,
         });
       } catch (e) {
-        console.warn('[avatar-motion-lab] retarget failed', entry.path, e);
+        console.warn('[avatar-motion-lab] retarget failed', entry.file, e);
         retargeted = null;
       }
       scene.remove(donorGltf.scene);
@@ -321,7 +339,7 @@ async function buildLibraryClips(targetMesh) {
       }
     } catch (e) {
       loadFailures += 1;
-      console.warn('[avatar-motion-lab] donor load failed', donorUrl, e);
+      console.warn('[avatar-motion-lab] donor processing failed', e);
     }
   }
   buildLibraryClips.lastLoadFailures = loadFailures;
@@ -405,7 +423,7 @@ loader.load(
         if (analysis.risky) parts.push(analysis.message);
         if (failedLoads >= LIBRARY_CLIPS.length) {
           parts.push(
-            `Could not load any motion-library GLBs from this site (check that /games/shell-snag/mixamo/*.glb is deployed at ${window.location.origin}/).`,
+            `Could not load any motion-library GLBs. Try URLs under /mixamo/ or /games/shell-snag/mixamo/ on ${window.location.origin}/ (see vercel.json routes).`,
           );
         } else {
           parts.push(
