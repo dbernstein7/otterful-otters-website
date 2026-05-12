@@ -99,19 +99,34 @@ class AvatarBuilder {
         this.init();
     }
 
-    /** Meta + ?fbBucket=&furPrefix=… overrides (see AvatarBuilder/index.html). */
+    /** Meta + ?fbBucket=&furPrefix=… overrides (see AvatarBuilder/index.html). Accepts ottvatar-* or otterful-* meta names. */
     static readAssetSources() {
         const meta = (n) => (document.querySelector(`meta[name="${n}"]`)?.getAttribute('content') || '').trim();
+        const first = (...names) => {
+            for (let i = 0; i < names.length; i += 1) {
+                const v = meta(names[i]);
+                if (v) return v;
+            }
+            return '';
+        };
         const q = new URLSearchParams(window.location.search);
         const qv = (k) => (q.get(k) || '').trim();
         return {
-            firebaseBucket: qv('fbBucket') || meta('ottvatar-firebase-bucket'),
-            firebaseToken: qv('fbToken') || meta('ottvatar-firebase-token'),
-            furPrefix: qv('furPrefix') || meta('ottvatar-fur-prefix'),
-            hatPrefix: qv('hatPrefix') || meta('ottvatar-hat-prefix'),
-            shirtPrefix: qv('shirtPrefix') || meta('ottvatar-shirt-prefix'),
-            eyesPrefix: qv('eyesPrefix') || meta('ottvatar-eyes-prefix'),
+            firebaseBucket: qv('fbBucket') || first('ottvatar-firebase-bucket', 'otterful-firebase-bucket'),
+            firebaseToken: qv('fbToken') || first('ottvatar-firebase-token', 'otterful-firebase-token'),
+            furPrefix: qv('furPrefix') || first('ottvatar-fur-prefix', 'otterful-fur-prefix'),
+            hatPrefix: qv('hatPrefix') || first('ottvatar-hat-prefix', 'otterful-hat-prefix'),
+            shirtPrefix: qv('shirtPrefix') || first('ottvatar-shirt-prefix', 'otterful-shirt-prefix'),
+            eyesPrefix: qv('eyesPrefix') || first('ottvatar-eyes-prefix', 'otterful-eyes-prefix'),
         };
+    }
+
+    createGLTFLoader() {
+        const loader = new GLTFLoader();
+        try {
+            loader.setCrossOrigin('anonymous');
+        } catch (_) { /* ignore */ }
+        return loader;
     }
 
     /** @param {string} legacyFolder e.g. WEARABLES/Furs */
@@ -1052,8 +1067,8 @@ class AvatarBuilder {
             }
         }
 
-        const loader = new GLTFLoader();
-        
+        const loader = this.createGLTFLoader();
+
         try {
             const gltf = await new Promise((resolve, reject) => {
                 loader.load(
@@ -1062,7 +1077,7 @@ class AvatarBuilder {
                     undefined,
                     (error) => {
                         console.error(`Error loading ${fileName} from path: ${filePath}`, error);
-                        reject(new Error(`Failed to load ${fileName}. Check Firebase path or WEARABLES/Furs on this site.`));
+                        reject(new Error(`Failed to load ${fileName}. Check Firebase object exists (e.g. Furs/${fileName}), Storage rules/token, or WEARABLES/Furs on this site.`));
                     }
                 );
             });
@@ -1192,7 +1207,7 @@ class AvatarBuilder {
 
         } catch (error) {
             console.error('Error loading GLB:', error);
-            alert(`Error loading ${fileName}:\n\n${error.message}\n\nCheck Firebase Storage (meta ottvatar-fur-prefix) or WEARABLES/Furs on this host.`);
+            alert(`Error loading ${fileName}:\n\n${error.message}\n\nCheck Firebase (meta ottvatar-fur-prefix or otterful-fur-prefix), object path/case, and Storage read access.`);
             if (manageLoadingScreen && placeholder) {
                 placeholder.style.display = 'flex';
             }
@@ -1212,7 +1227,7 @@ class AvatarBuilder {
         loading.style.display = 'block';
         placeholder.style.display = 'none';
 
-        const loader = new GLTFLoader();
+        const loader = this.createGLTFLoader();
         
         try {
             const gltf = await new Promise((resolve, reject) => {
@@ -1285,7 +1300,7 @@ class AvatarBuilder {
     // Reference file loading removed - using default transforms
     // This function is kept for potential future use but is not called
     async loadReferenceFile() {
-        const loader = new GLTFLoader();
+        const loader = this.createGLTFLoader();
         try {
             const gltf = await new Promise((resolve, reject) => {
                 loader.load(
@@ -1559,7 +1574,7 @@ class AvatarBuilder {
 
         const filePath = this.hatGlbUrl(hatName);
         console.log(`Loading hat from path: ${filePath}`);
-        const loader = new GLTFLoader();
+        const loader = this.createGLTFLoader();
         
         try {
             const gltf = await loader.loadAsync(filePath);
@@ -2327,7 +2342,7 @@ class AvatarBuilder {
 
         const filePath = this.shirtGlbUrl(shirtName);
         console.log(`Loading shirt from path: ${filePath}`);
-        const loader = new GLTFLoader();
+        const loader = this.createGLTFLoader();
         
         try {
             const gltf = await loader.loadAsync(filePath);
@@ -2429,7 +2444,7 @@ class AvatarBuilder {
 
         const filePath = this.eyesGlbUrl(eyeName);
         console.log(`Loading eyes from path: ${filePath}`);
-        const loader = new GLTFLoader();
+        const loader = this.createGLTFLoader();
         
         try {
             const gltf = await loader.loadAsync(filePath);

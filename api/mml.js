@@ -26,8 +26,13 @@
  */
 
 function siteOriginFromRequest(req) {
-  const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
+  let proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
   const host = (req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  const hostOnly = host.split(':')[0];
+  /* Avoid http:// document URLs in MML (mixed content / wrong links) when the site is served behind TLS. */
+  if (hostOnly && /(^|\.)otterfulotters\.xyz$/i.test(hostOnly) && proto === 'http') {
+    proto = 'https';
+  }
   if (host) return `${proto}://${host}`;
   return process.env.SITE_ORIGIN || 'https://www.otterfulotters.xyz';
 }
