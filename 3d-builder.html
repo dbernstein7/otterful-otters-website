@@ -111,8 +111,16 @@
         </div>
 
         <div id="builder-panel-mml" class="builder-page-panel" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
+            <div class="builder-mml-callout" role="note">
+                <strong class="builder-mml-callout-title">Start here — two different links</strong>
+                <ol class="builder-mml-callout-list">
+                    <li><strong>Your Firebase <code>.glb</code></strong> is only the 3D model file. It is <em>not</em> an MML “document.” Pasting it in the box below will stay blank.</li>
+                    <li><strong>An MML document</strong> is a normal <code>.html</code> page whose job is to point at that GLB (for example with <code>&lt;m-character src="…glb…"&gt;</code>).</li>
+                    <li>After your site has the latest update: click <strong>Try sample Otter document</strong> (third button), then <strong>Load in viewer</strong>. Or paste your live URL to <code>mml/MMLOtter-preview.html</code> — not the <code>.glb</code>.</li>
+                </ol>
+            </div>
             <p class="mml-viewer-lede mml-viewer-lede--inline">
-                <strong>Important:</strong> paste the URL of an <strong>MML <code>.html</code> document</strong> (or <code>wss://…</code> from the MML editor). Pasting your Firebase <code>.glb</code> link here will <strong>not</strong> work — the GLB must be referenced <em>inside</em> an HTML file (see <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer"><code>m-character</code></a>). The blank viewer + Issues tab “eval” warning is often a browser extension; the usual fix for a blank scene is using an HTML document URL, not the model file.
+                The red “eval / CSP” line in Chrome Issues often comes from extensions or from code inside <code>viewer.mml.io</code>; it is usually not why the scene is empty. An empty scene here almost always means the <strong>wrong kind of URL</strong> (a model link instead of an <code>.html</code> document).
             </p>
 
             <div class="mml-viewer-panel">
