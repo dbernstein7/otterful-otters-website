@@ -88,6 +88,14 @@
   <div id="err" hidden></div>
   <div id="stage"><canvas id="cv"></canvas></div>
 
+  <!-- three/examples/jsm/* modules import the bare specifier "three"; import maps are required in the browser (no bundler). -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
   <script type="module" src="glb-anim-preview.js"></script>
 </body>
 </html>
