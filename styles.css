@@ -1667,6 +1667,213 @@ body::before {
     height: min(1200px, calc(100vh - 310px));
 }
 
+/* MML Viewer (embeds viewer.mml.io) */
+.mml-viewer-lede {
+    margin-top: 10px;
+    max-width: 720px;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.mml-viewer-lede code {
+    font-size: 0.88em;
+    padding: 0.1em 0.35em;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-soft);
+}
+
+.mml-viewer-lede a {
+    color: var(--panel-blue-alt);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.mml-viewer-panel {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: rgba(79, 214, 165, 0.1);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.mml-viewer-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.mml-viewer-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    background: rgba(10, 26, 15, 0.85);
+    color: var(--text-primary);
+    font-family: ui-monospace, monospace;
+}
+
+.mml-viewer-hint {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.mml-viewer-hint code {
+    font-size: 0.9em;
+}
+
+.mml-viewer-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+}
+
+.mml-viewer-check {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.mml-viewer-check input {
+    accent-color: var(--panel-blue-alt);
+}
+
+.mml-viewer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.mml-viewer-btn {
+    padding: 8px 16px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: 1px solid rgba(90, 255, 180, 0.35);
+    background: rgba(7, 13, 26, 0.5);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.mml-viewer-btn:hover {
+    background: rgba(79, 214, 165, 0.15);
+    color: var(--text-primary);
+}
+
+.mml-viewer-btn--primary {
+    background: linear-gradient(135deg, var(--panel-blue) 0%, var(--panel-blue-alt) 100%);
+    color: var(--bg-base);
+    border: none;
+}
+
+.mml-viewer-btn--primary:hover {
+    filter: brightness(1.08);
+    color: var(--bg-base);
+}
+
+.mml-viewer-links {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 768px) {
+    .mml-viewer-links {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mml-viewer-link-block {
+    min-width: 0;
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.mml-viewer-link-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: rgba(79, 214, 165, 0.08);
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.mml-viewer-link-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.mml-viewer-copy {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(90, 255, 180, 0.35);
+    background: rgba(7, 13, 26, 0.55);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.mml-viewer-copy:hover {
+    color: var(--text-primary);
+    background: rgba(79, 214, 165, 0.12);
+}
+
+.mml-viewer-pre {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    word-break: break-all;
+    white-space: pre-wrap;
+    max-height: 140px;
+    overflow: auto;
+    color: var(--text-primary);
+    font-family: ui-monospace, monospace;
+}
+
+.mml-viewer-status {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.mml-viewer-status.is-error {
+    color: var(--highlight-orange);
+}
+
+.mml-viewer-frame-wrap {
+    margin-top: 16px;
+}
+
+.mml-viewer-frame {
+    display: block;
+    width: 100%;
+    height: min(1200px, calc(100vh - 200px));
+    min-height: 52vh;
+    border: 1px solid rgba(90, 255, 180, 0.35);
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 40px rgba(79, 214, 165, 0.12);
+}
+
 .nifty-gallery-section .section-title {
     font-size: 75px;
     font-weight: 800;

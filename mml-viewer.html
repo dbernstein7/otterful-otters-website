@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https://viewer.mml.io https:; worker-src 'self' blob:;">
+    <title>MML Viewer • Otterful Otters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="embed-page">
+    <div class="stars"></div>
+
+    <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-menu-btn-icon"></span>
+    </button>
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" aria-hidden="true"></div>
+    <nav class="top-nav" id="topNav">
+        <a href="index.html#home" class="nav-pill">Home</a>
+        <a href="index.html#analytics" class="nav-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-pill">Collection</a>
+        <a href="index.html#explore" class="nav-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-pill">Nifty Island Gallery</a>
+        <a href="3d-builder.html" class="nav-pill">3D Builder</a>
+        <a href="mml-viewer.html" class="nav-pill active" aria-current="page">MML Viewer</a>
+        <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
+        <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
+        <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
+        <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-pill">Team</a>
+    </nav>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <a href="index.html#home" class="nav-drawer-pill">Home</a>
+        <a href="index.html#analytics" class="nav-drawer-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
+        <a href="index.html#explore" class="nav-drawer-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-drawer-pill">Nifty Island Gallery</a>
+        <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
+        <a href="mml-viewer.html" class="nav-drawer-pill active" aria-current="page">MML Viewer</a>
+        <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
+        <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
+        <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
+        <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-drawer-pill">Team</a>
+    </aside>
+
+    <div class="top-right-icons">
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+        </header>
+
+        <p class="mml-viewer-lede">
+            Paste the <strong>MML document</strong> address (a hosted <code>.html</code> over <code>https://</code>, or an interactive <code>wss://</code> URL from the MML editor).
+            This page embeds the official <a href="https://viewer.mml.io/" target="_blank" rel="noopener noreferrer">MML Viewer</a> and shows the exact viewer link to copy or share.
+        </p>
+
+        <div class="mml-viewer-panel">
+            <label for="mml-doc-url" class="mml-viewer-label">MML document URL</label>
+            <input type="text" id="mml-doc-url" class="mml-viewer-input" placeholder="https://…/my-scene.html  or  wss://…" autocomplete="off" spellcheck="false" aria-describedby="mml-doc-hint">
+            <span id="mml-doc-hint" class="mml-viewer-hint">Tip: open this page with <code>?url=</code> plus an encoded link to pre-fill.</span>
+            <div class="mml-viewer-options">
+                <label class="mml-viewer-check">
+                    <input type="checkbox" id="mml-opt-no-ui" checked>
+                    Hide viewer config panel (<code>noUI</code>)
+                </label>
+                <label class="mml-viewer-check">
+                    <input type="checkbox" id="mml-opt-fit" checked>
+                    Frame content (<code>cameraFitContents</code>)
+                </label>
+            </div>
+            <div class="mml-viewer-actions">
+                <button type="button" id="mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
+                <button type="button" id="mml-open-tab-btn" class="mml-viewer-btn">Open viewer in new tab</button>
+            </div>
+        </div>
+
+        <div class="mml-viewer-links">
+            <div class="mml-viewer-link-block">
+                <div class="mml-viewer-link-head">
+                    <span class="mml-viewer-link-title">MML document (your input)</span>
+                    <button type="button" class="mml-viewer-copy" data-copy-target="mml-doc-out">Copy</button>
+                </div>
+                <pre id="mml-doc-out" class="mml-viewer-pre" aria-live="polite">—</pre>
+            </div>
+            <div class="mml-viewer-link-block">
+                <div class="mml-viewer-link-head">
+                    <span class="mml-viewer-link-title">Full viewer.mml.io URL</span>
+                    <button type="button" class="mml-viewer-copy" data-copy-target="mml-viewer-out">Copy</button>
+                </div>
+                <pre id="mml-viewer-out" class="mml-viewer-pre" aria-live="polite">—</pre>
+            </div>
+        </div>
+        <p id="mml-viewer-status" class="mml-viewer-status" aria-live="polite"></p>
+
+        <div class="mml-viewer-frame-wrap">
+            <iframe
+                id="mml-iframe"
+                class="builder-frame mml-viewer-frame"
+                title="MML Viewer embed"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            ></iframe>
+        </div>
+    </div>
+
+    <script>
+      (function () {
+        const menuBtn = document.querySelector('.nav-menu-btn');
+        const drawer = document.getElementById('navDrawer');
+        const overlay = document.getElementById('navDrawerOverlay');
+        if (!menuBtn || !drawer || !overlay) return;
+
+        function resetDrawerState() {
+          drawer.classList.remove('is-open');
+          overlay.classList.remove('is-open');
+          menuBtn.setAttribute('aria-expanded', 'false');
+          drawer.setAttribute('aria-hidden', 'true');
+          overlay.setAttribute('aria-hidden', 'true');
+          document.body.style.overflow = '';
+        }
+
+        function openDrawer() {
+          drawer.classList.add('is-open');
+          overlay.classList.add('is-open');
+          menuBtn.setAttribute('aria-expanded', 'true');
+          drawer.setAttribute('aria-hidden', 'false');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.style.overflow = 'hidden';
+        }
+
+        menuBtn.addEventListener('click', function () {
+          if (drawer.classList.contains('is-open')) resetDrawerState();
+          else openDrawer();
+        });
+
+        overlay.addEventListener('click', resetDrawerState);
+        document.querySelectorAll('.nav-drawer-pill').forEach((pill) => {
+          pill.addEventListener('click', () => {
+            resetDrawerState();
+            setTimeout(resetDrawerState, 0);
+          });
+        });
+        window.addEventListener('pageshow', resetDrawerState);
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const VIEWER_BASE = 'https://viewer.mml.io/';
+        const input = document.getElementById('mml-doc-url');
+        const iframe = document.getElementById('mml-iframe');
+        const docOut = document.getElementById('mml-doc-out');
+        const viewerOut = document.getElementById('mml-viewer-out');
+        const statusEl = document.getElementById('mml-viewer-status');
+        const loadBtn = document.getElementById('mml-load-btn');
+        const openTabBtn = document.getElementById('mml-open-tab-btn');
+        const noUi = document.getElementById('mml-opt-no-ui');
+        const fit = document.getElementById('mml-opt-fit');
+
+        function parseInitialUrl() {
+          const params = new URLSearchParams(window.location.search);
+          const raw = params.get('url');
+          if (raw && input) input.value = raw;
+        }
+
+        function looksLikeMmlUrl(s) {
+          const t = s.trim();
+          if (!t) return false;
+          try {
+            const u = new URL(t);
+            return u.protocol === 'https:' || u.protocol === 'wss:';
+          } catch {
+            return false;
+          }
+        }
+
+        function buildViewerUrl(docUrl) {
+          const v = new URL(VIEWER_BASE);
+          v.searchParams.set('url', docUrl.trim());
+          v.searchParams.set('cameraMode', 'orbit');
+          if (noUi.checked) v.searchParams.set('noUI', 'true');
+          if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
+          return v.toString();
+        }
+
+        function setStatus(msg, isError) {
+          statusEl.textContent = msg || '';
+          statusEl.classList.toggle('is-error', !!isError);
+        }
+
+        function apply() {
+          const docUrl = (input && input.value) ? input.value.trim() : '';
+          if (!looksLikeMmlUrl(docUrl)) {
+            setStatus('Enter a full URL starting with https:// (static MML HTML) or wss:// (interactive).', true);
+            return;
+          }
+          const viewerUrl = buildViewerUrl(docUrl);
+          docOut.textContent = docUrl;
+          viewerOut.textContent = viewerUrl;
+          iframe.src = viewerUrl;
+          setStatus('Loaded. If the iframe stays blank, check that the MML file allows loading from the public web and that CORS is OK for the viewer.', false);
+
+          try {
+            const next = new URL(window.location.href);
+            next.searchParams.set('url', docUrl);
+            window.history.replaceState({}, '', next.toString());
+          } catch (_) { /* ignore */ }
+        }
+
+        loadBtn.addEventListener('click', apply);
+        openTabBtn.addEventListener('click', function () {
+          const docUrl = (input && input.value) ? input.value.trim() : '';
+          if (!looksLikeMmlUrl(docUrl)) {
+            setStatus('Enter a valid MML document URL first.', true);
+            return;
+          }
+          window.open(buildViewerUrl(docUrl), '_blank', 'noopener,noreferrer');
+        });
+
+        document.querySelectorAll('.mml-viewer-copy').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const id = btn.getAttribute('data-copy-target');
+            const el = document.getElementById(id);
+            const text = el && el.textContent && el.textContent !== '—' ? el.textContent : '';
+            if (!text) {
+              setStatus('Nothing to copy yet — load a document first.', true);
+              return;
+            }
+            navigator.clipboard.writeText(text).then(function () {
+              setStatus('Copied to clipboard.', false);
+            }).catch(function () {
+              setStatus('Copy failed — select the text in the box and copy manually.', true);
+            });
+          });
+        });
+
+        parseInitialUrl();
+        if (input && input.value && looksLikeMmlUrl(input.value)) apply();
+      })();
+    </script>
+</body>
+</html>
