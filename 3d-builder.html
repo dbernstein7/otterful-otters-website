@@ -130,14 +130,15 @@
                 <span id="builder-mml-doc-hint" class="mml-viewer-hint">Open this tab with <code>#mml</code> in the URL, or add <code>?url=</code> with your MML document link to jump here pre-filled.</span>
                 <div class="mml-viewer-options">
                     <label class="mml-viewer-check">
-                        <input type="checkbox" id="builder-mml-opt-no-ui" checked>
-                        Hide viewer panel (<code>noUI</code>)
+                        <input type="checkbox" id="builder-mml-opt-no-ui">
+                        Hide viewer panel (<code>noUI</code>) — turn on only if you want a clean embed; keep off to reach <strong>Character</strong> / animation controls.
                     </label>
                     <label class="mml-viewer-check">
                         <input type="checkbox" id="builder-mml-opt-fit" checked>
                         Frame content (<code>cameraFitContents</code>)
                     </label>
                 </div>
+                <p class="mml-viewer-hint mml-viewer-hint--animations">Viewer defaults match your setup: <strong>orbit</strong> camera, <strong>cameraFitContents</strong>, <strong>ambientLight 5</strong>, <strong>ambientLightColor 0</strong>, orbit pitch 60°, speed 10°/s, FOV 75. <strong>Animations</strong> are not a separate URL — they come from <strong>clips inside your GLB</strong> (export from Blender) or from <code>m-character anim=&quot;…&quot;</code> for an external animation file. In the MML Viewer sidebar, scroll to <strong>Character</strong> (below Light) to pick a clip when the panel is visible.</p>
                 <div class="mml-viewer-actions">
                     <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
                     <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn">Open in new tab</button>
@@ -339,6 +340,11 @@
           const v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
+          v.searchParams.set('cameraOrbitPitch', '60');
+          v.searchParams.set('cameraOrbitSpeed', '10');
+          v.searchParams.set('cameraFov', '75');
+          v.searchParams.set('ambientLight', '5');
+          v.searchParams.set('ambientLightColor', '0');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
           return v.toString();

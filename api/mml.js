@@ -97,7 +97,7 @@ function buildHtml({ id, traits, urls, sockets }) {
     '<body>',
   ];
 
-  parts.push('<m-character', ` id="otter-${id}"`, ` src="${escAttr(urls.fur)}"`, ' y="0"', ' ry="12"', '>');
+  parts.push('<m-character', ` id="otter-${id}"`, ` src="${escAttr(urls.fur)}"`, ' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
 
   if (urls.hat) {
     parts.push(`  <m-model src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
