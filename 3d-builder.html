@@ -486,7 +486,7 @@
 
         function isMmlPublicDemoCharacterAnim(animUrl) {
           const u = (animUrl || '').toLowerCase();
-          if (u.indexOf('public.mml.io') === -1) return false;
+          if (u.indexOf('public.mml.io') === -1 && u.indexOf('public.mml.to') === -1) return false;
           return /\/character-[a-z0-9_-]*-animation\.glb/.test(u);
         }
 
@@ -505,6 +505,34 @@
             + 'Tracks target bones your model does not have, so you get a stretched pose and console “No target node” warnings. '
             + 'Use a movement .glb made for this otter’s skeleton (or embed clips in the body GLB).'
           );
+        }
+
+        /** m-character src must be the skinned body mesh, not an idle/walk clip GLB. */
+        function mCharacterBodySrcLooksLikeAnimPack(srcUrl) {
+          const u = (srcUrl || '').toLowerCase();
+          if (!u || !/\.glb(\?|#|$)/i.test(String(srcUrl || ''))) return false;
+          return (
+            /character[_-]?idle/i.test(u)
+            || /character[_-]?walk/i.test(u)
+            || /character[_-]?run/i.test(u)
+            || /[_-]idle[_-]?animation/i.test(u)
+            || /idle[_-]?animation/i.test(u)
+            || /character[_-]?idle[_-]?animation/i.test(u)
+            || /\/character-[a-z0-9_-]*-animation\.glb/i.test(u)
+          );
+        }
+
+        function mCharacterWrongBodySrcMessage(html) {
+          const { src } = parseFirstMCharacterAttrs(html);
+          if (!src || !mCharacterBodySrcLooksLikeAnimPack(src)) return '';
+          return (
+            'm-character src points at an animation-style GLB, not your otter BODY. Use your fur/body .glb for src; put movement on anim=. '
+            + 'Wrong body file breaks bones — wearables (eyes) can sit on the floor and look static.'
+          );
+        }
+
+        function combineMmlWarnings(html) {
+          return [mmlDemoAnimOnWrongBodyMessage(html), mCharacterWrongBodySrcMessage(html)].filter(Boolean).join(' ');
         }
 
         function ensureHeroPreview() {
@@ -656,7 +684,7 @@
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
-          const mismatch = mmlDemoAnimOnWrongBodyMessage(bodyText);
+          const mismatch = combineMmlWarnings(bodyText);
           if (mismatch) setStatus(mismatch, 'warn');
           else setStatus('', false);
 
@@ -758,10 +786,10 @@
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
-          const mismatch = mmlDemoAnimOnWrongBodyMessage(html);
+          const mismatch = combineMmlWarnings(html);
           if (mismatch) {
             setStatus(
-              mismatch + ' (Still opened the preview — swap anim= to a clip that matches your otter.)',
+              mismatch + ' (Preview still opened — fix src=/anim= URLs.)',
               'warn'
             );
           } else {
