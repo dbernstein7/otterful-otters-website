@@ -1,9 +1,10 @@
-// Canonical deployable copy: ../storage.rules (use `firebase deploy --only storage` from repo root).
+// Deploy to fix browser 403 on GLB URLs: from repo root run:
+//   npm i -g firebase-tools   (once)
+//   firebase login            (once)
+//   firebase deploy --only storage
 //
-// Example Firebase Storage rules for public READ of wearables (site + MML).
-// Firebase Console → Storage → Rules. Without read access, URLs return 403 unless you use &token=.
-//
-// Tighten `write` for production (e.g. only authenticated admin).
+// Rules: anyone may READ files under Furs/, Hats/, Shirts/, Eyes/ (needed for MML / viewer.mml.io).
+// Tighten `write` in production (e.g. authenticated admin only).
 
 rules_version = '2';
 service firebase.storage {

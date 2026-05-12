@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "description": "Static Otterful Otters dashboard with Vercel serverless APIs",
+  "scripts": {
+    "deploy:firebase-storage": "firebase deploy --only storage"
+  },
   "dependencies": {
     "redis": "^5.8.0"
   }
