@@ -110,79 +110,92 @@
             </div>
         </div>
 
-        <div id="builder-panel-mml" class="builder-page-panel" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
-            <div class="builder-mml-callout" role="note">
-                <strong class="builder-mml-callout-title">Start here — two different links</strong>
-                <ol class="builder-mml-callout-list">
-                    <li><strong>Your Firebase <code>.glb</code></strong> is only the 3D model file. It is <em>not</em> an MML “document.” Pasting it in the box below will stay blank.</li>
-                    <li><strong>An MML document</strong> is a normal <code>.html</code> page whose job is to point at that GLB (for example with <code>&lt;m-character src="…glb…"&gt;</code>).</li>
-                    <li><strong>Per-otter from metadata:</strong> use <strong>Build MML from metadata</strong> below (NFT #). That hits <code>/api/mml?id=…</code>, reads the same <code>metadata/&lt;#&gt;.json</code> as the 3D builder, and points wearables at <code>WEARABLES/Furs|Hats|Shirts|Eyes/…</code> — host those files on Firebase with the same paths (see <code>api/mml.js</code> env vars) or under <code>/AvatarBuilder/</code> on this site.</li>
-                    <li>Or click <strong>Try sample Otter document</strong>, then <strong>Load in viewer</strong>, or paste your <code>mml/MMLOtter-preview.html</code> URL — not a raw <code>.glb</code>.</li>
-                </ol>
-            </div>
-            <p class="mml-viewer-lede mml-viewer-lede--inline">
-                The red “eval / CSP” line in Chrome Issues often comes from extensions or from code inside <code>viewer.mml.io</code>; it is usually not why the scene is empty. An empty scene here almost always means the <strong>wrong kind of URL</strong> (a model link instead of an <code>.html</code> document).
-            </p>
-
-            <div class="mml-viewer-panel">
-                <label for="builder-mml-doc-url" class="mml-viewer-label">MML document URL</label>
-                <input type="text" id="builder-mml-doc-url" class="mml-viewer-input" placeholder="https://…/scene.html  or  wss://…" autocomplete="off" spellcheck="false" aria-describedby="builder-mml-doc-hint">
-                <span id="builder-mml-doc-hint" class="mml-viewer-hint">Open this tab with <code>#mml</code> in the URL, or add <code>?url=</code> with your MML document link to jump here pre-filled.</span>
-                <div class="mml-viewer-options">
-                    <label class="mml-viewer-check">
-                        <input type="checkbox" id="builder-mml-opt-no-ui">
-                        Hide viewer panel (<code>noUI</code>) — turn on only if you want a clean embed; keep off to reach <strong>Character</strong> / animation controls.
-                    </label>
-                    <label class="mml-viewer-check">
-                        <input type="checkbox" id="builder-mml-opt-fit" checked>
-                        Frame content (<code>cameraFitContents</code>)
-                    </label>
+        <div id="builder-panel-mml" class="builder-page-panel mml-debug" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
+            <details class="mml-debug-help">
+                <summary class="mml-debug-help-summary">How MML URLs work (read first)</summary>
+                <div class="builder-mml-callout mml-debug-callout" role="note">
+                    <strong class="builder-mml-callout-title">Two different links</strong>
+                    <ol class="builder-mml-callout-list">
+                        <li><strong>Firebase <code>.glb</code></strong> = the model file only — do not paste it as the MML document URL.</li>
+                        <li><strong>MML document</strong> = an <code>.html</code> page (or <code>/api/mml?id=…</code>) that references those GLBs.</li>
+                        <li><strong>Metadata:</strong> <strong>Build MML from metadata</strong> uses <code>metadata/&lt;#&gt;.json</code> + <code>WEARABLES/…</code> paths (see <code>api/mml.js</code>).</li>
+                        <li><strong>Sample:</strong> <strong>Try sample Otter document</strong> loads <code>mml/MMLOtter-preview.html</code>.</li>
+                    </ol>
                 </div>
-                <p class="mml-viewer-hint mml-viewer-hint--animations">Viewer defaults match your setup: <strong>orbit</strong> camera, <strong>cameraFitContents</strong>, <strong>ambientLight 5</strong>, <strong>ambientLightColor 0</strong>, orbit pitch 60°, speed 10°/s, FOV 75. <strong>Animations</strong> are not a separate URL — they come from <strong>clips inside your GLB</strong> (export from Blender) or from <code>m-character anim=&quot;…&quot;</code> for an external animation file. In the MML Viewer sidebar, scroll to <strong>Character</strong> (below Light) to pick a clip when the panel is visible.</p>
-                <div class="mml-viewer-actions">
-                    <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
-                    <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn">Open in new tab</button>
-                    <button type="button" id="builder-mml-sample-btn" class="mml-viewer-btn" title="Loads mml/MMLOtter-preview.html from this site">Try sample Otter document</button>
-                </div>
-            </div>
+                <p class="mml-viewer-lede mml-debug-lede">Chrome “eval / CSP” in Issues is usually extensions or viewer.mml.io itself — not your paste. Animations: clips inside the GLB, or <code>m-character anim="…"</code>; in the viewer sidebar use <strong>Character</strong> (below Light).</p>
+            </details>
 
-            <div class="mml-viewer-panel mml-viewer-panel--metadata">
-                <span class="mml-viewer-label">Build from collection metadata</span>
-                <p class="mml-viewer-hint">Same trait rules as the 3D builder (<code>Fur</code>, <code>Hats</code>/<code>Hat</code>, <code>Shirt</code>, <code>Eyes</code>). Uses <code>metadata/&lt;#&gt;.json</code> on this domain. Wearables attach with default bone sockets (<code>mixamorig:Head</code> / <code>mixamorig:Spine2</code>); if pieces are missing or offset, set Vercel env <code>MML_BONE_SCHEME=short</code> or <code>MML_SOCKET_*</code> — see <code>api/mml.js</code>.</p>
-                <div class="mml-viewer-metadata-row">
-                    <label for="builder-mml-nft-input" class="mml-viewer-sr-only">NFT number</label>
-                    <input type="number" id="builder-mml-nft-input" class="mml-viewer-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1 to 2222">
-                    <button type="button" id="builder-mml-from-nft-btn" class="mml-viewer-btn mml-viewer-btn--primary">Build MML from metadata</button>
-                </div>
-            </div>
-
-            <div class="mml-viewer-links">
-                <div class="mml-viewer-link-block">
-                    <div class="mml-viewer-link-head">
-                        <span class="mml-viewer-link-title">MML document</span>
-                        <button type="button" class="mml-viewer-copy" data-copy-target="builder-mml-doc-out">Copy</button>
+            <div class="mml-debug-grid">
+                <aside class="mml-debug-sidebar" aria-label="MML preview controls">
+                    <div class="mml-debug-brand">
+                        <span class="mml-debug-brand-title">MML preview</span>
+                        <span class="mml-debug-brand-tag">viewer.mml.io</span>
                     </div>
-                    <pre id="builder-mml-doc-out" class="mml-viewer-pre" aria-live="polite">—</pre>
-                </div>
-                <div class="mml-viewer-link-block">
-                    <div class="mml-viewer-link-head">
-                        <span class="mml-viewer-link-title">Full viewer.mml.io URL</span>
-                        <button type="button" class="mml-viewer-copy" data-copy-target="builder-mml-viewer-out">Copy</button>
-                    </div>
-                    <pre id="builder-mml-viewer-out" class="mml-viewer-pre" aria-live="polite">—</pre>
-                </div>
-            </div>
-            <p id="builder-mml-status" class="mml-viewer-status" aria-live="polite"></p>
 
-            <div class="mml-viewer-frame-wrap">
-                <iframe
-                    id="builder-mml-iframe"
-                    class="builder-frame mml-viewer-frame"
-                    title="MML Viewer embed"
-                    loading="lazy"
-                    referrerpolicy="no-referrer"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                ></iframe>
+                    <div class="mml-viewer-panel mml-debug-panel">
+                        <h3 class="mml-debug-section-title">Document URL</h3>
+                        <label for="builder-mml-doc-url" class="mml-viewer-sr-only">MML document URL</label>
+                        <input type="text" id="builder-mml-doc-url" class="mml-viewer-input mml-debug-input" placeholder="https://…/scene.html or wss://…" autocomplete="off" spellcheck="false" aria-describedby="builder-mml-doc-hint">
+                        <p id="builder-mml-doc-hint" class="mml-viewer-hint mml-debug-muted">Tip: <code>3d-builder.html#mml</code> or <code>?url=</code> to pre-fill.</p>
+                        <div class="mml-viewer-options mml-debug-options">
+                            <label class="mml-viewer-check mml-debug-check">
+                                <input type="checkbox" id="builder-mml-opt-no-ui">
+                                Hide viewer UI (<code>noUI</code>)
+                            </label>
+                            <label class="mml-viewer-check mml-debug-check">
+                                <input type="checkbox" id="builder-mml-opt-fit" checked>
+                                Frame content
+                            </label>
+                        </div>
+                        <p class="mml-viewer-hint mml-debug-muted mml-debug-hint-tight">Defaults: orbit camera, ambient 5, pitch 60°, FOV 75 (see viewer URL).</p>
+                        <div class="mml-viewer-actions mml-debug-actions">
+                            <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary mml-debug-btn mml-debug-btn--primary">Load preview</button>
+                            <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn mml-debug-btn">Open in new tab</button>
+                            <button type="button" id="builder-mml-sample-btn" class="mml-viewer-btn mml-debug-btn" title="Loads mml/MMLOtter-preview.html">Sample Otter</button>
+                        </div>
+                    </div>
+
+                    <div class="mml-viewer-panel mml-debug-panel mml-viewer-panel--metadata">
+                        <h3 class="mml-debug-section-title">From metadata</h3>
+                        <p class="mml-viewer-hint mml-debug-muted mml-debug-hint-tight">Same traits as 3D builder. Sockets: <code>mixamorig:Head</code> / <code>mixamorig:Spine2</code> (override via Vercel env).</p>
+                        <div class="mml-viewer-metadata-row mml-debug-metadata-row">
+                            <input type="number" id="builder-mml-nft-input" class="mml-viewer-nft-input mml-debug-input mml-debug-nft" placeholder="NFT #" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1 to 2222">
+                            <button type="button" id="builder-mml-from-nft-btn" class="mml-viewer-btn mml-viewer-btn--primary mml-debug-btn mml-debug-btn--primary mml-debug-btn--wide">Build from metadata</button>
+                        </div>
+                    </div>
+
+                    <div class="mml-debug-output">
+                        <h3 class="mml-debug-section-title">Output</h3>
+                        <div class="mml-viewer-links mml-debug-links">
+                            <div class="mml-viewer-link-block mml-debug-link-block">
+                                <div class="mml-viewer-link-head mml-debug-link-head">
+                                    <span class="mml-viewer-link-title">MML document</span>
+                                    <button type="button" class="mml-viewer-copy mml-debug-copy" data-copy-target="builder-mml-doc-out">Copy</button>
+                                </div>
+                                <pre id="builder-mml-doc-out" class="mml-viewer-pre mml-debug-pre" aria-live="polite">—</pre>
+                            </div>
+                            <div class="mml-viewer-link-block mml-debug-link-block">
+                                <div class="mml-viewer-link-head mml-debug-link-head">
+                                    <span class="mml-viewer-link-title">Viewer URL</span>
+                                    <button type="button" class="mml-viewer-copy mml-debug-copy" data-copy-target="builder-mml-viewer-out">Copy</button>
+                                </div>
+                                <pre id="builder-mml-viewer-out" class="mml-viewer-pre mml-debug-pre" aria-live="polite">—</pre>
+                            </div>
+                        </div>
+                        <p id="builder-mml-status" class="mml-viewer-status mml-debug-status" aria-live="polite"></p>
+                    </div>
+                </aside>
+
+                <div class="mml-debug-stage">
+                    <iframe
+                        id="builder-mml-iframe"
+                        class="mml-debug-iframe"
+                        title="MML Viewer embed"
+                        loading="lazy"
+                        referrerpolicy="no-referrer"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    ></iframe>
+                </div>
             </div>
         </div>
     </div>
