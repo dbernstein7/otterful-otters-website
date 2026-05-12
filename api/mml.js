@@ -15,6 +15,11 @@
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
+ *
+ * Optional separate animation file (same idea as many viewers: body GLB + linked anim GLB):
+ *   MML_CHARACTER_ANIM — URL or storage path (like WEARABLES/Animations/Idle.glb) for m-character's anim= attribute. Omitted when unset.
+ *   Metadata: optional trait type "MML Anim" (case-insensitive) with a full https URL or a storage path string; overrides MML_CHARACTER_ANIM for that token.
+ *   Same for trait type "MML_Anim" on metadata.
  */
 
 function siteOriginFromRequest(req) {
@@ -89,6 +94,7 @@ function parseTraits(metadata) {
     else if (traitType === 'shirt') traits.shirt = traitValue;
     else if (traitType === 'eyes') traits.eyes = traitValue;
     else if (traitType === 'hats' || traitType === 'hat') traits.hat = traitValue;
+    else if (traitType === 'mml anim' || traitType === 'mml_anim') traits.mmlAnim = traitValue;
   }
   return traits;
 }
@@ -131,6 +137,14 @@ function wearablePrefix() {
   return p || 'WEARABLES';
 }
 
+/** Full https URL as-is, otherwise treat as Firebase/site storage path for buildWearableUrl. */
+function resolveLinkedAssetUrl(origin, raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  if (/^https?:\/\//i.test(s)) return s;
+  return buildWearableUrl(origin, s.replace(/^\/+/, ''));
+}
+
 function buildHtml({ id, traits, urls, sockets }) {
   const parts = [
     '<!DOCTYPE html>',
@@ -144,7 +158,14 @@ function buildHtml({ id, traits, urls, sockets }) {
     '<body>',
   ];
 
-  parts.push('<m-character', ` id="otter-${id}"`, ` src="${escAttr(urls.fur)}"`, ' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
+  const charOpen = [
+    '<m-character',
+    ` id="otter-${id}"`,
+    ` src="${escAttr(urls.fur)}"`,
+  ];
+  if (urls.anim) charOpen.push(` anim="${escAttr(urls.anim)}"`);
+  charOpen.push(' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
+  parts.push(charOpen.join(''));
 
   if (urls.hat) {
     parts.push(`  <m-model src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
@@ -215,6 +236,12 @@ module.exports = async (req, res) => {
     } else {
       urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
     }
+  }
+
+  const animRaw = (traits.mmlAnim || process.env.MML_CHARACTER_ANIM || '').trim();
+  if (animRaw) {
+    const u = resolveLinkedAssetUrl(origin, animRaw);
+    if (u) urls.anim = u;
   }
 
   const sockets = defaultSockets();

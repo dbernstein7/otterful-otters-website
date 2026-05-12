@@ -152,7 +152,7 @@
                 </div>
                 <div id="builder-mml-anim-wrap" class="mml-simple-anim-wrap" hidden>
                     <h3 class="mml-simple-anim-title">Body GLB — animation clips</h3>
-                    <p class="mml-simple-anim-lead">Switch clips on the <strong>fur / body</strong> model (same file MML uses for <code>m-character</code>). Full outfit + MML lighting stay in the viewer above.</p>
+                    <p class="mml-simple-anim-lead">Clips load from <code>m-character anim=…</code> when set (separate animation GLB); otherwise from <code>src</code> (body). The main viewer above shows the full MML scene.</p>
                     <iframe
                         id="builder-mml-anim-iframe"
                         class="mml-simple-anim-iframe"
@@ -332,13 +332,20 @@
             const r = await fetch(docUrl);
             if (!r.ok) throw new Error(String(r.status));
             const html = await r.text();
-            const m = html.match(/<m-character[\s\S]*?\bsrc\s*=\s*["']([^"']+)["']/i);
-            if (!m) {
+            const block = html.match(/<m-character\b[\s\S]*?>/i);
+            const blockStr = block ? block[0] : html;
+            const mAnim = blockStr.match(/\banim\s*=\s*["']([^"']+)["']/i);
+            const mSrc = blockStr.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
+            if (!mSrc) {
               animWrap.hidden = true;
               animIframe.removeAttribute('src');
               return;
             }
-            const glbAbs = decodeHtmlAttr(m[1]).trim();
+            let glbAbs = decodeHtmlAttr(mSrc[1]).trim();
+            if (mAnim) {
+              const animAbs = decodeHtmlAttr(mAnim[1]).trim();
+              if (/\.glb(\?|#|$)/i.test(animAbs)) glbAbs = animAbs;
+            }
             if (!/\.glb(\?|#|$)/i.test(glbAbs)) {
               animWrap.hidden = true;
               animIframe.removeAttribute('src');
