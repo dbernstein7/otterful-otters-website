@@ -277,7 +277,8 @@
 
     <script>
       (function () {
-        const VIEWER_BASE = 'https://viewer.mml.io/';
+        // Use /main/v1/ — the site root redirects here and drops query params, which left the viewer with no document URL.
+        const VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
         const input = document.getElementById('builder-mml-doc-url');
         const iframe = document.getElementById('builder-mml-iframe');
         const docOut = document.getElementById('builder-mml-doc-out');
