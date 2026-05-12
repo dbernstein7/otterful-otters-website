@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Otterful — motion lab (library + retarget)</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; connect-src 'self' https: blob:; frame-src 'self' https:; worker-src 'self' blob:;">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: #0e0e12;
+      color: #ececf0;
+      min-height: 0;
+    }
+    #bar {
+      flex-shrink: 0;
+      z-index: 2;
+      display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+      padding: 10px 12px; background: #16161c; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    #bar label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.45); }
+    select, button {
+      font: inherit; font-size: 0.88rem; padding: 7px 12px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.14); background: #22222a; color: #f4f4f8;
+    }
+    select { min-width: 220px; max-width: min(100%, 420px); }
+    button { cursor: pointer; }
+    button:hover { filter: brightness(1.08); }
+    button#slow { background: #2b6cff; border-color: #2b6cff; color: #fff; font-weight: 600; }
+    button#slow.is-on { background: #1e4aa8; }
+    button#clear { background: #2a2a32; }
+    #hint {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      color: rgba(200,200,210,0.7);
+      padding: 0 12px 8px;
+      margin: 0;
+      line-height: 1.45;
+    }
+    #hint code { font-size: 0.92em; padding: 0.1em 0.35em; border-radius: 4px; background: rgba(0,0,0,0.35); }
+    #err {
+      flex-shrink: 0;
+      color: #ff9b9b;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      background: rgba(80,0,0,0.25);
+    }
+    #warn {
+      flex-shrink: 0;
+      color: #e8c86a;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      background: rgba(80, 60, 0, 0.22);
+      border-bottom: 1px solid rgba(255,200,80,0.12);
+    }
+    #stage {
+      position: relative;
+      z-index: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      background: #0a0a0e;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  </style>
+</head>
+<body>
+  <div id="bar">
+    <div>
+      <label for="clip">Animation</label><br>
+      <select id="clip" disabled aria-label="Animation clip">
+        <option value="">—</option>
+      </select>
+    </div>
+    <button type="button" id="slow" disabled>Slow motion</button>
+    <button type="button" id="clear" disabled>Clear</button>
+  </div>
+  <p id="hint">
+    <strong>Otterful motion library</strong> (like sideload-style viewers): when your GLB has <em>no</em> embedded glTF clips, we load our Mixamo-authored clips and
+    <strong>retarget</strong> them in the browser using <code>three.js SkeletonUtils</code> plus an <strong>Epic-style → Mixamo</strong> bone map (quadruped-friendly spine chain).
+    Quality varies by bind pose; MML / viewer.mml.io still only sees what is in your hosted files unless you bake clips there too.
+  </p>
+  <div id="warn" hidden></div>
+  <div id="err" hidden></div>
+  <div id="stage"><canvas id="cv"></canvas></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+    }
+  }
+  </script>
+  <script type="module" src="avatar-motion-lab.js"></script>
+</body>
+</html>
