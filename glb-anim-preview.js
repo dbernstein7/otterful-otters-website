@@ -5,6 +5,7 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/exampl
 const clipSel = document.getElementById('clip');
 const slowBtn = document.getElementById('slow');
 const clearBtn = document.getElementById('clear');
+const pngBtn = document.getElementById('png');
 const errEl = document.getElementById('err');
 const warnEl = document.getElementById('warn');
 const canvas = document.getElementById('cv');
@@ -155,7 +156,12 @@ scene.background = new THREE.Color(0x1a1a22);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 500);
 camera.position.set(0, 1.35, 2.8);
 
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  alpha: false,
+  preserveDrawingBuffer: true,
+});
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
@@ -270,6 +276,44 @@ clearBtn.addEventListener('click', () => {
   clipSel.value = '';
 });
 
+function safeFilenameBaseFromGlbUrl(url) {
+  try {
+    const u = new URL(url);
+    const seg = u.pathname.split('/').filter(Boolean).pop() || 'model';
+    const base = seg.replace(/\.glb$/i, '');
+    const cleaned = base.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '');
+    return (cleaned || 'otterful-preview').slice(0, 56);
+  } catch (_) {
+    return 'otterful-preview';
+  }
+}
+
+pngBtn.addEventListener('click', () => {
+  if (!root) return;
+  controls.update();
+  renderer.render(scene, camera);
+  canvas.toBlob(
+    (blob) => {
+      if (!blob) {
+        showWarn('PNG capture failed — try another browser or disable privacy extensions.');
+        return;
+      }
+      const name = `${safeFilenameBaseFromGlbUrl(glbUrl)}-${Date.now()}.png`;
+      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = name;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+    'image/png',
+    0.92
+  );
+});
+
 const loader = new GLTFLoader();
 loader.load(
   glbUrl,
@@ -308,6 +352,7 @@ loader.load(
         'This GLB lists 0 glTF animations (nothing to play). Re-export with clips included (e.g. Blender glTF: NLA / active actions), '
         + 'or use a separate movement file if your host supports anim="…" on the character element.';
       showWarn([analysis.risky ? analysis.message : '', noClipMsg].filter(Boolean).join(' '));
+      pngBtn.disabled = false;
       return;
     }
     const ph = document.createElement('option');
@@ -323,6 +368,7 @@ loader.load(
     clipSel.disabled = false;
     slowBtn.disabled = false;
     clearBtn.disabled = false;
+    pngBtn.disabled = false;
 
     mixer = new THREE.AnimationMixer(root);
     root.updateMatrixWorld(true);
@@ -344,5 +390,6 @@ loader.load(
     clipSel.disabled = true;
     slowBtn.disabled = true;
     clearBtn.disabled = true;
+    pngBtn.disabled = true;
   }
 );

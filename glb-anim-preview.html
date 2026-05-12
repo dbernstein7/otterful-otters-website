@@ -38,6 +38,8 @@
     button#slow { background: #2b6cff; border-color: #2b6cff; color: #fff; font-weight: 600; }
     button#slow.is-on { background: #1e4aa8; }
     button#clear { background: #2a2a32; }
+    button#png { background: #4fd6a5; border-color: #3bc493; color: #0a1612; font-weight: 700; }
+    button#png:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
     #hint {
       flex-shrink: 0;
       font-size: 0.78rem;
@@ -82,8 +84,9 @@
     </div>
     <button type="button" id="slow" disabled>Slow motion</button>
     <button type="button" id="clear" disabled>Clear animation</button>
+    <button type="button" id="png" disabled title="Current frame as PNG">Save PNG</button>
   </div>
-  <p id="hint">Clips come from the body <code>.glb</code> in your MML document. If a file contains more than one full-character skinned mesh, a yellow banner explains the issue; the 3D builder passes <code>hideDupBodies=1</code> to hide likely duplicates in this preview only (viewer.mml.io is unchanged).</p>
+  <p id="hint">Clips come from the body <code>.glb</code> in your MML document. <strong>Save PNG</strong> captures the current view (orbit to taste, then export). If a file contains more than one full-character skinned mesh, a yellow banner explains the issue; the 3D builder passes <code>hideDupBodies=1</code> to hide likely duplicates in this preview only (viewer.mml.io is unchanged).</p>
   <div id="warn" hidden></div>
   <div id="err" hidden></div>
   <div id="stage"><canvas id="cv"></canvas></div>
