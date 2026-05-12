@@ -328,7 +328,14 @@ loader.load(
   },
   undefined,
   (e) => {
-    showErr('Could not load GLB: ' + (e && e.message ? e.message : String(e)));
+    const base = e && e.message ? e.message : String(e);
+    let msg = 'Could not load GLB: ' + base;
+    if (/DOCTYPE|not valid JSON|Unexpected token '<'/i.test(base)) {
+      msg +=
+        ' — The URL probably returned an HTML page (404 or SPA shell) instead of a binary .glb. '
+        + 'If this is /mml/… on Vercel, deploy those GLB files or host them (e.g. Firebase) and set WEARABLE_ASSET_ORIGIN if needed.';
+    }
+    showErr(msg);
     showWarn('');
     clipSel.disabled = true;
     slowBtn.disabled = true;
