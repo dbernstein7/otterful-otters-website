@@ -112,59 +112,65 @@
 
         <div id="builder-panel-mml" class="builder-page-panel mml-simple" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
             <div class="mml-simple-stack">
-                <div class="mml-simple-hero">
-                    <div class="mml-simple-hero-head">
-                        <h2 class="mml-simple-hero-heading">Otter in motion</h2>
-                        <p class="mml-simple-hero-lead">This uses <strong>Otterful motion lab</strong> on your Firebase <code>OGOtter.glb</code>: browser-side <strong>Mixamo clip library + Epic→Mixamo retarget</strong> (similar idea to sideload-style viewers). It is <em>not</em> what viewer.mml.io does by itself — below is the real <strong>MML + Firebase / API</strong> path.</p>
+                <div class="mml-simple-toolbar">
+                    <h2 class="mml-simple-heading">MML document &amp; viewer</h2>
+                    <p class="mml-simple-lead"><strong>Preview</strong> loads <code>/api/mml?id=…</code> (your NFT trait GLBs). <strong>Sample otter</strong> (More options) loads the Firebase <code>OGOtter.glb</code> MML page. The MML viewer only plays clips that already exist inside the loaded GLB (or a separate <code>anim=</code> file that matches the skeleton). If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
+                    <div class="mml-simple-preview-row">
+                        <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
+                        <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
                     </div>
-                    <div class="mml-simple-hero-viewport">
-                        <iframe
-                            id="builder-mml-hero-iframe"
-                            class="mml-simple-hero-iframe"
-                            title="Sample animated otter (Three.js preview)"
-                            loading="eager"
-                            referrerpolicy="no-referrer"
-                        ></iframe>
-                    </div>
-                </div>
-                <div class="mml-simple-mml-section">
-                    <div class="mml-simple-toolbar">
-                        <h2 class="mml-simple-heading">MML document &amp; viewer</h2>
-                        <p class="mml-simple-lead"><strong>Preview</strong> loads <code>/api/mml?id=…</code> (your NFT trait GLBs). <strong>Sample otter</strong> (More options) loads the Firebase <code>OGOtter.glb</code> MML page. The MML viewer only plays clips that already exist inside the loaded GLB (or a separate <code>anim=</code> file that matches the skeleton); it does not attach default animations to arbitrary rigs. If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
-                        <div class="mml-simple-preview-row">
-                            <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
-                            <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
+                    <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
+                    <details class="mml-simple-more">
+                        <summary>More options</summary>
+                        <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
+                        <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
+                        <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
+                        <div class="mml-simple-more-btns">
+                            <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
+                            <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
+                            <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
                         </div>
-                        <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
-                        <details class="mml-simple-more">
-                            <summary>More options</summary>
-                            <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
-                            <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
-                            <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
-                            <div class="mml-simple-more-btns">
-                                <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
-                                <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
-                                <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
-                            </div>
-                            <div class="mml-simple-checks">
-                                <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
-                                <label><input type="checkbox" id="builder-mml-opt-no-ui"> Hide viewer controls</label>
-                            </div>
-                            <div class="mml-simple-copy-row">
-                                <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
-                                <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
-                            </div>
-                        </details>
+                        <div class="mml-simple-checks">
+                            <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
+                            <label><input type="checkbox" id="builder-mml-opt-no-ui"> Hide viewer controls</label>
+                        </div>
+                        <div class="mml-simple-copy-row">
+                            <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
+                            <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
+                        </div>
+                    </details>
+                </div>
+                <div class="mml-simple-split">
+                    <div class="mml-simple-hero">
+                        <div class="mml-simple-hero-head">
+                            <h2 class="mml-simple-hero-heading">Otter in motion</h2>
+                            <p class="mml-simple-hero-lead">Otterful <strong>motion lab</strong> on Firebase <code>OGOtter.glb</code>: Mixamo library clips + Epic→Mixamo retarget in the browser (not the same as viewer.mml.io alone).</p>
+                        </div>
+                        <div class="mml-simple-hero-viewport">
+                            <iframe
+                                id="builder-mml-hero-iframe"
+                                class="mml-simple-hero-iframe"
+                                title="Otter motion lab (Three.js)"
+                                loading="eager"
+                                referrerpolicy="no-referrer"
+                            ></iframe>
+                        </div>
                     </div>
-                    <div class="mml-simple-viewport">
-                        <iframe
-                            id="builder-mml-iframe"
-                            class="mml-simple-iframe"
-                            title="MML preview"
-                            loading="eager"
-                            referrerpolicy="no-referrer"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        ></iframe>
+                    <div class="mml-simple-mml-column">
+                        <div class="mml-simple-mml-column-head">
+                            <h3 class="mml-simple-mml-column-title">MML scene</h3>
+                            <p class="mml-simple-mml-column-lead">viewer.mml.io — your document URL from above.</p>
+                        </div>
+                        <div class="mml-simple-viewport mml-simple-viewport--split">
+                            <iframe
+                                id="builder-mml-iframe"
+                                class="mml-simple-iframe mml-simple-iframe--split"
+                                title="MML preview"
+                                loading="eager"
+                                referrerpolicy="no-referrer"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                            ></iframe>
+                        </div>
                     </div>
                 </div>
             </div>

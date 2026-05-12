@@ -51,6 +51,12 @@ const LIBRARY_CLIPS = [
   { path: 'games/shell-snag/mixamo/run-medium.glb', label: 'Library: Run (retargeted)' },
 ];
 
+/** Resolve static donor GLBs from site root (avoids wrong paths vs new URL(rel, './')). */
+function donorAssetHref(relPath) {
+  const path = String(relPath || '').replace(/^\/+/, '');
+  return new URL(path, `${window.location.origin}/`).href;
+}
+
 function showErr(msg) {
   errEl.hidden = !msg;
   errEl.textContent = msg || '';
@@ -192,6 +198,7 @@ scene.add(grid);
 
 let root = null;
 let mixer = null;
+let mixerClipRoot = null;
 let clips = [];
 let currentAction = null;
 let slow = false;
@@ -226,6 +233,7 @@ function disposeRoot() {
     mixer = null;
   }
   currentAction = null;
+  mixerClipRoot = null;
   if (!root) return;
   disposeGltf({ scene: root });
   scene.remove(root);
@@ -244,7 +252,8 @@ function playClipByIndex(index) {
   stopAll();
   const clip = clips[index];
   if (!clip || !mixer || !root) return;
-  currentAction = mixer.clipAction(clip, root);
+  const localRoot = mixerClipRoot && mixerClipRoot.isObject3D ? mixerClipRoot : root;
+  currentAction = mixer.clipAction(clip, localRoot);
   currentAction.reset();
   currentAction.setLoop(THREE.LoopRepeat, Infinity);
   currentAction.clampWhenFinished = false;
@@ -278,15 +287,16 @@ const loader = new GLTFLoader();
 
 async function buildLibraryClips(targetMesh) {
   const out = [];
-  const base = new URL('./', window.location.href);
+  let loadFailures = 0;
   for (const entry of LIBRARY_CLIPS) {
-    const donorUrl = new URL(entry.path, base).href;
+    const donorUrl = donorAssetHref(entry.path);
     try {
       const donorGltf = await loader.loadAsync(donorUrl);
       const donorMesh = findLargestSkinnedMesh(donorGltf.scene);
       const srcClip = donorGltf.animations && donorGltf.animations[0];
       if (!donorMesh || !donorMesh.skeleton || !srcClip) {
         disposeGltf(donorGltf);
+        loadFailures += 1;
         continue;
       }
       donorGltf.scene.visible = false;
@@ -310,13 +320,15 @@ async function buildLibraryClips(targetMesh) {
         out.push(retargeted);
       }
     } catch (e) {
+      loadFailures += 1;
       console.warn('[avatar-motion-lab] donor load failed', donorUrl, e);
     }
   }
+  buildLibraryClips.lastLoadFailures = loadFailures;
   return out;
 }
 
-function fillClipUi() {
+function fillClipUi(mixerBindingRoot) {
   clipSel.innerHTML = '';
   if (!clips.length) {
     const o = document.createElement('option');
@@ -341,7 +353,10 @@ function fillClipUi() {
   clipSel.disabled = false;
   slowBtn.disabled = false;
   clearBtn.disabled = false;
-  mixer = new THREE.AnimationMixer(root);
+  const bindRoot = mixerBindingRoot && mixerBindingRoot.isObject3D ? mixerBindingRoot : root;
+  mixerClipRoot = bindRoot;
+  mixer = new THREE.AnimationMixer(bindRoot);
+  bindRoot.updateMatrixWorld(true);
   root.updateMatrixWorld(true);
   mixer.update(0);
   clipSel.selectedIndex = 1;
@@ -374,7 +389,7 @@ loader.load(
     const targetMesh = findLargestSkinnedMesh(root);
     if (!targetMesh || !targetMesh.skeleton) {
       showErr('No skinned mesh with a skeleton found in this GLB.');
-      fillClipUi();
+      fillClipUi(root);
       return;
     }
 
@@ -384,35 +399,38 @@ loader.load(
     if (!nativeCount && useLibrary) {
       const lib = await buildLibraryClips(targetMesh);
       clips = lib;
+      const failedLoads = buildLibraryClips.lastLoadFailures || 0;
       if (!clips.length) {
-        showWarn(
-          analysis.risky ? `${analysis.message} ` : ''
-          + 'Motion library retarget produced no usable tracks for this skeleton. '
-          + 'Your rig may not match the built-in Epic→Mixamo map; embed clips in the GLB for MML.',
-        );
+        const parts = [];
+        if (analysis.risky) parts.push(analysis.message);
+        if (failedLoads >= LIBRARY_CLIPS.length) {
+          parts.push(
+            `Could not load any motion-library GLBs from this site (check that /games/shell-snag/mixamo/*.glb is deployed at ${window.location.origin}/).`,
+          );
+        } else {
+          parts.push(
+            'Motion library retarget produced no usable tracks for this skeleton. '
+            + 'Your rig may not match the built-in Epic→Mixamo map; embed clips in the GLB for MML.',
+          );
+        }
+        showWarn(parts.filter(Boolean).join(' '));
       } else {
         showWarn(
-          (analysis.risky ? `${analysis.message} ` : '')
-          + `Loaded ${clips.length} retargeted clip(s) from Otterful’s Mixamo library (body had 0 embedded glTF animations).`,
+          [analysis.risky ? analysis.message : null, `Loaded ${clips.length} retargeted clip(s) from Otterful’s Mixamo library (body had 0 embedded glTF animations).`]
+            .filter(Boolean)
+            .join(' '),
         );
       }
     } else if (!nativeCount && !useLibrary) {
       showWarn(
-        (analysis.risky ? `${analysis.message} ` : '')
-        + 'This file has no embedded animations and library=0 — nothing to play.',
+        [analysis.risky ? analysis.message : null, 'This file has no embedded animations and library=0 — nothing to play.']
+          .filter(Boolean)
+          .join(' '),
       );
-    } else if (nativeCount && useLibrary) {
-      const lib = await buildLibraryClips(targetMesh);
-      clips = [...(gltf.animations || []), ...lib];
-      if (lib.length) {
-        showWarn(
-          (analysis.risky ? `${analysis.message} ` : '')
-          + `Playing ${nativeCount} embedded clip(s) plus ${lib.length} retargeted library clip(s).`,
-        );
-      }
     }
 
-    fillClipUi();
+    const mixerBindingRoot = !nativeCount && clips.length ? targetMesh : root;
+    fillClipUi(mixerBindingRoot);
   },
   undefined,
   (e) => {
