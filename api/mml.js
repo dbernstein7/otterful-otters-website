@@ -1,6 +1,6 @@
 /**
- * Vercel serverless: returns a static MML HTML document for an Otterful token,
- * using metadata traits and GLB URLs (site /AvatarBuilder paths or Firebase Storage).
+ * Vercel serverless: returns a static MML HTML document for an Otterful token from NFT metadata.
+ * GLB URLs are either Firebase Storage (env below) or site-hosted paths — independent of the AvatarBuilder app.
  *
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
