@@ -2,6 +2,22 @@
   "version": 2,
   "buildCommand": null,
   "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/mml/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, HEAD, OPTIONS" }
+      ]
+    },
+    {
+      "source": "/AvatarBuilder/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, HEAD, OPTIONS" }
+      ]
+    }
+  ],
   "routes": [
     { "handle": "filesystem" },
     {
