@@ -114,7 +114,7 @@
             <div class="mml-doc-workbench-bar">
                 <div class="mml-doc-workbench-bar-main">
                     <h2 class="mml-doc-workbench-title">MML playground</h2>
-                    <p class="mml-doc-workbench-sub">Edit markup like the <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> docs — <strong>Preview</strong> loads your <code>/api/mml?id=…</code> page into the editor and viewer.</p>
+                    <p class="mml-doc-workbench-sub">Edit markup like the <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> docs — <strong>Preview</strong> loads your <code>/api/mml?id=…</code> page into the editor and viewer. <code>anim=</code> is documented there; it is <strong>not</strong> a drop-in “any public clip” on an arbitrary body (see below).</p>
                 </div>
                 <div class="mml-doc-workbench-bar-actions">
                     <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
@@ -134,6 +134,15 @@
                     </div>
                 </div>
                 <p id="builder-mml-status" class="mml-playground-status" role="status" aria-live="polite"></p>
+
+                <details class="mml-playground-anim-help">
+                    <summary>Animations — how <code>anim=</code> relates to the docs</summary>
+                    <div class="mml-playground-anim-help-body">
+                        <p>The <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> <code>anim</code> attribute is a URL to a <strong>second GLB</strong> whose <strong>glTF animations target the same skeleton / bone names</strong> as the body in <code>src</code>. The official example pairs <code>character-body.glb</code> with <code>character-idle-animation.glb</code> from <a href="https://public.mml.io/" target="_blank" rel="noopener noreferrer">public.mml.io</a> — those files were authored together, like a Blender body and its matching action export.</p>
+                        <p>There is <strong>no global “public animation library”</strong> that automatically rigs every character. Pasting e.g. <code>https://public.mml.io/character-idle-animation.glb</code> onto an otter body usually <strong>will not play</strong>, because the clip’s joints do not match your body GLB.</p>
+                        <p><strong>Otterful <code>/api/mml</code>:</strong> an <code>anim="…"</code> line is emitted when the token’s metadata has a trait <strong>MML Anim</strong> (or <strong>MML_Anim</strong>) whose value is a full <code>https://…</code> clip or a wearable-style path, <strong>or</strong> when the server sets env <code>MML_CHARACTER_ANIM</code> to your hosted clip (see <code>api/mml.js</code> header). <code>anim-enabled="true"</code> only turns playback on for clips that actually loaded from <code>src</code> / <code>anim</code>.</p>
+                    </div>
+                </details>
 
                 <div class="mml-playground-body">
                     <div class="mml-playground-editor" aria-labelledby="builder-mml-playground-label">
@@ -172,7 +181,7 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Fit camera to contents</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
-                    <p class="mml-playground-checks-hint">Fit zooms the orbit camera to the model bounds (can feel “in your face”). Leave it off for a calmer, Blender-like overview; turn it on when you want the frame tight on the asset.</p>
+                    <p class="mml-playground-checks-hint">Fit zooms the orbit camera to the model bounds. If the otter looks <strong>too small</strong> with Fit off, turn Fit on, or add <code>sx</code>/<code>sy</code>/<code>sz</code> on <code>m-character</code> (see docs). If it feels too tight, turn Fit off again.</p>
                     <label class="mml-playground-label" for="builder-mml-doc-visible">Resolved document URL</label>
                     <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
                     <label class="mml-playground-label" for="builder-mml-viewer-visible">Viewer URL</label>
@@ -501,11 +510,11 @@
           const v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
-          /* viewer.mml.io defaults: orbit distance 10, pitch 60, FOV 75, ambient 0 — tune for neutral “viewport” look */
-          v.searchParams.set('cameraOrbitPitch', '46');
+          /* Orbit distance: viewer default 10; lower = closer. Fit tightens framing so we keep a bit more distance when fit is on. */
+          v.searchParams.set('cameraOrbitPitch', '50');
           v.searchParams.set('cameraOrbitSpeed', '10');
-          v.searchParams.set('cameraOrbitDistance', fit.checked ? '26' : '19');
-          v.searchParams.set('cameraFov', fit.checked ? '50' : '56');
+          v.searchParams.set('cameraOrbitDistance', fit.checked ? '12' : '8');
+          v.searchParams.set('cameraFov', fit.checked ? '54' : '68');
           v.searchParams.set('ambientLight', '5');
           v.searchParams.set('ambientLightColor', 'cfd3dd');
           v.searchParams.set('backgroundColor', 'e8eaef');

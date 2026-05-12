@@ -1820,6 +1820,48 @@ body::before {
     color: #ffb4b4;
 }
 
+.mml-playground-anim-help {
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(18, 20, 28, 0.65);
+    padding: 0 14px 2px;
+}
+
+.mml-playground-anim-help summary {
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: rgba(190, 210, 255, 0.9);
+    padding: 8px 0 6px;
+    list-style: none;
+}
+
+.mml-playground-anim-help summary::-webkit-details-marker {
+    display: none;
+}
+
+.mml-playground-anim-help-body {
+    padding: 0 0 10px;
+}
+
+.mml-playground-anim-help-body p {
+    margin: 0 0 8px;
+    font-size: 0.74rem;
+    line-height: 1.5;
+    color: rgba(195, 200, 215, 0.9);
+}
+
+.mml-playground-anim-help-body p:last-child {
+    margin-bottom: 0;
+}
+
+.mml-playground-anim-help-body a {
+    color: #8fd4ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
 .mml-playground-body {
     flex: 1 1 auto;
     display: flex;

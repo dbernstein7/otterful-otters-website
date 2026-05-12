@@ -181,6 +181,12 @@ function buildHtml({ id, traits, urls, sockets }) {
   if (urls.anim) charOpen.push(` anim="${escAttr(urls.anim)}"`);
   charOpen.push(' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
   parts.push('<!-- Body: m-character @src = fur GLB for this token; wearables: m-model + socket -->');
+  if (!urls.anim) {
+    parts.push(
+      '<!-- No anim= yet: add metadata trait "MML Anim" (https clip or storage path), or set server env MML_CHARACTER_ANIM. '
+        + 'anim must be a GLB whose animations target the same skeleton as src (see m-character docs). -->'
+    );
+  }
   parts.push(charOpen.join(''));
 
   if (urls.hat) {
