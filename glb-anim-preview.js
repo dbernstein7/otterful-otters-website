@@ -6,15 +6,138 @@ const clipSel = document.getElementById('clip');
 const slowBtn = document.getElementById('slow');
 const clearBtn = document.getElementById('clear');
 const errEl = document.getElementById('err');
+const warnEl = document.getElementById('warn');
 const canvas = document.getElementById('cv');
 const stage = document.getElementById('stage');
+
+const pageParams = new URLSearchParams(window.location.search);
+const hideDupBodies = pageParams.get('hideDupBodies') === '1' || pageParams.get('hideDupBodies') === 'true';
+const rawUrlParam = pageParams.get('url');
 
 function showErr(msg) {
   errEl.hidden = !msg;
   errEl.textContent = msg || '';
 }
 
-const raw = new URLSearchParams(window.location.search).get('url');
+function showWarn(msg) {
+  warnEl.hidden = !msg;
+  warnEl.textContent = msg || '';
+}
+
+/** Names that usually indicate a real wearable, not a second full body. */
+const ACCESSORY_NAME_RE = /(hat|cap|beret|beanie|helmet|crown|shirt|jersey|tee|hoodie|jacket|coat|vest|sweater|eye|glass|goggle|mask|belt|shoe|boot|sock|necklace|watch|ring|earring|ear\b|accessory|prop|item|weapon|bag|backpack|scarf|tie|bow|glove|mitt)/i;
+
+function triCount(mesh) {
+  const g = mesh.geometry;
+  if (!g) return 0;
+  if (g.index) return Math.floor(g.index.count / 3);
+  const pos = g.attributes && g.attributes.position;
+  return pos ? Math.floor(pos.count / 3) : 0;
+}
+
+/**
+ * Collect skinned meshes with world-space AABB stats after scene graph is live.
+ * @param {THREE.Object3D} root
+ */
+function collectSkinnedMeshStats(root) {
+  const out = [];
+  root.updateMatrixWorld(true);
+  root.traverse((o) => {
+    if (!o.isSkinnedMesh) return;
+    const box = new THREE.Box3().setFromObject(o);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const vol = Math.max(size.x * size.y * size.z, 1e-9);
+    const tc = triCount(o);
+    out.push({
+      mesh: o,
+      name: o.name || '(unnamed)',
+      tris: tc,
+      volume: vol,
+      center,
+      size,
+      looksAccessory: ACCESSORY_NAME_RE.test(o.name || ''),
+    });
+  });
+  return out;
+}
+
+function countDistinctSkeletons(root) {
+  const set = new Set();
+  root.traverse((o) => {
+    if (o.isSkinnedMesh && o.skeleton) set.add(o.skeleton.uuid);
+  });
+  return set.size;
+}
+
+function logAssetAnalysis(gltf, stats, analysis) {
+  const clips = (gltf.animations && gltf.animations.length) || 0;
+  console.info('[glb-anim-preview] GLB summary', {
+    url: glbUrl,
+    clips,
+    skinnedMeshes: stats.length,
+    distinctSkeletons: countDistinctSkeletons(gltf.scene),
+    hideDupBodies,
+    duplicateBodyHeuristic: analysis.risky,
+  });
+  if (analysis.risky) console.warn('[glb-anim-preview]', analysis.message);
+}
+
+function analyzeDuplicateBodyRisk(stats, root) {
+  if (stats.length < 2) {
+    return { risky: false, pairs: [], message: '', hiddenMeshes: [], extraNote: '' };
+  }
+  const large = stats.filter((s) => s.tris >= 2500);
+  if (large.length < 2) {
+    const skels = countDistinctSkeletons(root);
+    if (skels >= 2 && stats.length >= 2) {
+      return {
+        risky: true,
+        pairs: [],
+        message:
+          `This GLB has ${skels} distinct skeletons and ${stats.length} skinned mesh(es). `
+          + 'Merged or "reference otter + wearable" exports often confuse MML (stacked bodies, wrong binds). '
+          + 'Prefer one skeleton on the body GLB and accessory-only meshes for hats/shirts.',
+        hiddenMeshes: [],
+        extraNote: '',
+      };
+    }
+    return { risky: false, pairs: [], message: '', hiddenMeshes: [], extraNote: '' };
+  }
+  const byTris = [...large].sort((a, b) => b.tris - a.tris);
+  const primary = byTris[0];
+  const duplicates = [];
+  for (let i = 1; i < byTris.length; i += 1) {
+    const s = byTris[i];
+    if (s.looksAccessory) continue;
+    const trRatio = s.tris / Math.max(primary.tris, 1);
+    const volRatio = s.volume / Math.max(primary.volume, 1e-9);
+    if (trRatio < 0.38 || volRatio < 0.42 || volRatio > 1.45) continue;
+    const dist = primary.center.distanceTo(s.center);
+    const span = Math.max(primary.size.length(), s.size.length(), 0.001);
+    if (dist > span * 0.85) continue;
+    duplicates.push({ primary, dup: s });
+  }
+  if (!duplicates.length) {
+    return { risky: false, pairs: [], message: '', hiddenMeshes: [], extraNote: '' };
+  }
+  const names = duplicates.map((p) => `"${p.dup.name}" (${p.dup.tris.toLocaleString()} tris)`).join(', ');
+  let message =
+    'This GLB looks like it contains more than one large character-scale skinned mesh (not named like a hat/shirt/eyes). '
+    + 'That breaks MML stacking (body + hat + shirt each load another full otter). '
+    + `Suspected duplicate mesh(es): ${names}. Re-export wearables as accessory-only GLBs parented to the shared rig.`;
+  const hiddenMeshes = [];
+  if (hideDupBodies) {
+    for (const p of duplicates) {
+      p.dup.mesh.visible = false;
+      hiddenMeshes.push(p.dup.name);
+    }
+    message += ` For this preview only, hid ${hiddenMeshes.length} duplicate-scale mesh(es). Open this page without hideDupBodies=1 to see the raw file.`;
+  }
+  return { risky: true, pairs: duplicates, message, hiddenMeshes, extraNote: '' };
+}
+
+const raw = rawUrlParam;
 if (!raw || !raw.trim()) {
   showErr('Missing ?url= with an absolute https link to a .glb file.');
   throw new Error('no url');
@@ -152,9 +275,15 @@ loader.load(
   glbUrl,
   (gltf) => {
     showErr('');
+    showWarn('');
     disposeRoot();
     root = gltf.scene;
     scene.add(root);
+    root.updateMatrixWorld(true);
+    const stats = collectSkinnedMeshStats(root);
+    const analysis = analyzeDuplicateBodyRisk(stats, root);
+    showWarn(analysis.risky ? analysis.message : '');
+    logAssetAnalysis(gltf, stats, analysis);
 
     const box = new THREE.Box3().setFromObject(root);
     const center = box.getCenter(new THREE.Vector3());
@@ -200,6 +329,7 @@ loader.load(
   undefined,
   (e) => {
     showErr('Could not load GLB: ' + (e && e.message ? e.message : String(e)));
+    showWarn('');
     clipSel.disabled = true;
     slowBtn.disabled = true;
     clearBtn.disabled = true;

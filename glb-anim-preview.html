@@ -52,6 +52,15 @@
       font-size: 0.85rem;
       background: rgba(80,0,0,0.25);
     }
+    #warn {
+      flex-shrink: 0;
+      color: #e8c86a;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      background: rgba(80, 60, 0, 0.22);
+      border-bottom: 1px solid rgba(255,200,80,0.12);
+    }
     #stage {
       position: relative;
       z-index: 0;
@@ -74,7 +83,8 @@
     <button type="button" id="slow" disabled>Slow motion</button>
     <button type="button" id="clear" disabled>Clear animation</button>
   </div>
-  <p id="hint">Clips come from the body <code>.glb</code> in your MML document. This panel is separate from viewer.mml.io (which does not expose per-clip picking for embedded animations).</p>
+  <p id="hint">Clips come from the body <code>.glb</code> in your MML document. If a file contains more than one full-character skinned mesh, a yellow banner explains the issue; the 3D builder passes <code>hideDupBodies=1</code> to hide likely duplicates in this preview only (viewer.mml.io is unchanged).</p>
+  <div id="warn" hidden></div>
   <div id="err" hidden></div>
   <div id="stage"><canvas id="cv"></canvas></div>
 

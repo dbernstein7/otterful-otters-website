@@ -138,7 +138,7 @@ function buildHtml({ id, traits, urls, sockets }) {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<!-- Otterful #${id} — MML from metadata / AvatarBuilder paths -->`,
+    `<!-- Otterful #${id} — MML from metadata. Wearable GLBs should be accessory-only (no second full body); duplicate otters break stacking in viewers. -->`,
     `<title>Otterful #${id}</title>`,
     '</head>',
     '<body>',
