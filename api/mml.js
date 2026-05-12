@@ -14,18 +14,26 @@
  *   MML_SKIP_SHIRT — if `1` or `true`, do not emit an m-model for shirt (use when the shirt is baked into the body GLB or you only want fur/hat/eyes).
  *   MML_SHIRT_OVERRIDE — if set (e.g. `Business`), always load that shirt filename and ignore the shirt trait (ignored when MML_SKIP_SHIRT is true).
  *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin). Ignored when FIREBASE_STORAGE_BUCKET is set (Firebase URLs are absolute).
- *   FIREBASE_STORAGE_BUCKET — required for Firebase URLs: bucket id (e.g. `otterful-otters.firebasestorage.app` or `project.appspot.com`). GLB paths are encoded as Storage object paths.
+ *   FIREBASE_STORAGE_BUCKET — set this (e.g. `otterful-otters.firebasestorage.app`) so all GLB `src` values use
+ *   `https://firebasestorage.googleapis.com/...` paths. If unset, responses fall back to `/AvatarBuilder/WEARABLES/...`
+ *   on your site origin — that is why Preview can show otterfulotters.xyz paths instead of Firebase until env is set.
  *   FIREBASE_STORAGE_TOKEN — optional `&token=` for download URLs (Firebase file tokens). Omit if rules allow public read on those objects.
  *   If downloads return 403: add Storage rules allowing read for `Furs/` (and other folders) or use tokens — see `firebase-storage.rules.example` in the repo root.
  *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
- *   MML_CHARACTER_Y — optional vertical offset on m-character (e.g. -0.72 for framing in viewer / mmleditor).
+ *   MML_CHARACTER_Y — vertical offset on m-character (default `-0.72` for viewer framing). Set to override; use MML_OMIT_CHARACTER_Y=1 to omit `y` entirely.
+ *   MML_OMIT_CHARACTER_Y — if `1` or `true`, do not emit `y` on m-character.
+ *   MML_HTML_TITLE — `<title>` text (default `MML` to match hand-authored preview pages).
+ *   MML_EMIT_CHARACTER_IDS — if `1` or `true`, add `id` / `name` on m-character (default: omitted for minimal markup).
+ *   MML_DEFAULT_CHARACTER_ANIM — idle clip URL when no ?anim=, metadata anim, or MML_CHARACTER_ANIM (default
+ *   `https://public.mml.io/character-idle-animation.glb`). Prefer an otter-specific clip via metadata or MML_CHARACTER_ANIM when ready.
+ *   MML_SKIP_DEFAULT_ANIM — if `1` or `true`, omit `anim` when nothing else supplies a URL (no default idle).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *
  * Optional separate animation file (body GLB + linked anim GLB):
  *   ?anim= on this endpoint — full https://…glb or a wearable path (e.g. WEARABLES/Animations/Walk.glb). Easiest way to try walk/run/idle without editing metadata.
  *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
  *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
- *   Priority: ?anim= > trait > MML_CHARACTER_ANIM.
+ *   Priority: ?anim= > trait > MML_CHARACTER_ANIM > MML_DEFAULT_CHARACTER_ANIM (unless MML_SKIP_DEFAULT_ANIM).
  *
  * Optional hat override (testing / Firebase per-file tokens):
  *   ?hat= — wins over metadata Hats/Hat trait. Value is either (a) a filename stem, e.g. antler → Hats/antler.glb via
@@ -205,26 +213,39 @@ function getQueryParam(req, key) {
 }
 
 function buildHtml({ id, traits, urls, sockets }) {
+  const title = (process.env.MML_HTML_TITLE != null && String(process.env.MML_HTML_TITLE).trim() !== '')
+    ? String(process.env.MML_HTML_TITLE).trim()
+    : 'MML';
+
+  const omitY = truthyEnv(process.env.MML_OMIT_CHARACTER_Y);
+  let yVal = '-0.72';
+  if (process.env.MML_CHARACTER_Y != null && String(process.env.MML_CHARACTER_Y).trim() !== '') {
+    yVal = String(process.env.MML_CHARACTER_Y).trim();
+  }
+
+  const ry = (process.env.MML_CHARACTER_RY || '').trim();
+  const emitIds = truthyEnv(process.env.MML_EMIT_CHARACTER_IDS);
+
   const parts = [
     '<!DOCTYPE html>',
     '<html lang="en">',
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<title>Otterful #${id}</title>`,
+    `<title>${escAttr(title)}</title>`,
     '</head>',
     '<body>',
+    '<m-character',
   ];
 
-  const ry = (process.env.MML_CHARACTER_RY || '').trim();
-  const cy = (process.env.MML_CHARACTER_Y || '').trim();
-  parts.push('<m-character');
-  parts.push(`  id="otter-${id}"`);
-  parts.push(`  name="Otterful #${id}"`);
-  parts.push(`  src="${escAttr(urls.fur)}"`);
-  if (urls.anim) parts.push(`  anim="${escAttr(urls.anim)}"`);
-  if (cy) parts.push(`  y="${escAttr(cy)}"`);
-  if (ry) parts.push(`  ry="${escAttr(ry)}"`);
+  if (emitIds) {
+    parts.push(`    id="otter-${id}"`);
+    parts.push(`    name="Otterful #${id}"`);
+  }
+  parts.push(`    src="${escAttr(urls.fur)}"`);
+  if (urls.anim) parts.push(`    anim="${escAttr(urls.anim)}"`);
+  if (!omitY) parts.push(`    y="${escAttr(yVal)}"`);
+  if (ry) parts.push(`    ry="${escAttr(ry)}"`);
   parts.push('>');
 
   if (urls.hat) {
@@ -323,6 +344,10 @@ module.exports = async (req, res) => {
   if (!animResolved) {
     const animRaw = (traits.mmlAnim || process.env.MML_CHARACTER_ANIM || '').trim();
     if (animRaw) animResolved = resolveLinkedAssetUrl(origin, animRaw) || '';
+  }
+  if (!animResolved && !truthyEnv(process.env.MML_SKIP_DEFAULT_ANIM)) {
+    const def = (process.env.MML_DEFAULT_CHARACTER_ANIM || 'https://public.mml.io/character-idle-animation.glb').trim();
+    if (def) animResolved = def;
   }
   if (animResolved) urls.anim = animResolved;
 
