@@ -5,9 +5,9 @@
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
  *   If unset, defaults are Mixamo-style: mixamorig:Head (hat, eyes), mixamorig:Spine2 (shirt).
- *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your MOVING OTTERS rig.
+ *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
  *   MML_BONE_SCHEME — `mixamo` (default: mixamorig:Head / mixamorig:Spine2) or `short` (Head / Spine2 / Head) if your rig omits the mixamorig: prefix
- *   MML_WEARABLE_PREFIX — folder path segment for GLBs (default `mml/MOVING OTTERS` at site root). Set to `WEARABLES` to use legacy AvatarBuilder/WEARABLES/… URLs.
+ *   MML_WEARABLE_PREFIX — folder segment under the asset base (default `WEARABLES` → …/AvatarBuilder/WEARABLES/Furs/…). Set e.g. to `mml/MyRiggedSet` for a library at site root; then base is site origin unless WEARABLE_ASSET_ORIGIN is set.
  *     When prefix is not `WEARABLES`, asset base is the site origin (not /AvatarBuilder). Override with WEARABLE_ASSET_ORIGIN if needed.
  *   MML_SKIP_SHIRT — if `1` or `true`, do not emit an m-model for shirt (use when the shirt is baked into the body GLB or you only want fur/hat/eyes).
  *   MML_SHIRT_OVERRIDE — if set (e.g. `Business`), always load that shirt filename and ignore the shirt trait (ignored when MML_SKIP_SHIRT is true).
@@ -42,7 +42,7 @@ function wearablesAssetBase(siteOrigin) {
   return siteOrigin.replace(/\/$/, '');
 }
 
-/** @param {string} storagePath e.g. mml/MOVING OTTERS/Furs/Robo-1.glb (slashes, not URL-encoded) */
+/** @param {string} storagePath e.g. WEARABLES/Furs/Robo-1.glb (slashes, not URL-encoded) */
 function buildWearableUrl(origin, storagePath) {
   const bucket = process.env.FIREBASE_STORAGE_BUCKET;
   if (bucket) {
@@ -60,7 +60,7 @@ function buildWearableUrl(origin, storagePath) {
   return `${base}/${sitePath}`;
 }
 
-/** Eyes are still under AvatarBuilder/WEARABLES when using MOVING OTTERS bodies (no Eyes folder there). */
+/** When the wearable prefix has no Eyes/ folder, load eyes from legacy AvatarBuilder/WEARABLES/Eyes. */
 function buildEyesWearableUrl(siteOrigin, eyeTraitName) {
   const bucket = process.env.FIREBASE_STORAGE_BUCKET;
   const path = `WEARABLES/Eyes/${eyeTraitName}.glb`;
@@ -125,10 +125,10 @@ function truthyEnv(v) {
 function wearablePrefix() {
   const raw = process.env.MML_WEARABLE_PREFIX;
   if (raw === '' || raw === undefined || raw === null) {
-    return 'mml/MOVING OTTERS';
+    return 'WEARABLES';
   }
   const p = String(raw).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-  return p || 'mml/MOVING OTTERS';
+  return p || 'WEARABLES';
 }
 
 function buildHtml({ id, traits, urls, sockets }) {
