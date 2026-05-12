@@ -7,11 +7,11 @@
  *   If unset, defaults are Mixamo-style: mixamorig:Head (hat, eyes), mixamorig:Spine2 (shirt).
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your MOVING OTTERS rig.
  *   MML_BONE_SCHEME — `mixamo` (default: mixamorig:Head / mixamorig:Spine2) or `short` (Head / Spine2 / Head) if your rig omits the mixamorig: prefix
- *   MML_WEARABLE_PREFIX — folder prefix under WEARABLE_ASSET_ORIGIN (default `WEARABLES`). Example for rigged library at site root: set
- *     WEARABLE_ASSET_ORIGIN to your origin (no /AvatarBuilder) and MML_WEARABLE_PREFIX to `mml/MOVING OTTERS` so URLs resolve to /mml/MOVING OTTERS/Furs/… etc.
+ *   MML_WEARABLE_PREFIX — folder path segment for GLBs (default `mml/MOVING OTTERS` at site root). Set to `WEARABLES` to use legacy AvatarBuilder/WEARABLES/… URLs.
+ *     When prefix is not `WEARABLES`, asset base is the site origin (not /AvatarBuilder). Override with WEARABLE_ASSET_ORIGIN if needed.
  *   MML_SKIP_SHIRT — if `1` or `true`, do not emit an m-model for shirt (use when the shirt is baked into the body GLB or you only want fur/hat/eyes).
  *   MML_SHIRT_OVERRIDE — if set (e.g. `Business`), always load that shirt filename and ignore the shirt trait (ignored when MML_SKIP_SHIRT is true).
- *   WEARABLE_ASSET_ORIGIN — absolute base where GLBs are hosted (default: same host + /AvatarBuilder/)
+ *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin).
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
@@ -31,7 +31,18 @@ function encodeWearablePath(folder, filename) {
   return `${encodedFolder}/${encodedFilename}`;
 }
 
-/** @param {string} storagePath e.g. WEARABLES/Furs/Robo-1.glb (slashes, not URL-encoded) */
+function wearablesAssetBase(siteOrigin) {
+  if (process.env.WEARABLE_ASSET_ORIGIN) {
+    return String(process.env.WEARABLE_ASSET_ORIGIN).replace(/\/$/, '');
+  }
+  const prefix = wearablePrefix();
+  if (prefix === 'WEARABLES') {
+    return `${siteOrigin.replace(/\/$/, '')}/AvatarBuilder`;
+  }
+  return siteOrigin.replace(/\/$/, '');
+}
+
+/** @param {string} storagePath e.g. mml/MOVING OTTERS/Furs/Robo-1.glb (slashes, not URL-encoded) */
 function buildWearableUrl(origin, storagePath) {
   const bucket = process.env.FIREBASE_STORAGE_BUCKET;
   if (bucket) {
@@ -41,11 +52,27 @@ function buildWearableUrl(origin, storagePath) {
     if (tok) u += `&token=${encodeURIComponent(tok)}`;
     return u;
   }
-  const base = (process.env.WEARABLE_ASSET_ORIGIN || `${origin.replace(/\/$/, '')}/AvatarBuilder`).replace(/\/$/, '');
+  const base = wearablesAssetBase(origin);
   const i = storagePath.lastIndexOf('/');
   const folder = storagePath.slice(0, i);
   const file = storagePath.slice(i + 1);
   const sitePath = encodeWearablePath(folder, file);
+  return `${base}/${sitePath}`;
+}
+
+/** Eyes are still under AvatarBuilder/WEARABLES when using MOVING OTTERS bodies (no Eyes folder there). */
+function buildEyesWearableUrl(siteOrigin, eyeTraitName) {
+  const bucket = process.env.FIREBASE_STORAGE_BUCKET;
+  const path = `WEARABLES/Eyes/${eyeTraitName}.glb`;
+  if (bucket) {
+    const enc = encodeURIComponent(path);
+    const tok = process.env.FIREBASE_STORAGE_TOKEN || '';
+    let u = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${enc}?alt=media`;
+    if (tok) u += `&token=${encodeURIComponent(tok)}`;
+    return u;
+  }
+  const base = `${siteOrigin.replace(/\/$/, '')}/AvatarBuilder`;
+  const sitePath = encodeWearablePath('WEARABLES/Eyes', `${eyeTraitName}.glb`);
   return `${base}/${sitePath}`;
 }
 
@@ -96,8 +123,12 @@ function truthyEnv(v) {
 }
 
 function wearablePrefix() {
-  const p = (process.env.MML_WEARABLE_PREFIX || 'WEARABLES').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-  return p || 'WEARABLES';
+  const raw = process.env.MML_WEARABLE_PREFIX;
+  if (raw === '' || raw === undefined || raw === null) {
+    return 'mml/MOVING OTTERS';
+  }
+  const p = String(raw).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  return p || 'mml/MOVING OTTERS';
 }
 
 function buildHtml({ id, traits, urls, sockets }) {
@@ -178,7 +209,13 @@ module.exports = async (req, res) => {
     const shirtName = shirtOverride || traits.shirt;
     if (shirtName) urls.shirt = buildWearableUrl(origin, `${wp}/Shirts/${shirtName}.glb`);
   }
-  if (traits.eyes) urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
+  if (traits.eyes) {
+    if (wp !== 'WEARABLES') {
+      urls.eyes = buildEyesWearableUrl(origin, traits.eyes);
+    } else {
+      urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
+    }
+  }
 
   const sockets = defaultSockets();
 
