@@ -145,7 +145,7 @@
                         id="builder-mml-iframe"
                         class="mml-simple-iframe"
                         title="MML preview"
-                        loading="lazy"
+                        loading="eager"
                         referrerpolicy="no-referrer"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                     ></iframe>
@@ -365,10 +365,66 @@
           const t = s.trim();
           if (!t) return false;
           try {
-            const u = new URL(t);
+            const u = new URL(t, window.location.href);
             return u.protocol === 'https:' || u.protocol === 'wss:';
           } catch {
             return false;
+          }
+        }
+
+        function absoluteDocUrl(raw) {
+          try {
+            return new URL(raw.trim(), window.location.href).href;
+          } catch (_) {
+            return raw.trim();
+          }
+        }
+
+        async function apply(options) {
+          options = options || {};
+          const docUrl = absoluteDocUrl(input.value);
+          if (!looksLikeMmlUrl(docUrl)) {
+            setStatus('Enter a full URL starting with https:// or wss:// (open More options).', true);
+            return;
+          }
+          if (looksLikeRawModelUrl(docUrl)) {
+            setStatus('That is a model file (.glb), not an MML page. Use Preview with an otter #, or Sample otter.', true);
+            return;
+          }
+          setStatus('Loading…', false);
+          try {
+            const dr = await fetch(docUrl, { method: 'GET', credentials: 'omit' });
+            if (!dr.ok) {
+              const errText = (await dr.text()).replace(/\s+/g, ' ').trim().slice(0, 280);
+              setStatus('MML page failed (' + dr.status + '). ' + errText, true);
+              iframe.removeAttribute('src');
+              return;
+            }
+            const ctype = (dr.headers.get('content-type') || '').toLowerCase();
+            if (ctype && !ctype.includes('html')) {
+              setStatus('That URL is not HTML (Content-Type: ' + ctype + ').', true);
+              iframe.removeAttribute('src');
+              return;
+            }
+          } catch (err) {
+            setStatus('Could not reach the MML page: ' + ((err && err.message) || String(err)), true);
+            iframe.removeAttribute('src');
+            return;
+          }
+          const viewerUrl = buildViewerUrl(docUrl);
+          setOuts(docUrl, viewerUrl);
+          iframe.removeAttribute('src');
+          iframe.src = viewerUrl;
+          setStatus('', false);
+          void updateAnimPreviewFromMmlDoc(docUrl);
+
+          if (!options.skipHistory) {
+            try {
+              const next = new URL(window.location.href);
+              next.searchParams.set('url', docUrl);
+              if (window.location.hash === '#mml') next.hash = 'mml';
+              window.history.replaceState({}, '', next.pathname + next.search + next.hash);
+            } catch (_) { /* ignore */ }
           }
         }
 
@@ -397,34 +453,6 @@
           statusEl.classList.toggle('is-error', !!isError);
         }
 
-        function apply(options) {
-          options = options || {};
-          const docUrl = input.value.trim();
-          if (!looksLikeMmlUrl(docUrl)) {
-            setStatus('Enter a full URL starting with https:// or wss:// (open More options).', true);
-            return;
-          }
-          if (looksLikeRawModelUrl(docUrl)) {
-            setStatus('That is a model file (.glb), not an MML page. Use Preview with an otter #, or Sample otter.', true);
-            return;
-          }
-          const viewerUrl = buildViewerUrl(docUrl);
-          setOuts(docUrl, viewerUrl);
-          iframe.removeAttribute('src');
-          iframe.src = viewerUrl;
-          setStatus('', false);
-          void updateAnimPreviewFromMmlDoc(docUrl);
-
-          if (!options.skipHistory) {
-            try {
-              const next = new URL(window.location.href);
-              next.searchParams.set('url', docUrl);
-              if (window.location.hash === '#mml') next.hash = 'mml';
-              window.history.replaceState({}, '', next.pathname + next.search + next.hash);
-            } catch (_) { /* ignore */ }
-          }
-        }
-
         function copyFrom(el, emptyMsg) {
           const text = el && el.textContent && el.textContent !== '—' ? el.textContent.trim() : '';
           if (!text) {
@@ -439,11 +467,11 @@
         }
 
         loadBtn.addEventListener('click', function () {
-          apply();
+          void apply();
         });
 
         openTabBtn.addEventListener('click', function () {
-          const docUrl = input.value.trim();
+          const docUrl = absoluteDocUrl(input.value);
           if (!looksLikeMmlUrl(docUrl)) {
             setStatus('Add a document URL under More options, or use Preview.', true);
             return;
@@ -462,7 +490,7 @@
             } catch (_) {
               input.value = window.location.origin + '/mml/MMLOtter-preview.html';
             }
-            apply();
+            void apply();
           });
         }
 
@@ -473,8 +501,13 @@
             setStatus('Enter an otter number between 1 and 2222 (or use Load NFT on the Otter tab first).', true);
             return;
           }
-          input.value = window.location.origin + '/api/mml?id=' + num;
-          apply();
+          const origin = window.location.origin || '';
+          if (!/^https:/i.test(origin)) {
+            setStatus('MML preview only works on the live https site (not file://).', true);
+            return;
+          }
+          input.value = origin + '/api/mml?id=' + num;
+          void apply();
         });
 
         if (mmlNftInput) {
@@ -495,8 +528,8 @@
         }
 
         parseQueryUrl();
-        if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(input.value.trim())) apply();
-        else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(input.value)) apply();
+        if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
+        else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
       })();
     </script>
 
