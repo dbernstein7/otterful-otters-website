@@ -1535,6 +1535,59 @@ body::before {
     }
 }
 
+/* 3D Builder: main mode tabs (Otter vs MML) */
+.builder-page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(7, 13, 26, 0.55);
+    border: 1px solid rgba(90, 255, 180, 0.4);
+    border-radius: 14px;
+}
+
+.builder-page-tab {
+    appearance: none;
+    border: 2px solid rgba(90, 255, 180, 0.35);
+    background: rgba(10, 26, 15, 0.75);
+    color: var(--text-secondary);
+    padding: 12px 22px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: transform 0.15s ease-out, background 0.15s ease-out, border-color 0.15s ease-out, color 0.15s ease-out;
+}
+
+.builder-page-tab:hover {
+    transform: translateY(-1px);
+    background: rgba(79, 214, 165, 0.14);
+    border-color: var(--panel-blue-alt);
+    color: var(--text-primary);
+}
+
+.builder-page-tab.is-active {
+    background: linear-gradient(135deg, var(--panel-blue) 0%, var(--panel-blue-alt) 100%);
+    border-color: transparent;
+    color: var(--bg-base);
+}
+
+.builder-page-panel {
+    margin-top: 14px;
+}
+
+.builder-page-panel[hidden] {
+    display: none !important;
+}
+
+.mml-viewer-lede--inline {
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+
 /* 3D Builder split layout (viewer + separate gallery iframe) */
 .builder-nft-load {
     display: flex;

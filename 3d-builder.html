@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https://viewer.mml.io https:; worker-src 'self' blob:;">
     <title>3D Builder • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +25,6 @@
         <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
         <a href="nifty-island-gallery.html" class="nav-pill">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-pill active" aria-current="page">3D Builder</a>
-        <a href="mml-viewer.html" class="nav-pill">MML Viewer</a>
         <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
@@ -40,7 +39,6 @@
         <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
         <a href="nifty-island-gallery.html" class="nav-drawer-pill">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-drawer-pill active" aria-current="page">3D Builder</a>
-        <a href="mml-viewer.html" class="nav-drawer-pill">MML Viewer</a>
         <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
@@ -66,43 +64,105 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
-        <div class="builder-nft-load">
-            <label for="builder-nft-input" class="builder-nft-load-label">Load NFT</label>
-            <input type="number" id="builder-nft-input" class="builder-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1–2222">
-            <button type="button" id="builder-nft-btn" class="builder-nft-btn">Load</button>
-            <span id="builder-nft-status" class="builder-nft-status" aria-live="polite"></span>
+        <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
+            <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
+            <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
         </div>
 
-        <div class="builder-layout">
-            <div class="builder-viewer">
-                <iframe
-                    class="builder-frame builder-frame--viewer"
-                    src="AvatarBuilder/index.html?embed=viewer"
-                    title="Otterful 3D Viewer"
-                    loading="eager"
-                    referrerpolicy="no-referrer"
-                ></iframe>
+        <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
+            <div class="builder-nft-load">
+                <label for="builder-nft-input" class="builder-nft-load-label">Load NFT</label>
+                <input type="number" id="builder-nft-input" class="builder-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1–2222">
+                <button type="button" id="builder-nft-btn" class="builder-nft-btn">Load</button>
+                <span id="builder-nft-status" class="builder-nft-status" aria-live="polite"></span>
             </div>
 
-            <aside class="builder-gallery">
-                <div class="builder-gallery-top">
-                    <div class="builder-tabs" role="tablist" aria-label="Trait galleries">
-                        <button type="button" class="builder-tab is-active" data-panel="fur" role="tab" aria-selected="true">Fur</button>
-                        <button type="button" class="builder-tab" data-panel="hat" role="tab" aria-selected="false">Hats</button>
-                        <button type="button" class="builder-tab" data-panel="shirt" role="tab" aria-selected="false">Shirts</button>
-                        <button type="button" class="builder-tab" data-panel="eyes" role="tab" aria-selected="false">Eyes</button>
-                    </div>
+            <div class="builder-layout">
+                <div class="builder-viewer">
+                    <iframe
+                        class="builder-frame builder-frame--viewer"
+                        src="AvatarBuilder/index.html?embed=viewer"
+                        title="Otterful 3D Viewer"
+                        loading="eager"
+                        referrerpolicy="no-referrer"
+                    ></iframe>
                 </div>
 
+                <aside class="builder-gallery">
+                    <div class="builder-gallery-top">
+                        <div class="builder-tabs" role="tablist" aria-label="Trait galleries">
+                            <button type="button" class="builder-tab is-active" data-panel="fur" role="tab" aria-selected="true">Fur</button>
+                            <button type="button" class="builder-tab" data-panel="hat" role="tab" aria-selected="false">Hats</button>
+                            <button type="button" class="builder-tab" data-panel="shirt" role="tab" aria-selected="false">Shirts</button>
+                            <button type="button" class="builder-tab" data-panel="eyes" role="tab" aria-selected="false">Eyes</button>
+                        </div>
+                    </div>
+
+                    <iframe
+                        id="traitGalleryFrame"
+                        class="builder-frame builder-frame--gallery"
+                        src="AvatarBuilder/index.html?embed=gallery&panel=fur"
+                        title="Otterful Trait Gallery"
+                        loading="eager"
+                        referrerpolicy="no-referrer"
+                    ></iframe>
+                </aside>
+            </div>
+        </div>
+
+        <div id="builder-panel-mml" class="builder-page-panel" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
+            <p class="mml-viewer-lede mml-viewer-lede--inline">
+                Paste your <strong>MML document</strong> URL (<code>https://…</code> static HTML, or <code>wss://…</code> from the MML editor). Uses the official <a href="https://viewer.mml.io/" target="_blank" rel="noopener noreferrer">viewer.mml.io</a> embed — not a raw <code>.glb</code> link; the document should reference your GLB inside MML.
+            </p>
+
+            <div class="mml-viewer-panel">
+                <label for="builder-mml-doc-url" class="mml-viewer-label">MML document URL</label>
+                <input type="text" id="builder-mml-doc-url" class="mml-viewer-input" placeholder="https://…/scene.html  or  wss://…" autocomplete="off" spellcheck="false" aria-describedby="builder-mml-doc-hint">
+                <span id="builder-mml-doc-hint" class="mml-viewer-hint">Open this tab with <code>#mml</code> in the URL, or add <code>?url=</code> with your MML document link to jump here pre-filled.</span>
+                <div class="mml-viewer-options">
+                    <label class="mml-viewer-check">
+                        <input type="checkbox" id="builder-mml-opt-no-ui" checked>
+                        Hide viewer panel (<code>noUI</code>)
+                    </label>
+                    <label class="mml-viewer-check">
+                        <input type="checkbox" id="builder-mml-opt-fit" checked>
+                        Frame content (<code>cameraFitContents</code>)
+                    </label>
+                </div>
+                <div class="mml-viewer-actions">
+                    <button type="button" id="builder-mml-load-btn" class="mml-viewer-btn mml-viewer-btn--primary">Load in viewer</button>
+                    <button type="button" id="builder-mml-open-tab-btn" class="mml-viewer-btn">Open in new tab</button>
+                </div>
+            </div>
+
+            <div class="mml-viewer-links">
+                <div class="mml-viewer-link-block">
+                    <div class="mml-viewer-link-head">
+                        <span class="mml-viewer-link-title">MML document</span>
+                        <button type="button" class="mml-viewer-copy" data-copy-target="builder-mml-doc-out">Copy</button>
+                    </div>
+                    <pre id="builder-mml-doc-out" class="mml-viewer-pre" aria-live="polite">—</pre>
+                </div>
+                <div class="mml-viewer-link-block">
+                    <div class="mml-viewer-link-head">
+                        <span class="mml-viewer-link-title">Full viewer.mml.io URL</span>
+                        <button type="button" class="mml-viewer-copy" data-copy-target="builder-mml-viewer-out">Copy</button>
+                    </div>
+                    <pre id="builder-mml-viewer-out" class="mml-viewer-pre" aria-live="polite">—</pre>
+                </div>
+            </div>
+            <p id="builder-mml-status" class="mml-viewer-status" aria-live="polite"></p>
+
+            <div class="mml-viewer-frame-wrap">
                 <iframe
-                    id="traitGalleryFrame"
-                    class="builder-frame builder-frame--gallery"
-                    src="AvatarBuilder/index.html?embed=gallery&panel=fur"
-                    title="Otterful Trait Gallery"
-                    loading="eager"
+                    id="builder-mml-iframe"
+                    class="builder-frame mml-viewer-frame"
+                    title="MML Viewer embed"
+                    loading="lazy"
                     referrerpolicy="no-referrer"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 ></iframe>
-            </aside>
+            </div>
         </div>
     </div>
 
@@ -155,8 +215,9 @@
 
     <script>
       (function () {
+        const otterPanel = document.getElementById('builder-panel-otter');
         const frame = document.getElementById('traitGalleryFrame');
-        const tabs = Array.from(document.querySelectorAll('.builder-tab'));
+        const tabs = otterPanel ? Array.from(otterPanel.querySelectorAll('.builder-tab')) : [];
         if (!frame || tabs.length === 0) return;
 
         function setActive(panel) {
@@ -171,6 +232,145 @@
         tabs.forEach((t) => {
           t.addEventListener('click', () => setActive(t.dataset.panel));
         });
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const pageTabs = Array.from(document.querySelectorAll('.builder-page-tab'));
+        const panelOtter = document.getElementById('builder-panel-otter');
+        const panelMml = document.getElementById('builder-panel-mml');
+        if (pageTabs.length === 0 || !panelOtter || !panelMml) return;
+
+        function setBuilderPage(which) {
+          const isMml = which === 'mml';
+          pageTabs.forEach((btn) => {
+            const on = btn.dataset.builderPage === which;
+            btn.classList.toggle('is-active', on);
+            btn.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          panelOtter.classList.toggle('is-active', !isMml);
+          panelOtter.toggleAttribute('hidden', isMml);
+          panelMml.classList.toggle('is-active', isMml);
+          panelMml.toggleAttribute('hidden', !isMml);
+          try {
+            if (isMml) {
+              if (window.location.hash !== '#mml') window.history.replaceState(null, '', '3d-builder.html#mml');
+            } else if (window.location.hash === '#mml') {
+              window.history.replaceState(null, '', '3d-builder.html');
+            }
+          } catch (_) { /* ignore */ }
+        }
+
+        pageTabs.forEach((btn) => {
+          btn.addEventListener('click', () => setBuilderPage(btn.dataset.builderPage || 'otter'));
+        });
+
+        function syncFromHash() {
+          if (window.location.hash === '#mml') setBuilderPage('mml');
+          else setBuilderPage('otter');
+        }
+        window.addEventListener('hashchange', syncFromHash);
+        syncFromHash();
+        try {
+          if (new URLSearchParams(window.location.search).get('url')) setBuilderPage('mml');
+        } catch (_) { /* ignore */ }
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const VIEWER_BASE = 'https://viewer.mml.io/';
+        const input = document.getElementById('builder-mml-doc-url');
+        const iframe = document.getElementById('builder-mml-iframe');
+        const docOut = document.getElementById('builder-mml-doc-out');
+        const viewerOut = document.getElementById('builder-mml-viewer-out');
+        const statusEl = document.getElementById('builder-mml-status');
+        const loadBtn = document.getElementById('builder-mml-load-btn');
+        const openTabBtn = document.getElementById('builder-mml-open-tab-btn');
+        const noUi = document.getElementById('builder-mml-opt-no-ui');
+        const fit = document.getElementById('builder-mml-opt-fit');
+        if (!input || !iframe || !docOut || !viewerOut || !statusEl || !loadBtn || !openTabBtn || !noUi || !fit) return;
+
+        function parseQueryUrl() {
+          const params = new URLSearchParams(window.location.search);
+          const raw = params.get('url');
+          if (raw) input.value = raw;
+        }
+
+        function looksLikeMmlUrl(s) {
+          const t = s.trim();
+          if (!t) return false;
+          try {
+            const u = new URL(t);
+            return u.protocol === 'https:' || u.protocol === 'wss:';
+          } catch {
+            return false;
+          }
+        }
+
+        function buildViewerUrl(docUrl) {
+          const v = new URL(VIEWER_BASE);
+          v.searchParams.set('url', docUrl.trim());
+          v.searchParams.set('cameraMode', 'orbit');
+          if (noUi.checked) v.searchParams.set('noUI', 'true');
+          if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
+          return v.toString();
+        }
+
+        function setStatus(msg, isError) {
+          statusEl.textContent = msg || '';
+          statusEl.classList.toggle('is-error', !!isError);
+        }
+
+        function apply() {
+          const docUrl = input.value.trim();
+          if (!looksLikeMmlUrl(docUrl)) {
+            setStatus('Enter a full URL starting with https:// or wss://', true);
+            return;
+          }
+          const viewerUrl = buildViewerUrl(docUrl);
+          docOut.textContent = docUrl;
+          viewerOut.textContent = viewerUrl;
+          iframe.src = viewerUrl;
+          setStatus('Loaded.', false);
+          try {
+            const next = new URL(window.location.href);
+            next.searchParams.set('url', docUrl);
+            if (window.location.hash === '#mml') next.hash = 'mml';
+            window.history.replaceState({}, '', next.pathname + next.search + next.hash);
+          } catch (_) { /* ignore */ }
+        }
+
+        loadBtn.addEventListener('click', apply);
+        openTabBtn.addEventListener('click', function () {
+          if (!looksLikeMmlUrl(input.value.trim())) {
+            setStatus('Enter a valid MML document URL first.', true);
+            return;
+          }
+          window.open(buildViewerUrl(input.value.trim()), '_blank', 'noopener,noreferrer');
+        });
+
+        document.querySelectorAll('#builder-panel-mml .mml-viewer-copy').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const id = btn.getAttribute('data-copy-target');
+            const el = document.getElementById(id);
+            const text = el && el.textContent && el.textContent !== '—' ? el.textContent : '';
+            if (!text) {
+              setStatus('Load a document first.', true);
+              return;
+            }
+            navigator.clipboard.writeText(text).then(function () {
+              setStatus('Copied.', false);
+            }).catch(function () {
+              setStatus('Copy failed — select text manually.', true);
+            });
+          });
+        });
+
+        parseQueryUrl();
+        if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(input.value.trim())) apply();
+        else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(input.value)) apply();
       })();
     </script>
 
