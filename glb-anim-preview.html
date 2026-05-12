@@ -7,8 +7,23 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; img-src 'self' data: blob:;">
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, sans-serif; background: #0e0e12; color: #ececf0; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: #0e0e12;
+      color: #ececf0;
+      min-height: 0;
+    }
     #bar {
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
       display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
       padding: 10px 12px; background: #16161c; border-bottom: 1px solid rgba(255,255,255,0.1);
     }
@@ -23,10 +38,28 @@
     button#slow { background: #2b6cff; border-color: #2b6cff; color: #fff; font-weight: 600; }
     button#slow.is-on { background: #1e4aa8; }
     button#clear { background: #2a2a32; }
-    #stage { position: relative; width: 100%; height: calc(100vh - 54px); min-height: 220px; background: #0a0a0e; }
-    canvas { display: block; width: 100%; height: 100%; }
-    #err { color: #ff9b9b; padding: 8px 12px; font-size: 0.85rem; background: rgba(80,0,0,0.25); }
-    #hint { font-size: 0.78rem; color: rgba(200,200,210,0.65); padding: 0 12px 8px; }
+    #hint {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      color: rgba(200,200,210,0.65);
+      padding: 0 12px 8px;
+      margin: 0;
+    }
+    #err {
+      flex-shrink: 0;
+      color: #ff9b9b;
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      background: rgba(80,0,0,0.25);
+    }
+      position: relative;
+      z-index: 0;
+      flex: 1 1 auto;
+      min-height: 0;
+      width: 100%;
+      background: #0a0a0e;
+    }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; }
   </style>
 </head>
 <body>
@@ -107,6 +140,10 @@
     }
     setSize();
     window.addEventListener('resize', setSize);
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => setSize());
+      ro.observe(stage);
+    }
 
     const clock = new THREE.Clock();
     function tick() {
@@ -154,8 +191,8 @@
     function playClipByIndex(index) {
       stopAll();
       const clip = clips[index];
-      if (!clip || !mixer) return;
-      currentAction = mixer.clipAction(clip);
+      if (!clip || !mixer || !root) return;
+      currentAction = mixer.clipAction(clip, root);
       currentAction.reset();
       currentAction.setLoop(THREE.LoopRepeat, Infinity);
       currentAction.clampWhenFinished = false;
@@ -163,10 +200,15 @@
       currentAction.play();
     }
 
-    clipSel.addEventListener('change', () => {
+    function onClipSelect() {
       const v = clipSel.value;
-      if (v !== '') playClipByIndex(parseInt(v, 10));
-    });
+      if (v === '') return;
+      const idx = parseInt(v, 10);
+      if (!Number.isFinite(idx) || idx < 0 || idx >= clips.length) return;
+      playClipByIndex(idx);
+    }
+    clipSel.addEventListener('change', onClipSelect);
+    clipSel.addEventListener('input', onClipSelect);
 
     slowBtn.addEventListener('click', () => {
       slow = !slow;
@@ -225,8 +267,10 @@
         clearBtn.disabled = false;
 
         mixer = new THREE.AnimationMixer(root);
+        root.updateMatrixWorld(true);
+        mixer.update(0);
         clipSel.selectedIndex = 1;
-        playClipByIndex(parseInt(clipSel.value, 10));
+        onClipSelect();
       },
       undefined,
       (e) => {
