@@ -114,7 +114,7 @@
             <div class="mml-doc-workbench-bar">
                 <div class="mml-doc-workbench-bar-main">
                     <h2 class="mml-doc-workbench-title">MML playground</h2>
-                    <p class="mml-doc-workbench-sub"><strong>Two flows:</strong> <strong>Preview</strong> (otter #) loads <code>/api/mml?id=…</code>. <strong>Load</strong> (under More options) fetches whatever MML <strong>document URL</strong> is in the box — e.g. sample <code>/mml/MMLOtter-preview.html</code> or any <code>https://…</code> page. Movement override: full <code>https://…</code> <code>.glb</code> link below. <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
+                    <p class="mml-doc-workbench-sub"><strong>Two flows:</strong> <strong>Preview</strong> (otter #) loads <code>/api/mml?id=…</code> (optional <code>?hat=</code> / <code>?anim=</code> from the fields below). <strong>Load</strong> (under More options) fetches whatever MML <strong>document URL</strong> is in the box — e.g. sample <code>/mml/MMLOtter-preview.html</code> or any <code>https://…</code> page. <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
                 </div>
                 <div class="mml-doc-workbench-bar-actions">
                     <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
@@ -146,6 +146,12 @@
                     <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb) — optional</label>
                     <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb — paste full link, then Preview or Run" autocomplete="off" spellcheck="false">
                     <p class="mml-playground-anim-hint">Do <strong>not</strong> use <code>public.mml.io/character-*-animation.glb</code> on the otter — those clips are for MML’s tall demo mannequin only. One link = one movement file for <strong>your</strong> rig; change the link, then <strong>Preview</strong> or <strong>Run</strong>.</p>
+                </div>
+
+                <div class="mml-playground-anim-row">
+                    <label class="mml-playground-label" for="builder-mml-hat-override">Hat — optional (Preview /api/mml)</label>
+                    <input type="text" id="builder-mml-hat-override" class="mml-playground-input" placeholder="antler (trait file stem) or full https://…/antler.glb?alt=media&amp;token=…" autocomplete="off" spellcheck="false">
+                    <p class="mml-playground-anim-hint">Adds <code>?hat=…</code> to the preview URL. Use a <strong>full Firebase download URL</strong> if each file has its own token. Trait stem (e.g. <code>antler</code>) needs <code>MML_HAT_STORAGE_PATH=Hats</code> and bucket env on the server.</p>
                 </div>
 
                 <div class="mml-playground-body">
@@ -359,6 +365,7 @@
         const noUi = document.getElementById('builder-mml-opt-no-ui');
         const fit = document.getElementById('builder-mml-opt-fit');
         const animOverrideInput = document.getElementById('builder-mml-anim-override');
+        const hatOverrideInput = document.getElementById('builder-mml-hat-override');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
         const heroIframe = document.getElementById('builder-mml-hero-iframe');
@@ -392,6 +399,25 @@
           return { html: html.replace(re, '<m-character' + nextInner + '>'), error: null };
         }
 
+        function mergeHatIntoMmlHtml(html, hatUrl) {
+          const u = hatUrl.trim();
+          if (!/^https:\/\//i.test(u)) {
+            return { html: html, error: 'Hat override for Run must be a full https:// URL to your .glb (use Preview for a trait stem like antler).' };
+          }
+          const esc = escapeHtmlAttr(u);
+          const reExisting = /<m-model\s+class="hat"\s+src="[^"]*"\s+socket="([^"]*)"\s*\/>/i;
+          const hm = html.match(reExisting);
+          if (hm) {
+            return { html: html.replace(reExisting, '<m-model class="hat" src="' + esc + '" socket="' + hm[1] + '" />'), error: null };
+          }
+          const reChar = /(<m-character[^>]*>)/i;
+          if (!reChar.test(html)) return { html: html, error: null };
+          return {
+            html: html.replace(reChar, '$1\n  <m-model class="hat" src="' + esc + '" socket="mixamorig:Head" />'),
+            error: null,
+          };
+        }
+
         function extractAnimFromMmlApiUrl(docUrl) {
           if (!animOverrideInput || !docUrl) return;
           try {
@@ -403,12 +429,35 @@
           } catch (_) { /* ignore */ }
         }
 
+        function extractHatFromMmlApiUrl(docUrl) {
+          if (!hatOverrideInput || !docUrl) return;
+          try {
+            const u = new URL(docUrl, window.location.href);
+            const path = (u.pathname || '').replace(/\/+$/, '') || '/';
+            if (!path.endsWith('/api/mml')) return;
+            const h = u.searchParams.get('hat');
+            if (h) hatOverrideInput.value = h;
+          } catch (_) { /* ignore */ }
+        }
+
         function appendAnimToApiMmlUrl(baseUrl, animUrl) {
           const trimmed = animUrl.trim();
           if (!trimmed) return baseUrl;
           try {
             const out = new URL(baseUrl, window.location.href);
             out.searchParams.set('anim', trimmed);
+            return out.href;
+          } catch (_) {
+            return baseUrl;
+          }
+        }
+
+        function appendHatToApiMmlUrl(baseUrl, hatVal) {
+          const trimmed = hatVal.trim();
+          if (!trimmed) return baseUrl;
+          try {
+            const out = new URL(baseUrl, window.location.href);
+            out.searchParams.set('hat', trimmed);
             return out.href;
           } catch (_) {
             return baseUrl;
@@ -485,6 +534,7 @@
           const raw = params.get('url');
           if (raw) input.value = raw;
           extractAnimFromMmlApiUrl(absoluteDocUrl(input.value));
+          extractHatFromMmlApiUrl(absoluteDocUrl(input.value));
         }
 
         function looksLikeMmlUrl(s) {
@@ -589,6 +639,7 @@
           editor.value = bodyText;
           syncGutter();
           extractAnimFromMmlApiUrl(docUrl);
+          extractHatFromMmlApiUrl(docUrl);
 
           const viewerUrlFinal = buildViewerUrl(docUrl);
           setOuts(docUrl, viewerUrlFinal);
@@ -665,6 +716,14 @@
               return;
             }
             html = merged.html;
+          }
+          if (hatOverrideInput && hatOverrideInput.value.trim()) {
+            const mergedH = mergeHatIntoMmlHtml(html, hatOverrideInput.value.trim());
+            if (mergedH.error) {
+              setStatus(mergedH.error, true);
+              return;
+            }
+            html = mergedH.html;
           }
           if (!html.trim()) {
             setStatus('Editor is empty.', true);
@@ -760,6 +819,9 @@
           let docUrl = origin + '/api/mml?id=' + num;
           if (animOverrideInput && animOverrideInput.value.trim()) {
             docUrl = appendAnimToApiMmlUrl(docUrl, animOverrideInput.value.trim());
+          }
+          if (hatOverrideInput && hatOverrideInput.value.trim()) {
+            docUrl = appendHatToApiMmlUrl(docUrl, hatOverrideInput.value.trim());
           }
           input.value = docUrl;
           void apply();

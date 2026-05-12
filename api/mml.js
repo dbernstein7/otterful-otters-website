@@ -24,6 +24,11 @@
  *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
  *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
  *   Priority: ?anim= > trait > MML_CHARACTER_ANIM.
+ *
+ * Optional hat override (testing / Firebase per-file tokens):
+ *   ?hat= — wins over metadata Hats/Hat trait. Value is either (a) a filename stem, e.g. antler → Hats/antler.glb via
+ *   MML_HAT_STORAGE_PATH / WEARABLES/Hats, same as metadata; or (b) a full https://… URL to the hat .glb (use when each
+ *   Firebase object has its own download token — FIREBASE_STORAGE_TOKEN is one token for all paths and may not match).
  */
 
 function siteOriginFromRequest(req) {
@@ -267,7 +272,15 @@ module.exports = async (req, res) => {
   const urls = {
     fur: buildWearableUrl(origin, glbObjectPath('MML_FUR_STORAGE_PATH', wp, 'Furs', traits.fur)),
   };
-  if (traits.hat) {
+  const hatOverride = getQueryParam(req, 'hat');
+  if (hatOverride) {
+    const ho = hatOverride.trim();
+    if (/^https?:\/\//i.test(ho)) {
+      urls.hat = ho;
+    } else {
+      urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', ho));
+    }
+  } else if (traits.hat) {
     urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', traits.hat));
   }
   const skipShirt = truthyEnv(process.env.MML_SKIP_SHIRT);
