@@ -110,71 +110,46 @@
             </div>
         </div>
 
-        <div id="builder-panel-mml" class="builder-page-panel mml-simple" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
-            <div class="mml-simple-stack">
-                <div class="mml-simple-toolbar">
-                    <h2 class="mml-simple-heading">MML document &amp; viewer</h2>
-                    <p class="mml-simple-lead"><strong>Preview</strong> loads <code>/api/mml?id=…</code> (your NFT trait GLBs). <strong>Sample otter</strong> (More options) loads the Firebase <code>OGOtter.glb</code> MML page. The MML viewer only plays clips that already exist inside the loaded GLB (or a separate <code>anim=</code> file that matches the skeleton). If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
-                    <div class="mml-simple-preview-row">
-                        <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
-                        <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
-                    </div>
-                    <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
-                    <details class="mml-simple-more">
-                        <summary>More options</summary>
-                        <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
-                        <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
-                        <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
-                        <div class="mml-simple-more-btns">
-                            <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
-                            <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
-                            <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
-                        </div>
-                        <div class="mml-simple-checks">
-                            <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
-                            <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
-                        </div>
-                        <div class="mml-simple-copy-row">
-                            <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
-                            <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
-                        </div>
-                    </details>
+        <div id="builder-panel-mml" class="builder-page-panel mml-doc-workbench" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
+            <div class="mml-doc-workbench-bar">
+                <div class="mml-doc-workbench-bar-main">
+                    <h2 class="mml-doc-workbench-title">MML playground</h2>
+                    <p class="mml-doc-workbench-sub">Edit markup like the <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a> docs — <strong>Preview</strong> loads your <code>/api/mml?id=…</code> page into the editor and viewer.</p>
                 </div>
-                <p class="mml-simple-split-note" role="note">
-                    Two previews: <strong>Left</strong> is a fixed animation sandbox on this site’s Mixamo shell GLB (not tied to the number above). <strong>Right</strong> is your <code>/api/mml</code> document in viewer.mml.io—whatever that id loads, usually a static pose unless the document includes animation.
-                </p>
-                <div class="mml-simple-split">
-                    <div class="mml-simple-hero">
-                        <div class="mml-simple-hero-head">
-                            <h2 class="mml-simple-hero-heading">Otter in motion</h2>
-                            <p class="mml-simple-hero-lead">Embedded clips from this site’s <code>otter-shell-avatar-mixamo.glb</code> — pick an animation; use <strong>Save PNG</strong> in the preview bar for a snapshot. Separate from MML (right).</p>
-                        </div>
-                        <div class="mml-simple-hero-viewport">
-                            <iframe
-                                id="builder-mml-hero-iframe"
-                                class="mml-simple-hero-iframe"
-                                title="Animated otter (embedded GLB clips)"
-                                loading="eager"
-                                referrerpolicy="no-referrer"
-                            ></iframe>
-                        </div>
+                <div class="mml-doc-workbench-bar-actions">
+                    <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
+                    <input type="number" id="builder-mml-nft-input" class="mml-doc-workbench-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
+                    <button type="button" id="builder-mml-preview-btn" class="mml-doc-workbench-preview">Preview</button>
+                    <a class="mml-doc-workbench-docs" href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">MML reference</a>
+                </div>
+            </div>
+
+            <div class="mml-playground">
+                <div class="mml-playground-chrome">
+                    <span class="mml-playground-chrome-title" id="builder-mml-playground-label">MML document</span>
+                    <div class="mml-playground-chrome-actions">
+                        <button type="button" id="builder-mml-run-btn" class="mml-playground-btn mml-playground-btn--primary" title="Send editor contents to viewer (inline data URL)">Run</button>
+                        <button type="button" id="builder-mml-reset-editor-btn" class="mml-playground-btn" title="Restore last document loaded from the server">Reset</button>
+                        <button type="button" id="builder-mml-refresh-btn" class="mml-playground-btn mml-playground-btn--icon" title="Reload from document URL" aria-label="Reload from document URL">↻</button>
                     </div>
-                    <div class="mml-simple-mml-column">
-                        <div class="mml-simple-mml-column-head">
-                            <h3 class="mml-simple-mml-column-title">MML (static scene)</h3>
-                            <p class="mml-simple-mml-column-lead">Your document in viewer.mml.io — pose is only what the GLB contains (no motion lab here). URLs update when you Preview / Load.</p>
+                </div>
+                <p id="builder-mml-status" class="mml-playground-status" role="status" aria-live="polite"></p>
+
+                <div class="mml-playground-body">
+                    <div class="mml-playground-editor" aria-labelledby="builder-mml-playground-label">
+                        <div class="mml-playground-editor-tab" role="tab" aria-selected="true">Code</div>
+                        <div class="mml-editor-wrap">
+                            <div class="mml-editor-gutter" id="builder-mml-gutter" aria-hidden="true">1</div>
+                            <textarea id="builder-mml-editor" class="mml-editor-textarea" spellcheck="false" wrap="off" autocomplete="off" aria-label="MML and HTML source" placeholder="Load with Preview or open More options, then edit…"></textarea>
                         </div>
-                        <div class="mml-simple-mml-url-stack">
-                            <label class="mml-simple-label" for="builder-mml-doc-visible">MML document URL</label>
-                            <input type="text" id="builder-mml-doc-visible" class="mml-simple-url mml-simple-url--display" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="Use Preview or More options, then Load…">
-                            <label class="mml-simple-label" for="builder-mml-viewer-visible">Viewer URL</label>
-                            <input type="text" id="builder-mml-viewer-visible" class="mml-simple-url mml-simple-url--display" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
-                        </div>
-                        <div class="mml-simple-viewport mml-simple-viewport--split">
+                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Large documents may need the hosted URL (use <strong>Load</strong> in More options) instead of Run.</p>
+                    </div>
+                    <div class="mml-playground-preview">
+                        <div class="mml-playground-preview-frame">
                             <iframe
                                 id="builder-mml-iframe"
-                                class="mml-simple-iframe mml-simple-iframe--split"
-                                title="MML preview"
+                                class="mml-playground-iframe"
+                                title="MML preview (viewer.mml.io)"
                                 loading="eager"
                                 referrerpolicy="no-referrer"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
@@ -182,9 +157,47 @@
                         </div>
                     </div>
                 </div>
+
+                <details class="mml-playground-advanced">
+                    <summary>More options</summary>
+                    <p class="mml-playground-advanced-tip">Use a full <code>https://</code> MML document URL (not a raw <code>.glb</code>). <strong>Load</strong> fetches into the editor and viewer.</p>
+                    <label class="mml-playground-label" for="builder-mml-doc-url">Document URL</label>
+                    <input type="text" id="builder-mml-doc-url" class="mml-playground-input" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
+                    <div class="mml-playground-advanced-btns">
+                        <button type="button" id="builder-mml-load-btn" class="mml-playground-btn">Load</button>
+                        <button type="button" id="builder-mml-open-tab-btn" class="mml-playground-btn">Open viewer tab</button>
+                        <button type="button" id="builder-mml-sample-btn" class="mml-playground-btn">Sample otter</button>
+                    </div>
+                    <div class="mml-playground-checks">
+                        <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
+                        <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
+                    </div>
+                    <label class="mml-playground-label" for="builder-mml-doc-visible">Resolved document URL</label>
+                    <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
+                    <label class="mml-playground-label" for="builder-mml-viewer-visible">Viewer URL</label>
+                    <input type="text" id="builder-mml-viewer-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="—">
+                    <div class="mml-playground-advanced-btns">
+                        <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
+                        <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
+                    </div>
+                </details>
+
+                <details class="mml-motion-sandbox" id="mml-motion-details">
+                    <summary>Mixamo clip sandbox (optional)</summary>
+                    <p class="mml-motion-sandbox-lead">Separate GLB preview for trying clips and <strong>Save PNG</strong> — not your MML document.</p>
+                    <div class="mml-motion-sandbox-viewport">
+                        <iframe
+                            id="builder-mml-hero-iframe"
+                            class="mml-motion-sandbox-iframe"
+                            title="Animated otter (embedded GLB clips)"
+                            loading="lazy"
+                            referrerpolicy="no-referrer"
+                        ></iframe>
+                    </div>
+                </details>
             </div>
-            <pre id="builder-mml-doc-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
-            <pre id="builder-mml-viewer-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
+            <pre id="builder-mml-doc-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
+            <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
     </div>
 
@@ -313,17 +326,22 @@
 
     <script>
       (function () {
-        // Use /main/v1/ — the site root redirects here and drops query params, which left the viewer with no document URL.
         const VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
+        const DATA_URL_MAX = 110000;
         const input = document.getElementById('builder-mml-doc-url');
         const iframe = document.getElementById('builder-mml-iframe');
         const docOut = document.getElementById('builder-mml-doc-out');
         const viewerOut = document.getElementById('builder-mml-viewer-out');
         const statusEl = document.getElementById('builder-mml-status');
+        const editor = document.getElementById('builder-mml-editor');
+        const gutter = document.getElementById('builder-mml-gutter');
         const loadBtn = document.getElementById('builder-mml-load-btn');
         const openTabBtn = document.getElementById('builder-mml-open-tab-btn');
         const sampleBtn = document.getElementById('builder-mml-sample-btn');
         const previewBtn = document.getElementById('builder-mml-preview-btn');
+        const runBtn = document.getElementById('builder-mml-run-btn');
+        const resetEditorBtn = document.getElementById('builder-mml-reset-editor-btn');
+        const refreshBtn = document.getElementById('builder-mml-refresh-btn');
         const mmlNftInput = document.getElementById('builder-mml-nft-input');
         const otterNftInput = document.getElementById('builder-nft-input');
         const noUi = document.getElementById('builder-mml-opt-no-ui');
@@ -331,9 +349,13 @@
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
         const heroIframe = document.getElementById('builder-mml-hero-iframe');
-        if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit) return;
+        const motionDetails = document.getElementById('mml-motion-details');
+        if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit || !editor) return;
 
+        let lastFetchedSource = '';
+        let lastHttpsDocUrl = '';
         let heroPreviewLoaded = false;
+
         function ensureHeroPreview() {
           if (heroPreviewLoaded || !heroIframe) return;
           heroPreviewLoaded = true;
@@ -346,6 +368,20 @@
             preview.searchParams.set('hideDupBodies', '1');
             heroIframe.src = preview.toString();
           } catch (_) { /* ignore */ }
+        }
+
+        if (motionDetails && heroIframe) {
+          motionDetails.addEventListener('toggle', function () {
+            if (motionDetails.open) ensureHeroPreview();
+          });
+        }
+
+        function syncGutter() {
+          if (!gutter || !editor) return;
+          const n = editor.value.split('\n').length;
+          const lines = [];
+          for (let i = 1; i <= n; i += 1) lines.push(String(i));
+          gutter.textContent = lines.join('\n');
         }
 
         function looksLikeRawModelUrl(s) {
@@ -379,7 +415,6 @@
         }
 
         window.addEventListener('otterful-mml-panel-open', function () {
-          ensureHeroPreview();
           const docUrl = absoluteDocUrl(input.value);
           if (docUrl && looksLikeMmlUrl(docUrl)) void apply();
         });
@@ -391,7 +426,6 @@
         }
 
         async function apply(options) {
-          ensureHeroPreview();
           options = options || {};
           const docUrl = absoluteDocUrl(input.value);
           if (!looksLikeMmlUrl(docUrl)) {
@@ -407,6 +441,7 @@
           const viewerUrl = buildViewerUrl(docUrl);
           setOuts(docUrl, viewerUrl);
           setStatus('Loading…', false);
+          let bodyText = '';
           try {
             const dr = await fetch(docUrl, { method: 'GET', credentials: 'omit' });
             if (!dr.ok) {
@@ -416,7 +451,7 @@
               setOuts(docUrl, viewerUrl);
               return;
             }
-            const bodyText = await dr.text();
+            bodyText = await dr.text();
             const probe = bodyText.trim().slice(0, 12000);
             const ctype = (dr.headers.get('content-type') || '').toLowerCase();
             const ctypeLooksDoc =
@@ -439,6 +474,12 @@
             setOuts(docUrl, viewerUrl);
             return;
           }
+
+          lastFetchedSource = bodyText;
+          if (docUrl.indexOf('https:') === 0) lastHttpsDocUrl = docUrl;
+          editor.value = bodyText;
+          syncGutter();
+
           const viewerUrlFinal = buildViewerUrl(docUrl);
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
@@ -459,11 +500,11 @@
           const v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
-          v.searchParams.set('cameraOrbitPitch', '60');
+          v.searchParams.set('cameraOrbitPitch', '55');
           v.searchParams.set('cameraOrbitSpeed', '10');
-          v.searchParams.set('cameraFov', '75');
-          v.searchParams.set('ambientLight', '5');
-          v.searchParams.set('ambientLightColor', '0');
+          v.searchParams.set('cameraFov', '72');
+          v.searchParams.set('ambientLight', '38');
+          v.searchParams.set('ambientLightColor', 'ffffff');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));
@@ -493,8 +534,53 @@
           navigator.clipboard.writeText(text).then(function () {
             setStatus('Copied.', false);
           }).catch(function () {
-            setStatus('Copy failed — try Open in new tab and copy from the address bar.', true);
+            setStatus('Copy failed — try Open viewer tab and copy from the address bar.', true);
           });
+        }
+
+        function runFromEditor() {
+          const html = editor.value;
+          if (!html.trim()) {
+            setStatus('Editor is empty.', true);
+            return;
+          }
+          if (html.length > DATA_URL_MAX) {
+            setStatus(
+              'Document is too long for an inline data URL. Use Load with a hosted https URL, or shorten the markup.',
+              true
+            );
+            return;
+          }
+          let dataUrl;
+          try {
+            dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+          } catch (err) {
+            setStatus('Could not encode document: ' + ((err && err.message) || String(err)), true);
+            return;
+          }
+          const viewerUrl = buildViewerUrl(dataUrl);
+          setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
+          iframe.removeAttribute('src');
+          iframe.src = viewerUrl;
+          setStatus('Running editor in viewer (inline). If the frame stays blank, use Load with your hosted URL.', false);
+        }
+
+        function resetEditorToFetched() {
+          if (!lastFetchedSource) {
+            setStatus('Nothing to reset — Preview or Load a document first.', true);
+            return;
+          }
+          editor.value = lastFetchedSource;
+          syncGutter();
+          if (lastHttpsDocUrl) {
+            const v = buildViewerUrl(lastHttpsDocUrl);
+            setOuts(lastHttpsDocUrl, v);
+            iframe.removeAttribute('src');
+            iframe.src = v;
+            setStatus('Restored last fetched document and viewer.', false);
+          } else {
+            setStatus('Editor restored. Use Run to preview if you only have local edits.', false);
+          }
         }
 
         loadBtn.addEventListener('click', function () {
@@ -541,6 +627,21 @@
           void apply();
         });
 
+        if (runBtn) runBtn.addEventListener('click', runFromEditor);
+        if (resetEditorBtn) resetEditorBtn.addEventListener('click', resetEditorToFetched);
+        if (refreshBtn) refreshBtn.addEventListener('click', function () { void apply({ skipHistory: true }); });
+
+        editor.addEventListener('input', syncGutter);
+        editor.addEventListener('scroll', function () {
+          if (gutter) gutter.scrollTop = editor.scrollTop;
+        });
+        editor.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            runFromEditor();
+          }
+        });
+
         if (mmlNftInput) {
           mmlNftInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') previewBtn.click();
@@ -559,10 +660,6 @@
         }
 
         parseQueryUrl();
-        (function loadHeroIfMmlPanelVisible() {
-          const mmlPanel = document.getElementById('builder-panel-mml');
-          if (mmlPanel && !mmlPanel.hidden) ensureHeroPreview();
-        })();
         if (!input.value.trim()) {
           try {
             input.value = new URL('mml/MMLOtter-preview.html', window.location.href).href;
@@ -573,6 +670,7 @@
           }
         }
         syncUrlFieldsFromInput();
+        syncGutter();
         if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
         else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
       })();
