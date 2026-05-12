@@ -145,6 +145,21 @@ function resolveLinkedAssetUrl(origin, raw) {
   return buildWearableUrl(origin, s.replace(/^\/+/, ''));
 }
 
+function getQueryParam(req, key) {
+  const q = req.query && req.query[key];
+  if (q != null && String(q).trim() !== '') return String(q).trim();
+  try {
+    const raw = String(req.url || '');
+    const qIdx = raw.indexOf('?');
+    const search = qIdx >= 0 ? raw.slice(qIdx + 1) : '';
+    if (!search) return '';
+    const sp = new URLSearchParams(search);
+    return (sp.get(key) || '').trim();
+  } catch (_) {
+    return '';
+  }
+}
+
 function buildHtml({ id, traits, urls, sockets }) {
   const parts = [
     '<!DOCTYPE html>',
@@ -165,6 +180,7 @@ function buildHtml({ id, traits, urls, sockets }) {
   ];
   if (urls.anim) charOpen.push(` anim="${escAttr(urls.anim)}"`);
   charOpen.push(' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
+  parts.push('<!-- Body: m-character @src = fur GLB for this token; wearables: m-model + socket -->');
   parts.push(charOpen.join(''));
 
   if (urls.hat) {
@@ -185,12 +201,13 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).send('Method not allowed');
 
-  const rawId = (req.query && (req.query.id || req.query.token)) || '';
+  const rawId = getQueryParam(req, 'id') || getQueryParam(req, 'token');
   const id = parseInt(String(rawId), 10);
   if (!id || id < 1 || id > 2222) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');

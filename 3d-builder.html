@@ -381,6 +381,12 @@
           if (docUrl && looksLikeMmlUrl(docUrl)) void apply();
         });
 
+        function syncUrlFieldsFromInput() {
+          const docUrl = absoluteDocUrl(input.value);
+          if (!looksLikeMmlUrl(docUrl) || looksLikeRawModelUrl(docUrl)) return;
+          setOuts(docUrl, buildViewerUrl(docUrl));
+        }
+
         async function apply(options) {
           ensureHeroPreview();
           options = options || {};
@@ -395,6 +401,8 @@
             setOuts('', '');
             return;
           }
+          const viewerUrl = buildViewerUrl(docUrl);
+          setOuts(docUrl, viewerUrl);
           setStatus('Loading…', false);
           try {
             const dr = await fetch(docUrl, { method: 'GET', credentials: 'omit' });
@@ -402,26 +410,36 @@
               const errText = (await dr.text()).replace(/\s+/g, ' ').trim().slice(0, 280);
               setStatus('MML page failed (' + dr.status + '). ' + errText, true);
               iframe.removeAttribute('src');
-              setOuts('', '');
+              setOuts(docUrl, viewerUrl);
               return;
             }
+            const bodyText = await dr.text();
+            const probe = bodyText.trim().slice(0, 12000);
             const ctype = (dr.headers.get('content-type') || '').toLowerCase();
-            if (ctype && !ctype.includes('html')) {
-              setStatus('That URL is not HTML (Content-Type: ' + ctype + ').', true);
+            const ctypeLooksDoc =
+              !ctype ||
+              ctype.includes('html') ||
+              ctype.includes('xml') ||
+              ctype.includes('/xhtml');
+            const bodyLooksDoc =
+              /<!DOCTYPE\s+html|<\s*html[\s>]/i.test(probe) ||
+              /<\s*m-character[\s>]|<\s*m-model[\s>]|<\s*m-group[\s>]|<\s*m-light[\s>]/i.test(probe);
+            if (!bodyLooksDoc && !ctypeLooksDoc) {
+              setStatus('That URL did not return an HTML MML document (body did not look like HTML/MML).', true);
               iframe.removeAttribute('src');
-              setOuts('', '');
+              setOuts(docUrl, viewerUrl);
               return;
             }
           } catch (err) {
             setStatus('Could not reach the MML page: ' + ((err && err.message) || String(err)), true);
             iframe.removeAttribute('src');
-            setOuts('', '');
+            setOuts(docUrl, viewerUrl);
             return;
           }
-          const viewerUrl = buildViewerUrl(docUrl);
-          setOuts(docUrl, viewerUrl);
+          const viewerUrlFinal = buildViewerUrl(docUrl);
+          setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
-          iframe.src = viewerUrl;
+          iframe.src = viewerUrlFinal;
           setStatus('', false);
 
           if (!options.skipHistory) {
@@ -551,6 +569,7 @@
             }
           }
         }
+        syncUrlFieldsFromInput();
         if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
         else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
       })();
