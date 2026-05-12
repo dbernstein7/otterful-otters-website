@@ -7,6 +7,8 @@
  *   If unset, defaults follow MML_BONE_SCHEME (see below).
  *   Optional offsets on wearables (m-model transform group): MML_HAT_X … MML_HAT_SZ, MML_SHIRT_*, MML_EYES_* (suffixes
  *   X Y Z RX RY RZ SX SY SZ in meters / degrees / scale per MML). Example for eyes forward on head: MML_EYES_Y, MML_EYES_Z.
+ *   MML_EYES_ANIM_ENABLED — set `1` / `true` so the eyes m-model keeps default animation handling. If unset, the API emits
+ *   `anim-enabled="false"` on eyes only (stops the body’s anim clip from driving bones inside the eyes GLB’s own skeleton).
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
  *   MML_BONE_SCHEME — `mixamo` (default: Otterful glTF names mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head /
  *   mixamorig:Spine2), or `short` (Head / Spine2 / Head).
@@ -152,6 +154,12 @@ function wearableExtraAttrs(prefix) {
     out += ` ${attr}="${escAttr(String(v).trim())}"`;
   }
   return out;
+}
+
+/** Eyes GLBs often ship with a full internal skeleton; body anim clips then bind to wrong nodes. Default: turn off anim on eyes m-model. */
+function eyesAnimAttr() {
+  if (truthyEnv(process.env.MML_EYES_ANIM_ENABLED)) return '';
+  return ' anim-enabled="false"';
 }
 
 function defaultSockets() {
@@ -303,7 +311,7 @@ function buildHtml({ id, traits, urls, sockets }) {
   }
   if (urls.eyes) {
     parts.push(
-      `  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"${wearableExtraAttrs(
+      `  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"${eyesAnimAttr()}${wearableExtraAttrs(
         'MML_EYES'
       )}></m-model>`
     );
