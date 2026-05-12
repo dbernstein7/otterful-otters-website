@@ -1811,59 +1811,65 @@ body::before {
     cursor: pointer;
 }
 
+.mml-simple-hero {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mml-simple-hero-head {
+    padding: 14px 16px;
+    background: linear-gradient(180deg, #18181f 0%, #121218 100%);
+}
+
+.mml-simple-hero-heading {
+    margin: 0 0 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #ececf0);
+}
+
+.mml-simple-hero-lead {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: rgba(200, 200, 210, 0.78);
+    max-width: 52em;
+}
+
+.mml-simple-hero-lead strong {
+    color: rgba(230, 232, 240, 0.95);
+}
+
+.mml-simple-hero-viewport {
+    position: relative;
+    background: #000;
+    min-height: min(42vh, 400px);
+}
+
+.mml-simple-hero-iframe {
+    width: 100%;
+    height: min(42vh, 400px);
+    min-height: 280px;
+    border: none;
+    display: block;
+}
+
+.mml-simple-mml-section {
+    display: flex;
+    flex-direction: column;
+}
+
 .mml-simple-viewport {
     position: relative;
     background: #000;
-    min-height: min(65vh, 560px);
+    min-height: min(52vh, 520px);
 }
 
 .mml-simple-iframe {
     width: 100%;
-    height: min(65vh, 560px);
-    min-height: 360px;
+    height: min(52vh, 520px);
+    min-height: 320px;
     border: none;
     display: block;
-}
-
-.mml-simple-anim-wrap {
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 12px 14px 14px;
-    background: rgba(8, 8, 12, 0.92);
-}
-
-.mml-simple-anim-title {
-    margin: 0 0 6px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.55);
-}
-
-.mml-simple-anim-lead {
-    margin: 0 0 10px;
-    font-size: 0.78rem;
-    line-height: 1.45;
-    color: rgba(195, 198, 210, 0.82);
-    max-width: 52em;
-}
-
-.mml-simple-anim-lead code {
-    font-size: 0.92em;
-    padding: 0.08em 0.3em;
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.35);
-}
-
-.mml-simple-anim-iframe {
-    width: 100%;
-    height: min(42vh, 420px);
-    min-height: 280px;
-    border: none;
-    display: block;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #0a0a0e;
 }
 
 .mml-simple-hidden-pre {

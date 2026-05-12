@@ -112,54 +112,60 @@
 
         <div id="builder-panel-mml" class="builder-page-panel mml-simple" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
             <div class="mml-simple-stack">
-                <div class="mml-simple-toolbar">
-                    <h2 class="mml-simple-heading">MML preview</h2>
-                    <p class="mml-simple-lead"><strong>Sample otter</strong> (in More options) loads the Firebase <code>OGOtter.glb</code> MML page — use that to confirm MML + viewer. Movement only appears if that GLB’s glTF file actually contains animation <em>clips</em> (not just bones). <strong>Preview</strong> with a number loads <code>/api/mml?id=…</code> (your NFT trait GLBs). If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
-                    <div class="mml-simple-preview-row">
-                        <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
-                        <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
+                <div class="mml-simple-hero">
+                    <div class="mml-simple-hero-head">
+                        <h2 class="mml-simple-hero-heading">Otter in motion</h2>
+                        <p class="mml-simple-hero-lead">This is a <strong>built-in sample GLB</strong> from this site (with real glTF animation clips), so you always see movement here. It is not reading your Firebase file and does not auto-retarget random rigs — below is the real <strong>MML + viewer.mml.io</strong> path for your documents.</p>
                     </div>
-                    <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
-                    <details class="mml-simple-more">
-                        <summary>More options</summary>
-                        <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
-                        <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
-                        <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
-                        <div class="mml-simple-more-btns">
-                            <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
-                            <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
-                            <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
-                        </div>
-                        <div class="mml-simple-checks">
-                            <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
-                            <label><input type="checkbox" id="builder-mml-opt-no-ui"> Hide viewer controls</label>
-                        </div>
-                        <div class="mml-simple-copy-row">
-                            <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
-                            <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
-                        </div>
-                    </details>
+                    <div class="mml-simple-hero-viewport">
+                        <iframe
+                            id="builder-mml-hero-iframe"
+                            class="mml-simple-hero-iframe"
+                            title="Sample animated otter (Three.js preview)"
+                            loading="eager"
+                            referrerpolicy="no-referrer"
+                        ></iframe>
+                    </div>
                 </div>
-                <div class="mml-simple-viewport">
-                    <iframe
-                        id="builder-mml-iframe"
-                        class="mml-simple-iframe"
-                        title="MML preview"
-                        loading="eager"
-                        referrerpolicy="no-referrer"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                    ></iframe>
-                </div>
-                <div id="builder-mml-anim-wrap" class="mml-simple-anim-wrap" hidden>
-                    <h3 class="mml-simple-anim-title">Body GLB — animation clips</h3>
-                    <p class="mml-simple-anim-lead">Clips load from <code>m-character anim=…</code> when set (separate animation GLB); otherwise from <code>src</code> (body). The main viewer above shows the full MML scene.</p>
-                    <iframe
-                        id="builder-mml-anim-iframe"
-                        class="mml-simple-anim-iframe"
-                        title="GLB animation clip preview"
-                        loading="eager"
-                        referrerpolicy="no-referrer"
-                    ></iframe>
+                <div class="mml-simple-mml-section">
+                    <div class="mml-simple-toolbar">
+                        <h2 class="mml-simple-heading">MML document &amp; viewer</h2>
+                        <p class="mml-simple-lead"><strong>Preview</strong> loads <code>/api/mml?id=…</code> (your NFT trait GLBs). <strong>Sample otter</strong> (More options) loads the Firebase <code>OGOtter.glb</code> MML page. The MML viewer only plays clips that already exist inside the loaded GLB (or a separate <code>anim=</code> file that matches the skeleton); it does not attach default animations to arbitrary rigs. If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
+                        <div class="mml-simple-preview-row">
+                            <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
+                            <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
+                        </div>
+                        <p id="builder-mml-status" class="mml-simple-status" role="status" aria-live="polite"></p>
+                        <details class="mml-simple-more">
+                            <summary>More options</summary>
+                            <p class="mml-simple-tip">Use this only if you have your own MML <code>.html</code> or a full <code>/api/mml?id=…</code> link. Do not paste a raw <code>.glb</code> — the viewer needs a document page.</p>
+                            <label class="mml-simple-label" for="builder-mml-doc-url">Custom document URL</label>
+                            <input type="text" id="builder-mml-doc-url" class="mml-simple-url" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
+                            <div class="mml-simple-more-btns">
+                                <button type="button" id="builder-mml-load-btn" class="mml-simple-btn">Load</button>
+                                <button type="button" id="builder-mml-open-tab-btn" class="mml-simple-btn">Open in new tab</button>
+                                <button type="button" id="builder-mml-sample-btn" class="mml-simple-btn">Sample otter</button>
+                            </div>
+                            <div class="mml-simple-checks">
+                                <label><input type="checkbox" id="builder-mml-opt-fit" checked> Fit camera</label>
+                                <label><input type="checkbox" id="builder-mml-opt-no-ui"> Hide viewer controls</label>
+                            </div>
+                            <div class="mml-simple-copy-row">
+                                <button type="button" id="builder-mml-copy-viewer" class="mml-simple-btn mml-simple-btn--ghost">Copy viewer link</button>
+                                <button type="button" id="builder-mml-copy-doc" class="mml-simple-btn mml-simple-btn--ghost">Copy document link</button>
+                            </div>
+                        </details>
+                    </div>
+                    <div class="mml-simple-viewport">
+                        <iframe
+                            id="builder-mml-iframe"
+                            class="mml-simple-iframe"
+                            title="MML preview"
+                            loading="eager"
+                            referrerpolicy="no-referrer"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                        ></iframe>
+                    </div>
                 </div>
             </div>
             <pre id="builder-mml-doc-out" class="mml-simple-hidden-pre" aria-hidden="true">—</pre>
@@ -268,15 +274,13 @@
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
+          if (isMml) window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
         }
 
         pageTabs.forEach((btn) => {
           btn.addEventListener('click', () => {
             const next = btn.dataset.builderPage || 'otter';
             setBuilderPage(next);
-            if (next === 'mml') {
-              window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
-            }
           });
         });
 
@@ -311,56 +315,20 @@
         const fit = document.getElementById('builder-mml-opt-fit');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
-        const animWrap = document.getElementById('builder-mml-anim-wrap');
-        const animIframe = document.getElementById('builder-mml-anim-iframe');
+        const heroIframe = document.getElementById('builder-mml-hero-iframe');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit) return;
 
-        function decodeHtmlAttr(s) {
-          const t = document.createElement('textarea');
-          t.innerHTML = s;
-          return t.value;
-        }
-
-        async function updateAnimPreviewFromMmlDoc(docUrl) {
-          if (!animWrap || !animIframe) return;
-          if (!looksLikeMmlUrl(docUrl) || looksLikeRawModelUrl(docUrl)) {
-            animWrap.hidden = true;
-            animIframe.removeAttribute('src');
-            return;
-          }
+        let heroPreviewLoaded = false;
+        function ensureHeroPreview() {
+          if (heroPreviewLoaded || !heroIframe) return;
+          heroPreviewLoaded = true;
           try {
-            const r = await fetch(docUrl);
-            if (!r.ok) throw new Error(String(r.status));
-            const html = await r.text();
-            const block = html.match(/<m-character\b[\s\S]*?>/i);
-            const blockStr = block ? block[0] : html;
-            const mAnim = blockStr.match(/\banim\s*=\s*["']([^"']+)["']/i);
-            const mSrc = blockStr.match(/\bsrc\s*=\s*["']([^"']+)["']/i);
-            if (!mSrc) {
-              animWrap.hidden = true;
-              animIframe.removeAttribute('src');
-              return;
-            }
-            let glbAbs = decodeHtmlAttr(mSrc[1]).trim();
-            if (mAnim) {
-              const animAbs = decodeHtmlAttr(mAnim[1]).trim();
-              if (/\.glb(\?|#|$)/i.test(animAbs)) glbAbs = animAbs;
-            }
-            if (!/\.glb(\?|#|$)/i.test(glbAbs)) {
-              animWrap.hidden = true;
-              animIframe.removeAttribute('src');
-              return;
-            }
+            const glbUrl = new URL('games/shell-snag/otter-shell-avatar-mixamo.glb', window.location.href).href;
             const previewPage = new URL('glb-anim-preview.html', window.location.href);
-            previewPage.searchParams.set('url', glbAbs);
+            previewPage.searchParams.set('url', glbUrl);
             previewPage.searchParams.set('hideDupBodies', '1');
-            animIframe.removeAttribute('src');
-            animIframe.src = previewPage.toString();
-            animWrap.hidden = false;
-          } catch (_) {
-            animWrap.hidden = true;
-            animIframe.removeAttribute('src');
-          }
+            heroIframe.src = previewPage.toString();
+          } catch (_) { /* ignore */ }
         }
 
         function looksLikeRawModelUrl(s) {
@@ -394,11 +362,13 @@
         }
 
         window.addEventListener('otterful-mml-panel-open', function () {
+          ensureHeroPreview();
           const docUrl = absoluteDocUrl(input.value);
           if (docUrl && looksLikeMmlUrl(docUrl)) void apply();
         });
 
         async function apply(options) {
+          ensureHeroPreview();
           options = options || {};
           const docUrl = absoluteDocUrl(input.value);
           if (!looksLikeMmlUrl(docUrl)) {
@@ -434,7 +404,6 @@
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
           setStatus('', false);
-          void updateAnimPreviewFromMmlDoc(docUrl);
 
           if (!options.skipHistory) {
             try {
@@ -546,6 +515,10 @@
         }
 
         parseQueryUrl();
+        (function loadHeroIfMmlPanelVisible() {
+          const mmlPanel = document.getElementById('builder-panel-mml');
+          if (mmlPanel && !mmlPanel.hidden) ensureHeroPreview();
+        })();
         if (!input.value.trim()) {
           try {
             input.value = new URL('mml/MMLOtter-preview.html', window.location.href).href;
