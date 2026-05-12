@@ -307,6 +307,58 @@ function isBinaryGlbMagic(buf) {
   return magic === 0x46546c67;
 }
 
+/**
+ * Three.js r160 GLTFBinaryExtension advances chunk offsets by 8 + chunkLength only,
+ * without the glTF-Binary spec's 4-byte padding between chunks. If a chunk length
+ * is not a multiple of 4, the BIN chunk is misread, binary buffer stays null, and
+ * texture bufferViews throw "Cannot read properties of null (reading 'slice')".
+ * This rebuilds the container so each chunk's declared length includes trailing
+ * pad bytes (0x20), matching what Three's parser expects.
+ * @param {ArrayBuffer} ab
+ * @returns {ArrayBuffer}
+ */
+function normalizeGlbChunkPaddingForThree(ab) {
+  const u8 = new Uint8Array(ab);
+  if (u8.byteLength < 12) return ab;
+  if (u8[0] !== 0x67 || u8[1] !== 0x6c || u8[2] !== 0x54 || u8[3] !== 0x46) return ab;
+  const dv = new DataView(ab);
+  const declared = dv.getUint32(8, true);
+  const end = Math.min(ab.byteLength, declared);
+  let p = 12;
+  const chunks = [];
+  while (p + 8 <= end) {
+    const chunkLen = dv.getUint32(p, true);
+    const chunkType = dv.getUint32(p + 4, true);
+    if (chunkLen < 0 || chunkLen > end || p + 8 + chunkLen > ab.byteLength) break;
+    chunks.push({ type: chunkType, data: ab.slice(p + 8, p + 8 + chunkLen) });
+    p += 8 + chunkLen;
+    p += (4 - (chunkLen % 4)) % 4;
+  }
+  if (chunks.length === 0) return ab;
+  if (chunks.every((c) => (c.data.byteLength % 4) === 0)) return ab;
+  let outSize = 12;
+  for (let i = 0; i < chunks.length; i += 1) {
+    const pad = (4 - (chunks[i].data.byteLength % 4)) % 4;
+    outSize += 8 + chunks[i].data.byteLength + pad;
+  }
+  const out = new ArrayBuffer(outSize);
+  new Uint8Array(out, 0, 12).set(u8.subarray(0, 12));
+  const outDv = new DataView(out);
+  outDv.setUint32(8, outSize, true);
+  let o = 12;
+  for (let i = 0; i < chunks.length; i += 1) {
+    const { type, data } = chunks[i];
+    const pad = (4 - (data.byteLength % 4)) % 4;
+    const paddedLen = data.byteLength + pad;
+    outDv.setUint32(o, paddedLen, true);
+    outDv.setUint32(o + 4, type, true);
+    new Uint8Array(out, o + 8, data.byteLength).set(new Uint8Array(data));
+    for (let j = 0; j < pad; j += 1) new Uint8Array(out)[o + 8 + data.byteLength + j] = 0x20;
+    o += 8 + paddedLen;
+  }
+  return out;
+}
+
 if (pngBtn) {
   pngBtn.addEventListener('click', () => {
     if (!root) return;
@@ -445,8 +497,14 @@ function onGltfError(e) {
     }
     const resourcePath = glbResourceBase(glbUrl);
     if (resourcePath) loader.setResourcePath(resourcePath);
+    let parseBuf = buf;
+    try {
+      parseBuf = normalizeGlbChunkPaddingForThree(buf);
+    } catch (_) {
+      parseBuf = buf;
+    }
     loader.parse(
-      buf,
+      parseBuf,
       resourcePath,
       onGltfLoaded,
       onGltfError
