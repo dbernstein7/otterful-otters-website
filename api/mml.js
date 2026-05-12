@@ -14,6 +14,7 @@
  *   WEARABLE_ASSET_ORIGIN — absolute base for all GLBs when set; otherwise base follows prefix (WEARABLES → /AvatarBuilder, else site origin).
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
+ *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *
  * Optional separate animation file (body GLB + linked anim GLB):
@@ -168,35 +169,28 @@ function buildHtml({ id, traits, urls, sockets }) {
     '<head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    `<!-- Otterful #${id} — MML from metadata -->`,
     `<title>Otterful #${id}</title>`,
     '</head>',
     '<body>',
   ];
 
-  const charOpen = [
-    '<m-character',
-    ` id="otter-${id}"`,
-    ` src="${escAttr(urls.fur)}"`,
-  ];
-  if (urls.anim) charOpen.push(` anim="${escAttr(urls.anim)}"`);
-  charOpen.push(' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
-  parts.push('<!-- Body: m-character @src = fur GLB for this token; wearables: m-model + socket -->');
-  if (!urls.anim) {
-    parts.push(
-      '<!-- No anim=: add ?anim=https://…/clip.glb to this page URL, or metadata "MML Anim", or env MML_CHARACTER_ANIM. Clip must match this body’s skeleton. -->'
-    );
-  }
-  parts.push(charOpen.join(''));
+  const ry = (process.env.MML_CHARACTER_RY || '').trim();
+  parts.push('<m-character');
+  parts.push(`  id="otter-${id}"`);
+  parts.push(`  name="Otterful #${id}"`);
+  parts.push(`  src="${escAttr(urls.fur)}"`);
+  if (urls.anim) parts.push(`  anim="${escAttr(urls.anim)}"`);
+  if (ry) parts.push(`  ry="${escAttr(ry)}"`);
+  parts.push('>');
 
   if (urls.hat) {
-    parts.push(`  <m-model src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
+    parts.push(`  <m-model class="hat" src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
   }
   if (urls.shirt) {
-    parts.push(`  <m-model src="${escAttr(urls.shirt)}" socket="${escAttr(sockets.shirt)}" />`);
+    parts.push(`  <m-model class="shirt" src="${escAttr(urls.shirt)}" socket="${escAttr(sockets.shirt)}" />`);
   }
   if (urls.eyes) {
-    parts.push(`  <m-model src="${escAttr(urls.eyes)}" socket="${escAttr(sockets.eyes)}" />`);
+    parts.push(`  <m-model class="eyes" src="${escAttr(urls.eyes)}" socket="${escAttr(sockets.eyes)}" />`);
   }
 
   parts.push('</m-character>', '</body>', '</html>');
