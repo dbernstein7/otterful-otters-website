@@ -288,108 +288,170 @@ function safeFilenameBaseFromGlbUrl(url) {
   }
 }
 
-pngBtn.addEventListener('click', () => {
-  if (!root) return;
-  controls.update();
-  renderer.render(scene, camera);
-  canvas.toBlob(
-    (blob) => {
-      if (!blob) {
-        showWarn('PNG capture failed — try another browser or disable privacy extensions.');
-        return;
-      }
-      const name = `${safeFilenameBaseFromGlbUrl(glbUrl)}-${Date.now()}.png`;
-      const a = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      a.href = url;
-      a.download = name;
-      a.rel = 'noopener';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    },
-    'image/png',
-    0.92
-  );
-});
+/** Directory URL (trailing slash) for resolving relative texture/bin paths inside GLBs. */
+function glbResourceBase(url) {
+  try {
+    const u = new URL(url);
+    const href = u.href;
+    const i = href.lastIndexOf('/');
+    return i === -1 ? '' : href.slice(0, i + 1);
+  } catch (_) {
+    return '';
+  }
+}
+
+function isBinaryGlbMagic(buf) {
+  if (!buf || buf.byteLength < 12) return false;
+  const magic = new DataView(buf).getUint32(0, true);
+  /* Little-endian "glTF" at byte 0 */
+  return magic === 0x46546c67;
+}
+
+if (pngBtn) {
+  pngBtn.addEventListener('click', () => {
+    if (!root) return;
+    controls.update();
+    renderer.render(scene, camera);
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          showWarn('PNG capture failed — try another browser or disable privacy extensions.');
+          return;
+        }
+        const name = `${safeFilenameBaseFromGlbUrl(glbUrl)}-${Date.now()}.png`;
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = name;
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      },
+      'image/png',
+      0.92
+    );
+  });
+}
 
 const loader = new GLTFLoader();
-loader.load(
-  glbUrl,
-  (gltf) => {
-    showErr('');
-    showWarn('');
-    disposeRoot();
-    root = gltf.scene;
-    scene.add(root);
-    root.updateMatrixWorld(true);
-    const stats = collectSkinnedMeshStats(root);
-    const analysis = analyzeDuplicateBodyRisk(stats, root);
-    showWarn(analysis.risky ? analysis.message : '');
-    logAssetAnalysis(gltf, stats, analysis);
+loader.setCrossOrigin('anonymous');
 
-    const box = new THREE.Box3().setFromObject(root);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
-    controls.target.copy(center);
-    const dist = maxDim * 2.2;
-    camera.position.set(center.x + dist * 0.45, center.y + maxDim * 0.35, center.z + dist);
-    controls.update();
+function onGltfLoaded(gltf) {
+  showErr('');
+  showWarn('');
+  disposeRoot();
+  root = gltf.scene;
+  scene.add(root);
+  root.updateMatrixWorld(true);
+  const stats = collectSkinnedMeshStats(root);
+  const analysis = analyzeDuplicateBodyRisk(stats, root);
+  showWarn(analysis.risky ? analysis.message : '');
+  logAssetAnalysis(gltf, stats, analysis);
 
-    clips = gltf.animations || [];
-    clipSel.innerHTML = '';
-    if (!clips.length) {
-      const o = document.createElement('option');
-      o.value = '';
-      o.textContent = 'No clips in this GLB';
-      clipSel.appendChild(o);
-      clipSel.disabled = true;
-      slowBtn.disabled = true;
-      clearBtn.disabled = true;
-      const noClipMsg =
-        'This GLB lists 0 glTF animations (nothing to play). Re-export with clips included (e.g. Blender glTF: NLA / active actions), '
-        + 'or use a separate movement file if your host supports anim="…" on the character element.';
-      showWarn([analysis.risky ? analysis.message : '', noClipMsg].filter(Boolean).join(' '));
-      pngBtn.disabled = false;
-      return;
-    }
-    const ph = document.createElement('option');
-    ph.value = '';
-    ph.textContent = 'Select animation…';
-    clipSel.appendChild(ph);
-    clips.forEach((c, i) => {
-      const o = document.createElement('option');
-      o.value = String(i);
-      o.textContent = c.name || `Clip ${i + 1}`;
-      clipSel.appendChild(o);
-    });
-    clipSel.disabled = false;
-    slowBtn.disabled = false;
-    clearBtn.disabled = false;
-    pngBtn.disabled = false;
+  const box = new THREE.Box3().setFromObject(root);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+  controls.target.copy(center);
+  const dist = maxDim * 2.2;
+  camera.position.set(center.x + dist * 0.45, center.y + maxDim * 0.35, center.z + dist);
+  controls.update();
 
-    mixer = new THREE.AnimationMixer(root);
-    root.updateMatrixWorld(true);
-    mixer.update(0);
-    clipSel.selectedIndex = 1;
-    onClipSelect();
-  },
-  undefined,
-  (e) => {
-    const base = e && e.message ? e.message : String(e);
-    let msg = 'Could not load GLB: ' + base;
-    if (/DOCTYPE|not valid JSON|Unexpected token '<'/i.test(base)) {
-      msg +=
-        ' — The URL probably returned an HTML page (404 or SPA shell) instead of a binary .glb. '
-        + 'If this is /mml/… on Vercel, deploy those GLB files or host them (e.g. Firebase) and set WEARABLE_ASSET_ORIGIN if needed.';
-    }
-    showErr(msg);
-    showWarn('');
+  clips = gltf.animations || [];
+  clipSel.innerHTML = '';
+  if (!clips.length) {
+    const o = document.createElement('option');
+    o.value = '';
+    o.textContent = 'No clips in this GLB';
+    clipSel.appendChild(o);
     clipSel.disabled = true;
     slowBtn.disabled = true;
     clearBtn.disabled = true;
-    pngBtn.disabled = true;
+    const noClipMsg =
+      'This GLB lists 0 glTF animations (nothing to play). Re-export with clips included (e.g. Blender glTF: NLA / active actions), '
+      + 'or use a separate movement file if your host supports anim="…" on the character element.';
+    showWarn([analysis.risky ? analysis.message : '', noClipMsg].filter(Boolean).join(' '));
+    if (pngBtn) pngBtn.disabled = false;
+    return;
   }
-);
+  const ph = document.createElement('option');
+  ph.value = '';
+  ph.textContent = 'Select animation…';
+  clipSel.appendChild(ph);
+  clips.forEach((c, i) => {
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = c.name || `Clip ${i + 1}`;
+    clipSel.appendChild(o);
+  });
+  clipSel.disabled = false;
+  slowBtn.disabled = false;
+  clearBtn.disabled = false;
+  if (pngBtn) pngBtn.disabled = false;
+
+  mixer = new THREE.AnimationMixer(root);
+  root.updateMatrixWorld(true);
+  mixer.update(0);
+  clipSel.selectedIndex = 1;
+  onClipSelect();
+}
+
+function onGltfError(e) {
+  const base = e && e.message ? e.message : String(e);
+  let msg = 'Could not load GLB: ' + base;
+  if (/DOCTYPE|not valid JSON|Unexpected token '<'/i.test(base)) {
+    msg +=
+      ' — The URL probably returned an HTML page (404 or SPA shell) instead of a binary .glb. '
+      + 'If this is /mml/… on Vercel, deploy those GLB files or host them (e.g. Firebase) and set WEARABLE_ASSET_ORIGIN if needed.';
+  }
+  showErr(msg);
+  showWarn('');
+  clipSel.disabled = true;
+  slowBtn.disabled = true;
+  clearBtn.disabled = true;
+  if (pngBtn) pngBtn.disabled = true;
+}
+
+(async function loadGlbFromUrl() {
+  try {
+    const res = await fetch(glbUrl, { method: 'GET', mode: 'cors', credentials: 'omit' });
+    if (!res.ok) {
+      onGltfError(new Error(`HTTP ${res.status} ${(res.statusText || '').trim()}`.trim()));
+      return;
+    }
+    const buf = await res.arrayBuffer();
+    if (!buf.byteLength) {
+      onGltfError(new Error('empty response body'));
+      return;
+    }
+    const ctype = (res.headers.get('content-type') || '').toLowerCase();
+    if (ctype.includes('text/html') || ctype.includes('application/json')) {
+      onGltfError(
+        new Error(
+          `server returned ${ctype || 'unknown'} instead of a GLB (HTML page, JSON API, or proxy error)`
+        )
+      );
+      return;
+    }
+    if (!isBinaryGlbMagic(buf)) {
+      onGltfError(
+        new Error(
+          'response is not a valid GLB (missing glTF magic bytes) — wrong file, HTML shell, or truncated download'
+        )
+      );
+      return;
+    }
+    const resourcePath = glbResourceBase(glbUrl);
+    if (resourcePath) loader.setResourcePath(resourcePath);
+    loader.parse(
+      buf,
+      resourcePath,
+      onGltfLoaded,
+      onGltfError
+    );
+  } catch (err) {
+    onGltfError(err);
+  }
+})();

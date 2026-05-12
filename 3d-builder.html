@@ -337,7 +337,7 @@
           try {
             const origin = window.location.origin || '';
             if (!/^https:/i.test(origin)) return;
-            const glbUrl = new URL('otter-shell-avatar-mixamo.glb', `${origin}/`).href;
+            const glbUrl = new URL('games/shell-snag/otter-shell-avatar-mixamo.glb', `${origin}/`).href;
             const preview = new URL('glb-anim-preview.html', window.location.href);
             preview.searchParams.set('url', glbUrl);
             preview.searchParams.set('hideDupBodies', '1');
