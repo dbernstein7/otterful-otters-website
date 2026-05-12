@@ -5,7 +5,12 @@
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
  *   If unset, defaults are Mixamo-style: mixamorig:Head (hat, eyes), mixamorig:Spine2 (shirt).
+ *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your MOVING OTTERS rig.
  *   MML_BONE_SCHEME — `mixamo` (default: mixamorig:Head / mixamorig:Spine2) or `short` (Head / Spine2 / Head) if your rig omits the mixamorig: prefix
+ *   MML_WEARABLE_PREFIX — folder prefix under WEARABLE_ASSET_ORIGIN (default `WEARABLES`). Example for rigged library at site root: set
+ *     WEARABLE_ASSET_ORIGIN to your origin (no /AvatarBuilder) and MML_WEARABLE_PREFIX to `mml/MOVING OTTERS` so URLs resolve to /mml/MOVING OTTERS/Furs/… etc.
+ *   MML_SKIP_SHIRT — if `1` or `true`, do not emit an m-model for shirt (use when the shirt is baked into the body GLB or you only want fur/hat/eyes).
+ *   MML_SHIRT_OVERRIDE — if set (e.g. `Business`), always load that shirt filename and ignore the shirt trait (ignored when MML_SKIP_SHIRT is true).
  *   WEARABLE_ASSET_ORIGIN — absolute base where GLBs are hosted (default: same host + /AvatarBuilder/)
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
@@ -84,6 +89,17 @@ function defaultSockets() {
   };
 }
 
+function truthyEnv(v) {
+  if (v == null || v === '') return false;
+  const s = String(v).trim().toLowerCase();
+  return s === '1' || s === 'true' || s === 'yes';
+}
+
+function wearablePrefix() {
+  const p = (process.env.MML_WEARABLE_PREFIX || 'WEARABLES').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  return p || 'WEARABLES';
+}
+
 function buildHtml({ id, traits, urls, sockets }) {
   const parts = [
     '<!DOCTYPE html>',
@@ -151,12 +167,18 @@ module.exports = async (req, res) => {
     return res.status(422).send('Metadata has no Fur trait (required for MML body).');
   }
 
+  const wp = wearablePrefix();
   const urls = {
-    fur: buildWearableUrl(origin, `WEARABLES/Furs/${traits.fur}.glb`),
+    fur: buildWearableUrl(origin, `${wp}/Furs/${traits.fur}.glb`),
   };
-  if (traits.hat) urls.hat = buildWearableUrl(origin, `WEARABLES/Hats/${traits.hat}.glb`);
-  if (traits.shirt) urls.shirt = buildWearableUrl(origin, `WEARABLES/Shirts/${traits.shirt}.glb`);
-  if (traits.eyes) urls.eyes = buildWearableUrl(origin, `WEARABLES/Eyes/${traits.eyes}.glb`);
+  if (traits.hat) urls.hat = buildWearableUrl(origin, `${wp}/Hats/${traits.hat}.glb`);
+  const skipShirt = truthyEnv(process.env.MML_SKIP_SHIRT);
+  const shirtOverride = (process.env.MML_SHIRT_OVERRIDE || '').trim();
+  if (!skipShirt) {
+    const shirtName = shirtOverride || traits.shirt;
+    if (shirtName) urls.shirt = buildWearableUrl(origin, `${wp}/Shirts/${shirtName}.glb`);
+  }
+  if (traits.eyes) urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
 
   const sockets = defaultSockets();
 
