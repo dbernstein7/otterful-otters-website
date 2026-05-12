@@ -15,6 +15,12 @@
  *   FIREBASE_STORAGE_BUCKET — if set, GLB URLs use Firebase REST form (see buildFirebaseDownloadUrl)
  *   FIREBASE_STORAGE_TOKEN — optional &token= for Firebase objects (same token only works if shared across objects)
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
+ *
+ * Shared body (one rig for all furs — optional):
+ *   MML_SHARED_BODY_PATH — full storage path to the body .glb for every token (e.g. WEARABLES/Furs/Otter-Base.glb). When set, m-character always uses this src; the Fur trait is still required in metadata.
+ *   MML_SHARED_BODY_FILENAME — alternative: only a filename under {prefix}/Furs/ (e.g. Otter-Base.glb). Ignored if MML_SHARED_BODY_PATH is set.
+ *   MML_FUR_VARIANT_SUBPATH — folder under MML_WEARABLE_PREFIX for per-fur overlay models (e.g. FurSkins → …/WEARABLES/FurSkins/{Fur trait}.glb). Omit to use one body with no per-fur model. MML has no official PNG-on-mesh for m-character; use small GLBs with only fur mesh/material, or keep per-fur full body GLBs without shared mode.
+ *   MML_FUR_VARIANT_SOCKET — optional bone name for the fur overlay m-model (omit attribute when unset or empty).
  */
 
 function siteOriginFromRequest(req) {
@@ -131,6 +137,20 @@ function wearablePrefix() {
   return p || 'WEARABLES';
 }
 
+/** @returns {string|null} absolute URL for shared body, or null to use per-fur Furs/{trait}.glb */
+function resolveSharedBodyFurUrl(origin, wp) {
+  const full = (process.env.MML_SHARED_BODY_PATH || '').trim().replace(/^\/+/, '');
+  if (full) return buildWearableUrl(origin, full);
+  const file = (process.env.MML_SHARED_BODY_FILENAME || '').trim();
+  if (file) return buildWearableUrl(origin, `${wp}/Furs/${file}`);
+  return null;
+}
+
+function furVariantExt() {
+  const e = (process.env.MML_FUR_VARIANT_EXT || 'glb').trim().replace(/^\./, '');
+  return e || 'glb';
+}
+
 function buildHtml({ id, traits, urls, sockets }) {
   const parts = [
     '<!DOCTYPE html>',
@@ -146,6 +166,11 @@ function buildHtml({ id, traits, urls, sockets }) {
 
   parts.push('<m-character', ` id="otter-${id}"`, ` src="${escAttr(urls.fur)}"`, ' y="0"', ' ry="12"', ' anim-enabled="true"', ' anim-loop="true"', '>');
 
+  if (urls.furVariant) {
+    const sk = (process.env.MML_FUR_VARIANT_SOCKET || '').trim();
+    const sock = sk ? ` socket="${escAttr(sk)}"` : '';
+    parts.push(`  <m-model src="${escAttr(urls.furVariant)}"${sock} />`);
+  }
   if (urls.hat) {
     parts.push(`  <m-model src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
   }
@@ -199,9 +224,18 @@ module.exports = async (req, res) => {
   }
 
   const wp = wearablePrefix();
-  const urls = {
-    fur: buildWearableUrl(origin, `${wp}/Furs/${traits.fur}.glb`),
-  };
+  const urls = {};
+  const sharedFur = resolveSharedBodyFurUrl(origin, wp);
+  if (sharedFur) {
+    urls.fur = sharedFur;
+    const vsub = (process.env.MML_FUR_VARIANT_SUBPATH || '').trim().replace(/^\/+|\/+$/g, '');
+    if (vsub && traits.fur) {
+      const ext = furVariantExt();
+      urls.furVariant = buildWearableUrl(origin, `${wp}/${vsub}/${traits.fur}.${ext}`);
+    }
+  } else {
+    urls.fur = buildWearableUrl(origin, `${wp}/Furs/${traits.fur}.glb`);
+  }
   if (traits.hat) urls.hat = buildWearableUrl(origin, `${wp}/Hats/${traits.hat}.glb`);
   const skipShirt = truthyEnv(process.env.MML_SKIP_SHIRT);
   const shirtOverride = (process.env.MML_SHIRT_OVERRIDE || '').trim();
