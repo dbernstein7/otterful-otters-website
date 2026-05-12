@@ -114,7 +114,7 @@
             <div class="mml-simple-stack">
                 <div class="mml-simple-toolbar">
                     <h2 class="mml-simple-heading">MML preview</h2>
-                    <p class="mml-simple-lead">Type your otter number and press Preview. If this box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
+                    <p class="mml-simple-lead"><strong>Sample otter</strong> (in More options) loads one rigged <code>MMLOtter.glb</code> with animation — use that to confirm MML + viewer. <strong>Preview</strong> with a number loads <code>/api/mml?id=…</code> (your NFT trait GLBs). If the number box is empty, we use the same number as <strong>Load NFT</strong> on the Otter tab.</p>
                     <div class="mml-simple-preview-row">
                         <input type="number" id="builder-mml-nft-input" class="mml-simple-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
                         <button type="button" id="builder-mml-preview-btn" class="mml-simple-preview">Preview</button>
@@ -271,7 +271,13 @@
         }
 
         pageTabs.forEach((btn) => {
-          btn.addEventListener('click', () => setBuilderPage(btn.dataset.builderPage || 'otter'));
+          btn.addEventListener('click', () => {
+            const next = btn.dataset.builderPage || 'otter';
+            setBuilderPage(next);
+            if (next === 'mml') {
+              window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
+            }
+          });
         });
 
         function syncFromHash() {
@@ -379,6 +385,11 @@
             return raw.trim();
           }
         }
+
+        window.addEventListener('otterful-mml-panel-open', function () {
+          const docUrl = absoluteDocUrl(input.value);
+          if (docUrl && looksLikeMmlUrl(docUrl)) void apply();
+        });
 
         async function apply(options) {
           options = options || {};
@@ -528,6 +539,15 @@
         }
 
         parseQueryUrl();
+        if (!input.value.trim()) {
+          try {
+            input.value = new URL('mml/MMLOtter-preview.html', window.location.href).href;
+          } catch (_) {
+            if (window.location.origin && /^https:/i.test(window.location.origin)) {
+              input.value = window.location.origin + '/mml/MMLOtter-preview.html';
+            }
+          }
+        }
         if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
         else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
       })();
