@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Otterful — MML preview (animated GLB from repo)</title>
+    <!--
+      Same-origin GLB that includes glTF animations (see games/shell-snag/otter-shell-avatar-mixamo.glb).
+      Use this in viewer.mml.io to verify the MML pipeline plays clips; contrast with mml/MMLOtter-preview.html
+      which points at Firebase MMLOtter.glb (currently 0 embedded clips).
+    -->
+</head>
+<body>
+    <m-character
+        id="otter-animated"
+        src="../games/shell-snag/otter-shell-avatar-mixamo.glb"
+        y="0"
+        ry="20"
+        anim-enabled="true"
+        anim-loop="true"
+    ></m-character>
+</body>
+</html>

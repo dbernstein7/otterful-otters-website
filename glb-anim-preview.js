@@ -304,6 +304,10 @@ loader.load(
       clipSel.disabled = true;
       slowBtn.disabled = true;
       clearBtn.disabled = true;
+      const noClipMsg =
+        'This GLB lists 0 glTF animations (nothing to play). Re-export with clips included (e.g. Blender glTF: NLA / active actions), '
+        + 'or use a separate movement file if your host supports anim="…" on the character element.';
+      showWarn([analysis.risky ? analysis.message : '', noClipMsg].filter(Boolean).join(' '));
       return;
     }
     const ph = document.createElement('option');

@@ -4,7 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Otterful — MMLOtter MML preview</title>
-    <!-- Static MML document: load this URL in viewer.mml.io, not the raw .glb. Edit src if your model URL changes. -->
+    <!--
+      Static MML document: open this page URL in viewer.mml.io (not the raw .glb).
+      The Firebase MMLOtter.glb currently ships with a rigged mesh but 0 glTF animation clips,
+      so anim-enabled has nothing to play until the asset is re-exported with animations or you
+      add anim="https://…/clips.glb" for a clip file that matches this skeleton.
+      For a working animated sample from this repo, use mml/otter-mml-animated-preview.html.
+    -->
 </head>
 <body>
     <m-character
