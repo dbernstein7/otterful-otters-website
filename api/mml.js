@@ -4,9 +4,10 @@
  *
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
- *   If unset, defaults are Mixamo-style: mixamorig:Head (hat, eyes), mixamorig:Spine2 (shirt).
+ *   If unset, defaults follow MML_BONE_SCHEME (see below).
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
- *   MML_BONE_SCHEME — `mixamo` (default: mixamorig:Head / mixamorig:Spine2) or `short` (Head / Spine2 / Head) if your rig omits the mixamorig: prefix
+ *   MML_BONE_SCHEME — `mixamo` (default: Otterful glTF names mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head /
+ *   mixamorig:Spine2), or `short` (Head / Spine2 / Head).
  *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/…). Used when MML_*_STORAGE_PATH overrides are not set.
  *   MML_FUR_STORAGE_PATH — Firebase (or site) object folder for body GLBs, no leading slash (e.g. `Furs` → `Furs/OG.glb`). When unset, fur uses `${MML_WEARABLE_PREFIX}/Furs/<Fur trait>.glb`.
  *   MML_HAT_STORAGE_PATH, MML_SHIRT_STORAGE_PATH, MML_EYES_STORAGE_PATH — same pattern (e.g. `Hats`, `Shirts`, `Eyes`) when those assets live at bucket root.
@@ -17,6 +18,7 @@
  *   FIREBASE_STORAGE_TOKEN — optional `&token=` for download URLs (Firebase file tokens). Omit if rules allow public read on those objects.
  *   If downloads return 403: add Storage rules allowing read for `Furs/` (and other folders) or use tokens — see `firebase-storage.rules.example` in the repo root.
  *   MML_CHARACTER_RY — optional rotation on m-character (degrees). Omitted when unset (viewer uses default 0).
+ *   MML_CHARACTER_Y — optional vertical offset on m-character (e.g. -0.72 for framing in viewer / mmleditor).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *
  * Optional separate animation file (body GLB + linked anim GLB):
@@ -129,10 +131,18 @@ function defaultSockets() {
       eyes: process.env.MML_SOCKET_EYES || 'Head',
     };
   }
+  if (scheme === 'mixamo_colon' || scheme === 'mixamo_legacy') {
+    return {
+      hat: process.env.MML_SOCKET_HAT || 'mixamorig:Head',
+      shirt: process.env.MML_SOCKET_SHIRT || 'mixamorig:Spine2',
+      eyes: process.env.MML_SOCKET_EYES || 'mixamorig:Head',
+    };
+  }
+  /* Default mixamo: glTF-exported Otterful rigs use bone names without a colon (mixamorigHead, mixamorigSpine2). */
   return {
-    hat: process.env.MML_SOCKET_HAT || 'mixamorig:Head',
-    shirt: process.env.MML_SOCKET_SHIRT || 'mixamorig:Spine2',
-    eyes: process.env.MML_SOCKET_EYES || 'mixamorig:Head',
+    hat: process.env.MML_SOCKET_HAT || 'mixamorigHead',
+    shirt: process.env.MML_SOCKET_SHIRT || 'mixamorigSpine2',
+    eyes: process.env.MML_SOCKET_EYES || 'mixamorigHead',
   };
 }
 
@@ -207,22 +217,24 @@ function buildHtml({ id, traits, urls, sockets }) {
   ];
 
   const ry = (process.env.MML_CHARACTER_RY || '').trim();
+  const cy = (process.env.MML_CHARACTER_Y || '').trim();
   parts.push('<m-character');
   parts.push(`  id="otter-${id}"`);
   parts.push(`  name="Otterful #${id}"`);
   parts.push(`  src="${escAttr(urls.fur)}"`);
   if (urls.anim) parts.push(`  anim="${escAttr(urls.anim)}"`);
+  if (cy) parts.push(`  y="${escAttr(cy)}"`);
   if (ry) parts.push(`  ry="${escAttr(ry)}"`);
   parts.push('>');
 
   if (urls.hat) {
-    parts.push(`  <m-model class="hat" src="${escAttr(urls.hat)}" socket="${escAttr(sockets.hat)}" />`);
+    parts.push(`  <m-model socket="${escAttr(sockets.hat)}" src="${escAttr(urls.hat)}"></m-model>`);
   }
   if (urls.shirt) {
-    parts.push(`  <m-model class="shirt" src="${escAttr(urls.shirt)}" socket="${escAttr(sockets.shirt)}" />`);
+    parts.push(`  <m-model socket="${escAttr(sockets.shirt)}" src="${escAttr(urls.shirt)}"></m-model>`);
   }
   if (urls.eyes) {
-    parts.push(`  <m-model class="eyes" src="${escAttr(urls.eyes)}" socket="${escAttr(sockets.eyes)}" />`);
+    parts.push(`  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"></m-model>`);
   }
 
   parts.push('</m-character>', '</body>', '</html>');

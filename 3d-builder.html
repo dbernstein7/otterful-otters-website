@@ -405,15 +405,26 @@
             return { html: html, error: 'Hat override for Run must be a full https:// URL to your .glb (use Preview for a trait stem like antler).' };
           }
           const esc = escapeHtmlAttr(u);
-          const reExisting = /<m-model\s+class="hat"\s+src="[^"]*"\s+socket="([^"]*)"\s*\/>/i;
-          const hm = html.match(reExisting);
+          const reSocketFirst = /<m-model\s+socket="([^"]*)"\s+src="[^"]*"(?:\s*\/>|\s*><\/m-model>)/i;
+          const reOldHat = /<m-model\s+class="hat"\s+src="[^"]*"\s+socket="([^"]*)"\s*\/>/i;
+          let hm = html.match(reSocketFirst);
           if (hm) {
-            return { html: html.replace(reExisting, '<m-model class="hat" src="' + esc + '" socket="' + hm[1] + '" />'), error: null };
+            return {
+              html: html.replace(reSocketFirst, '<m-model socket="' + hm[1] + '" src="' + esc + '"></m-model>'),
+              error: null,
+            };
+          }
+          hm = html.match(reOldHat);
+          if (hm) {
+            return {
+              html: html.replace(reOldHat, '<m-model socket="' + hm[1] + '" src="' + esc + '"></m-model>'),
+              error: null,
+            };
           }
           const reChar = /(<m-character[^>]*>)/i;
           if (!reChar.test(html)) return { html: html, error: null };
           return {
-            html: html.replace(reChar, '$1\n  <m-model class="hat" src="' + esc + '" socket="mixamorig:Head" />'),
+            html: html.replace(reChar, '$1\n  <m-model socket="mixamorigHead" src="' + esc + '"></m-model>'),
             error: null,
           };
         }
