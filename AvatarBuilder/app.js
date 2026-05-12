@@ -34,6 +34,9 @@ class AvatarBuilder {
         this.needsRender = true;  // Performance: only render when needed
         this.isRendering = false;  // Prevent multiple renders
         this.isRandomizing = false;  // Prevent overlapping randomize calls
+
+        /** @type {{ firebaseBucket: string, firebaseToken: string, furPrefix: string, hatPrefix: string, shirtPrefix: string, eyesPrefix: string }} */
+        this.assetSources = AvatarBuilder.readAssetSources();
         
         // Available fur options
         this.furOptions = [
@@ -94,6 +97,52 @@ class AvatarBuilder {
         ];
         
         this.init();
+    }
+
+    /** Meta + ?fbBucket=&furPrefix=… overrides (see AvatarBuilder/index.html). */
+    static readAssetSources() {
+        const meta = (n) => (document.querySelector(`meta[name="${n}"]`)?.getAttribute('content') || '').trim();
+        const q = new URLSearchParams(window.location.search);
+        const qv = (k) => (q.get(k) || '').trim();
+        return {
+            firebaseBucket: qv('fbBucket') || meta('ottvatar-firebase-bucket'),
+            firebaseToken: qv('fbToken') || meta('ottvatar-firebase-token'),
+            furPrefix: qv('furPrefix') || meta('ottvatar-fur-prefix'),
+            hatPrefix: qv('hatPrefix') || meta('ottvatar-hat-prefix'),
+            shirtPrefix: qv('shirtPrefix') || meta('ottvatar-shirt-prefix'),
+            eyesPrefix: qv('eyesPrefix') || meta('ottvatar-eyes-prefix'),
+        };
+    }
+
+    /** @param {string} legacyFolder e.g. WEARABLES/Furs */
+    glbAssetUrl(legacyFolder, fileName, firebaseFolderPrefix) {
+        const bucket = (this.assetSources.firebaseBucket || '').trim();
+        const pref = (firebaseFolderPrefix || '').trim().replace(/^\/+|\/+$/g, '');
+        if (bucket && pref) {
+            const objectPath = `${pref}/${fileName}`;
+            const encPath = encodeURIComponent(objectPath);
+            let url = `https://firebasestorage.googleapis.com/v0/b/${bucket}/o/${encPath}?alt=media`;
+            const tok = (this.assetSources.firebaseToken || '').trim();
+            if (tok) url += `&token=${encodeURIComponent(tok)}`;
+            return url;
+        }
+        return this.encodePath(legacyFolder, fileName);
+    }
+
+    furGlbUrl(fileName) {
+        return this.glbAssetUrl('WEARABLES/Furs', fileName, this.assetSources.furPrefix);
+    }
+
+    hatGlbUrl(hatName) {
+        return this.glbAssetUrl('WEARABLES/Hats', `${hatName}.glb`, this.assetSources.hatPrefix);
+    }
+
+    shirtGlbUrl(shirtName) {
+        return this.glbAssetUrl('WEARABLES/Shirts', `${shirtName}.glb`, this.assetSources.shirtPrefix);
+    }
+
+    eyesGlbUrl(eyeName) {
+        return this.glbAssetUrl('WEARABLES/Eyes', `${eyeName}.glb`, this.assetSources.eyesPrefix);
     }
 
     // Helper function to properly encode file paths with spaces
@@ -840,7 +889,9 @@ class AvatarBuilder {
         this.furOptions.forEach((furName) => {
             const button = document.createElement('button');
             button.className = 'fur-btn';
-            button.title = `Load ${furName}.glb from WEARABLES/Furs folder`;
+            button.title = this.assetSources.firebaseBucket && this.assetSources.furPrefix
+                ? `Load ${furName}.glb from Firebase (${this.assetSources.furPrefix}/)`
+                : `Load ${furName}.glb from WEARABLES/Furs`;
             
             // Create image element with lazy loading
             const img = document.createElement('img');
@@ -985,10 +1036,8 @@ class AvatarBuilder {
     }
 
     async loadFurFile(furName, preserveWearables = true, manageLoadingScreen = true) {
-        // Load GLB file directly from the WEARABLES/Furs folder
         const fileName = `${furName}.glb`;
-        // Properly encode the file path to handle spaces and special characters
-        const filePath = this.encodePath('WEARABLES/Furs', fileName);
+        const filePath = this.furGlbUrl(fileName);
         
         const loading = document.getElementById('loading');
         const placeholder = document.getElementById('placeholder');
@@ -1013,7 +1062,7 @@ class AvatarBuilder {
                     undefined,
                     (error) => {
                         console.error(`Error loading ${fileName} from path: ${filePath}`, error);
-                        reject(new Error(`Failed to load ${fileName}. Make sure the file exists in the WEARABLES/Furs folder.`));
+                        reject(new Error(`Failed to load ${fileName}. Check Firebase path or WEARABLES/Furs on this site.`));
                     }
                 );
             });
@@ -1143,7 +1192,7 @@ class AvatarBuilder {
 
         } catch (error) {
             console.error('Error loading GLB:', error);
-            alert(`Error loading ${fileName}:\n\n${error.message}\n\nMake sure the file exists in the WEARABLES/Furs folder.`);
+            alert(`Error loading ${fileName}:\n\n${error.message}\n\nCheck Firebase Storage (meta ottvatar-fur-prefix) or WEARABLES/Furs on this host.`);
             if (manageLoadingScreen && placeholder) {
                 placeholder.style.display = 'flex';
             }
@@ -1508,7 +1557,7 @@ class AvatarBuilder {
         if (this.currentHat?.parent) this.currentHat.parent.remove(this.currentHat);
         this.currentHat = null;
 
-        const filePath = this.encodePath("WEARABLES/Hats", `${hatName}.glb`);
+        const filePath = this.hatGlbUrl(hatName);
         console.log(`Loading hat from path: ${filePath}`);
         const loader = new GLTFLoader();
         
@@ -1629,7 +1678,7 @@ class AvatarBuilder {
             console.error('Error loading hat:', error);
             console.error('Attempted path:', filePath);
             console.error('Full error details:', error);
-            alert(`Error loading ${hatName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nMake sure:\n1. The file exists in the WEARABLES/Hats folder\n2. You're running the app from a web server (not file://)\n3. Check the browser console for more details`);
+            alert(`Error loading ${hatName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nCheck Firebase (ottvatar-hat-prefix meta / ?hatPrefix=) or WEARABLES/Hats on this site.`);
         }
     }
 
@@ -2276,7 +2325,7 @@ class AvatarBuilder {
         if (this.currentShirt?.parent) this.currentShirt.parent.remove(this.currentShirt);
         this.currentShirt = null;
 
-        const filePath = this.encodePath("WEARABLES/Shirts", `${shirtName}.glb`);
+        const filePath = this.shirtGlbUrl(shirtName);
         console.log(`Loading shirt from path: ${filePath}`);
         const loader = new GLTFLoader();
         
@@ -2342,7 +2391,7 @@ class AvatarBuilder {
             console.error('Error loading shirt:', error);
             console.error('Attempted path:', filePath);
             console.error('Full error details:', error);
-            alert(`Error loading ${shirtName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nMake sure:\n1. The file exists in the WEARABLES/Shirts folder\n2. You're running the app from a web server (not file://)\n3. Check the browser console for more details`);
+            alert(`Error loading ${shirtName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nCheck Firebase (ottvatar-shirt-prefix meta) or WEARABLES/Shirts on this site.`);
         }
     }
 
@@ -2378,7 +2427,7 @@ class AvatarBuilder {
         if (this.currentEyes?.parent) this.currentEyes.parent.remove(this.currentEyes);
         this.currentEyes = null;
 
-        const filePath = this.encodePath("WEARABLES/Eyes", `${eyeName}.glb`);
+        const filePath = this.eyesGlbUrl(eyeName);
         console.log(`Loading eyes from path: ${filePath}`);
         const loader = new GLTFLoader();
         
@@ -2464,7 +2513,7 @@ class AvatarBuilder {
             console.error('Error loading eyes:', error);
             console.error('Attempted path:', filePath);
             console.error('Full error details:', error);
-            alert(`Error loading ${eyeName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nMake sure:\n1. The file exists in the WEARABLES/Eyes folder\n2. You're running the app from a web server (not file://)\n3. Check the browser console for more details`);
+            alert(`Error loading ${eyeName}.glb:\n\nPath: ${filePath}\n\nError: ${error.message}\n\nCheck Firebase (ottvatar-eyes-prefix meta) or WEARABLES/Eyes on this site.`);
         }
     }
 
