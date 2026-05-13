@@ -337,7 +337,7 @@ function buildHtml({ id, traits, urls, sockets, documentUrl }) {
     const vu = new URL('https://viewer.mml.io/main/v1/');
     vu.searchParams.set('url', documentUrl);
     vu.searchParams.set('environmentMap', 'cloudysky');
-    vu.searchParams.set('showEnvironmentMapField', 'false');
+    vu.searchParams.set('cameraOrbitSpeed', '0');
     vu.searchParams.set('ambientLight', '0.22');
     vu.searchParams.set('ambientLightColor', '8b95a8');
     const viewerHref = vu.toString();

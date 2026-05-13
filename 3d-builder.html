@@ -828,7 +828,8 @@
            * and the otter becomes a speck. Fixed orbit + moderate FOV keeps the character readable.
            */
           v.searchParams.set('cameraOrbitPitch', fit.checked ? '38' : '42');
-          v.searchParams.set('cameraOrbitSpeed', '10');
+          /* 0 = no auto-spin; non-zero makes the orbit target drift and wheel zoom feel "jumpy". */
+          v.searchParams.set('cameraOrbitSpeed', '0');
           v.searchParams.set('cameraOrbitDistance', fit.checked ? '3.15' : '4.25');
           v.searchParams.set('cameraFov', fit.checked ? '58' : '54');
           /*
@@ -839,8 +840,7 @@
           v.searchParams.set('ambientLightColor', '8b95a8');
           /* MSquared / MML viewer preset: cloudy sky HDR (not flat backgroundColor). */
           v.searchParams.set('environmentMap', 'cloudysky');
-          /* HDR as background only — full equirect background is very bright; IBL still lights the model. */
-          v.searchParams.set('showEnvironmentMapField', 'false');
+          /* Omit showEnvironmentMapField so default true: HDR is visible as sky (IBL still lights the model). */
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));
           return v.toString();
