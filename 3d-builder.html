@@ -709,7 +709,8 @@
           v.searchParams.set('cameraFov', fit.checked ? '54' : '68');
           v.searchParams.set('ambientLight', '5');
           v.searchParams.set('ambientLightColor', 'cfd3dd');
-          v.searchParams.set('backgroundColor', 'e8eaef');
+          /* MSquared / MML viewer preset: cloudy sky HDR (not flat backgroundColor). */
+          v.searchParams.set('environmentMap', 'cloudysky');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));

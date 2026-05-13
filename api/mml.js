@@ -287,7 +287,10 @@ function buildHtml({ id, traits, urls, sockets, documentUrl }) {
   ];
 
   if (!truthyEnv(process.env.MML_OMIT_VIEWER_BANNER) && documentUrl) {
-    const viewerHref = `https://viewer.mml.io/main/v1/?url=${encodeURIComponent(documentUrl)}`;
+    const vu = new URL('https://viewer.mml.io/main/v1/');
+    vu.searchParams.set('url', documentUrl);
+    vu.searchParams.set('environmentMap', 'cloudysky');
+    const viewerHref = vu.toString();
     parts.push(
       '<p style="font-family:system-ui,sans-serif;margin:0;padding:0.85rem 1.1rem;background:#151922;color:#dce0ea;font-size:14px;line-height:1.45;border-bottom:1px solid #2a3142">'
         + 'This URL is an <strong>MML document</strong> (HTML). A normal tab does not run the 3D viewer. '
