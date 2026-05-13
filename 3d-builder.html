@@ -753,10 +753,16 @@
           v.searchParams.set('cameraOrbitSpeed', '10');
           v.searchParams.set('cameraOrbitDistance', fit.checked ? '3.15' : '4.25');
           v.searchParams.set('cameraFov', fit.checked ? '58' : '54');
-          v.searchParams.set('ambientLight', '5');
-          v.searchParams.set('ambientLightColor', 'cfd3dd');
+          /*
+           * Ambient is Three.js intensity (viewer default 0). We previously used 5, which blows out the subject.
+           * Keep a low fill + muted color; IBL comes from environmentMap below.
+           */
+          v.searchParams.set('ambientLight', '0.22');
+          v.searchParams.set('ambientLightColor', '8b95a8');
           /* MSquared / MML viewer preset: cloudy sky HDR (not flat backgroundColor). */
           v.searchParams.set('environmentMap', 'cloudysky');
+          /* HDR as background only — full equirect background is very bright; IBL still lights the model. */
+          v.searchParams.set('showEnvironmentMapField', 'false');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));
           return v.toString();
