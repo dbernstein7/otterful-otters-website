@@ -531,6 +531,32 @@
           );
         }
 
+        function furLooksLikeOtterfulMmlBody(srcUrl) {
+          try {
+            const s = decodeURIComponent(String(srcUrl || '')).toLowerCase();
+            if (!s || !/\.glb/i.test(s)) return false;
+            if (s.indexOf('public.mml.io') !== -1 && s.indexOf('character-body') !== -1) return false;
+            if (/(otterful|brettonful)/i.test(s) && /(firebasestorage|appspot)/i.test(s)) return true;
+            if (/(^|\/)(furs|wearables\/furs)\//i.test(s)) return true;
+            return false;
+          } catch (_) {
+            return false;
+          }
+        }
+
+        /** Humanoid demo idle on Otterful furs distorts bones; eyes then follow a broken head transform. */
+        function stripDemoHumanoidAnimOnOtterMml(html) {
+          const { src, anim } = parseFirstMCharacterAttrs(html);
+          if (!anim || !isMmlPublicDemoCharacterAnim(anim) || !furLooksLikeOtterfulMmlBody(src)) {
+            return { html: html, didStrip: false };
+          }
+          const next = html.replace(/<m-character(\s[^>]*)>/i, function (full, inner) {
+            const stripped = inner.replace(/\sanim\s*=\s*"[^"]*"/i, '');
+            return '<m-character' + stripped + '>';
+          });
+          return { html: next, didStrip: true };
+        }
+
         function combineMmlWarnings(html) {
           return [mmlDemoAnimOnWrongBodyMessage(html), mCharacterWrongBodySrcMessage(html)].filter(Boolean).join(' ');
         }
@@ -699,6 +725,9 @@
             return;
           }
 
+          const strippedAnim = stripDemoHumanoidAnimOnOtterMml(bodyText);
+          bodyText = strippedAnim.html;
+
           const sanitized = sanitizeMmlSocketedModels(bodyText);
           bodyText = sanitized.html;
 
@@ -720,7 +749,7 @@
           /* viewer.mml.io cannot load blob: from our origin; use inline data URL so fixes apply to the iframe. */
           let viewerDocUrl = docUrl;
           let dataUrlTooLarge = false;
-          if (sanitized.fixedWearableY) {
+          if (sanitized.fixedWearableY || strippedAnim.didStrip) {
             if (bodyText.length <= DATA_URL_MAX) {
               try {
                 viewerDocUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(bodyText);
@@ -736,12 +765,16 @@
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
-          let wornYFix = sanitized.fixedWearableY
-            ? 'Removed character-scale y on socketed m-model (keep y on m-character only — otherwise glasses sit in mid-air). '
-            : '';
-          if (sanitized.fixedWearableY && dataUrlTooLarge) {
+          let wornYFix = '';
+          if (strippedAnim.didStrip) {
+            wornYFix += 'Removed incompatible public.mml.io human idle for this otter body so head sockets (eyes) match the rig. ';
+          }
+          if (sanitized.fixedWearableY) {
+            wornYFix += 'Removed character-scale y on socketed m-model (keep y on m-character only — otherwise glasses sit in mid-air). ';
+          }
+          if ((sanitized.fixedWearableY || strippedAnim.didStrip) && dataUrlTooLarge) {
             wornYFix +=
-              'Document is too large for inline-fixed preview; the iframe still loads the remote URL. Shorten the markup or remove the stray y on the glasses m-model at the source. ';
+              'Document is too large for inline-fixed preview; the iframe still loads the remote URL. Shorten the markup or fix at the source. ';
           }
           const mismatch = (wornYFix + combineMmlWarnings(bodyText)).trim();
           if (mismatch) setStatus(mismatch, 'warn');
@@ -832,9 +865,11 @@
             }
             html = mergedH.html;
           }
+          const sanAnim = stripDemoHumanoidAnimOnOtterMml(html);
+          html = sanAnim.html;
           const sanRun = sanitizeMmlSocketedModels(html);
           html = sanRun.html;
-          if (sanRun.fixedWearableY) {
+          if (sanAnim.didStrip || sanRun.fixedWearableY) {
             editor.value = html;
             syncGutter();
           }
@@ -860,10 +895,13 @@
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
-          const wornYFix = sanRun.fixedWearableY
+          const wornYFix = sanAnim.didStrip
+            ? 'Removed incompatible public.mml.io human idle for this otter body (saved in editor). '
+            : '';
+          const wornYFix2 = sanRun.fixedWearableY
             ? 'Removed character-scale y on socketed m-model (saved in editor; use m-character for body lift only). '
             : '';
-          const mismatch = (wornYFix + combineMmlWarnings(html)).trim();
+          const mismatch = (wornYFix + wornYFix2 + combineMmlWarnings(html)).trim();
           if (mismatch) {
             setStatus(
               mismatch + ' (Preview still opened — fix src=/anim= URLs.)',

@@ -31,6 +31,7 @@
  *   MML_DEFAULT_CHARACTER_ANIM — idle clip URL when no ?anim=, metadata anim, or MML_CHARACTER_ANIM (default
  *   `https://public.mml.io/character-idle-animation.glb`). Prefer an otter-specific clip via metadata or MML_CHARACTER_ANIM when ready.
  *   MML_SKIP_DEFAULT_ANIM — if `1` or `true`, omit `anim` when nothing else supplies a URL (no default idle).
+ *   MML_FORCE_DEMO_HUMANOID_ANIM — if `1` / `true`, keep pairing public.mml.io human idle with Otterful furs (not recommended; breaks sockets).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
  *
  * Optional separate animation file (body GLB + linked anim GLB):
@@ -249,6 +250,30 @@ function resolveLinkedAssetUrl(origin, raw) {
   return buildWearableUrl(origin, s.replace(/^\/+/, ''));
 }
 
+/** Demo human idle from public.mml.io — wrong skeleton for Otterful furs; breaks head bones and drops wearables. */
+function isDemoHumanoidIdleAnimUrl(animUrl) {
+  const s = String(animUrl || '').toLowerCase();
+  if (s.indexOf('public.mml.io') === -1 && s.indexOf('public.mml.to') === -1) return false;
+  return (
+    /character-idle-animation|character_idle_animation|character-idle|idle-animation|idle_animation/i.test(s)
+    || /\/character-[a-z0-9_-]*-animation\.glb/i.test(s)
+  );
+}
+
+/** Otterful / site fur bodies — never pair with MML’s demo humanoid idle (see isDemoHumanoidIdleAnimUrl). */
+function furLooksLikeOtterfulBody(furUrl) {
+  try {
+    const s = decodeURIComponent(String(furUrl || '')).toLowerCase();
+    if (!s || !/\.glb/i.test(s)) return false;
+    if (/public\.mml\.(io|to)/i.test(s) && /character-body/i.test(s)) return false;
+    if (/(otterful|brettonful)/i.test(s) && /(firebasestorage|appspot)/i.test(s)) return true;
+    if (/(^|\/)(furs|wearables\/furs)\//i.test(s)) return true;
+    return false;
+  } catch (_) {
+    return false;
+  }
+}
+
 function getQueryParam(req, key) {
   const q = req.query && req.query[key];
   if (q != null && String(q).trim() !== '') return String(q).trim();
@@ -438,6 +463,14 @@ module.exports = async (req, res) => {
   if (!animResolved && !truthyEnv(process.env.MML_SKIP_DEFAULT_ANIM)) {
     const def = (process.env.MML_DEFAULT_CHARACTER_ANIM || 'https://public.mml.io/character-idle-animation.glb').trim();
     if (def) animResolved = def;
+  }
+  if (
+    animResolved
+    && !truthyEnv(process.env.MML_FORCE_DEMO_HUMANOID_ANIM)
+    && isDemoHumanoidIdleAnimUrl(animResolved)
+    && furLooksLikeOtterfulBody(urls.fur)
+  ) {
+    animResolved = '';
   }
   if (animResolved) urls.anim = animResolved;
 
