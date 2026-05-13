@@ -38,6 +38,10 @@
   "routes": [
     { "handle": "filesystem" },
     {
+      "src": "^/mml/(\\d+)\\.mml$",
+      "dest": "/api/mml?id=$1"
+    },
+    {
       "src": "/branding/(.*)$",
       "dest": "/games/shell-snag/branding/$1"
     },

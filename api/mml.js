@@ -2,6 +2,13 @@
  * Vercel serverless: returns a static MML HTML document for an Otterful token from NFT metadata.
  * GLB URLs are either Firebase Storage (env below) or site-hosted paths — independent of the AvatarBuilder app.
  *
+ * Otherside (Unreal): Yuga’s intake expects each token’s metadata to include a top-level **mml** URL to a
+ * public MML document (see https://docs.otherside.xyz/documentation/characters/making-avatars-available-in-the-otherside ).
+ * Use the canonical **.mml** URL so it matches their examples; `vercel.json` rewrites it to this handler:
+ *   https://<SITE_ORIGIN>/mml/<tokenId>.mml   →   /api/mml?id=<tokenId>
+ * Query strings (e.g. `?anim=…`, `?hat=…`) are preserved by the platform when present on the `.mml` request.
+ * You still need contract whitelisting and GLBs that meet Otherside technical limits — this endpoint only serves MML.
+ *
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
  *   If unset, defaults follow MML_BONE_SCHEME (see below).
@@ -410,14 +417,14 @@ module.exports = async (req, res) => {
   }
 
   const origin = siteOriginFromRequest(req);
-  const pathAndQuery = (() => {
-    const raw = String(req.url || '');
-    const q = raw.indexOf('?');
-    const path = (q >= 0 ? raw.slice(0, q) : raw) || '/api/mml';
-    const search = q >= 0 ? raw.slice(q) : `?id=${id}`;
-    return `${path}${search}`;
-  })();
-  const documentUrl = `${origin.replace(/\/$/, '')}${pathAndQuery}`;
+  const rawUrl = String(req.url || '');
+  const qIdx = rawUrl.indexOf('?');
+  const searchPart = qIdx >= 0 ? rawUrl.slice(qIdx + 1) : '';
+  const qs = new URLSearchParams(searchPart);
+  qs.delete('id');
+  qs.delete('token');
+  const rest = qs.toString();
+  const documentUrl = `${origin.replace(/\/$/, '')}/mml/${id}.mml${rest ? `?${rest}` : ''}`;
   const metaUrl = `${origin}/metadata/${id}.json`;
 
   let metadata;
