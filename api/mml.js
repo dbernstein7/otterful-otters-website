@@ -5,8 +5,8 @@
  * Env (optional — override default bone names on the fur rig):
  *   MML_SOCKET_HAT, MML_SOCKET_SHIRT, MML_SOCKET_EYES
  *   If unset, defaults follow MML_BONE_SCHEME (see below).
- *   Optional offsets on wearables (m-model transform group): MML_HAT_X … MML_HAT_SZ, MML_SHIRT_*, MML_EYES_* (suffixes
- *   X Y Z RX RY RZ SX SY SZ in meters / degrees / scale per MML). Example for eyes forward on head: MML_EYES_Y, MML_EYES_Z.
+ *   Optional offsets on wearables (m-model): MML_HAT_* / MML_SHIRT_* (X Y Z RX RY RZ SX SY SZ). For **eyes** only
+ *   MML_EYES_RX … MML_EYES_SZ are emitted — **MML_EYES_X/Y/Z are ignored** (translation on socketed eyes drifts off the head).
  *   MML_EYES_ANIM_DISABLED — set `1` / `true` to emit `anim-enabled="false"` on the eyes m-model only (use if your eyes GLB
  *   has its own skeleton and the body’s clip causes binding glitches). Default: eyes behave like hats (socket + viewer animation).
  *   Legacy: `MML_EYES_ANIM_ENABLED` is still read — if explicitly false/0, same as MML_EYES_ANIM_DISABLED.
@@ -135,7 +135,26 @@ function escAttr(s) {
     .replace(/</g, '&lt;');
 }
 
-/** Extra m-model attributes from env, e.g. `MML_EYES` → MML_EYES_X, MML_EYES_Z, … (MML transformable group). */
+/** x,y,z on socketed eyes drift under retargeting; only rotation/scale env overrides apply. */
+function wearableExtraAttrsRotScaleOnly(prefix) {
+  const pairs = [
+    ['rx', 'RX'],
+    ['ry', 'RY'],
+    ['rz', 'RZ'],
+    ['sx', 'SX'],
+    ['sy', 'SY'],
+    ['sz', 'SZ'],
+  ];
+  let out = '';
+  for (const [attr, suf] of pairs) {
+    const key = `${prefix}_${suf}`;
+    const v = process.env[key];
+    if (v == null || String(v).trim() === '') continue;
+    out += ` ${attr}="${escAttr(String(v).trim())}"`;
+  }
+  return out;
+}
+
 function wearableExtraAttrs(prefix) {
   const pairs = [
     ['x', 'X'],
@@ -357,7 +376,7 @@ function buildHtml({ id, traits, urls, sockets, documentUrl }) {
   }
   if (urls.eyes) {
     parts.push(
-      `  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"${eyesAnimAttr()}${wearableExtraAttrs(
+      `  <m-model socket="${escAttr(sockets.eyes)}" src="${escAttr(urls.eyes)}"${eyesAnimAttr()}${wearableExtraAttrsRotScaleOnly(
         'MML_EYES'
       )}></m-model>`
     );

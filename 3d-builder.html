@@ -191,7 +191,7 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
-                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Socketed wearables: put vertical lift on <code>m-character</code> (<code>y</code>) only — do not reuse that same <code>y</code> on <code>m-model</code> (e.g. <code>-0.7</code> / <code>-0.72</code> on glasses pushes them off the face).</p>
+                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Eyes GLBs: <code>x</code>/<code>y</code>/<code>z</code> on <code>m-model</code> are removed on preview (socket-only); use <code>m-character</code> for body lift, not duplicate big <code>y</code> on wearables.</p>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
                         <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
@@ -575,24 +575,50 @@
           return Number.isFinite(v) ? v : null;
         }
 
+        function mmlInnerLooksLikeEyesWearable(inner) {
+          const srcM = inner.match(/\ssrc\s*=\s*"([^"]*)"/i);
+          if (!srcM) return false;
+          try {
+            const s = decodeURIComponent(srcM[1].replace(/\+/g, ' ')).toLowerCase();
+            return /(^|\/|%)eyes(\/|%2f)/i.test(s);
+          } catch (_) {
+            return /eyes/i.test(srcM[1]);
+          }
+        }
+
         function sanitizeMmlSocketedModels(html) {
-          let fixedWearableY = false;
+          let strippedEyesXYZ = false;
+          let fixedBodyLiftY = false;
           const charY = parseMCharacterYFromHtml(html);
           const next = html.replace(/<m-model([^>]*)>/gi, function (full, inner) {
             if (!/\bsocket\s*=/i.test(inner)) return full;
-            const yAttr = inner.match(/\s+y\s*=\s*"([^"]*)"/i);
-            if (!yAttr) return full;
-            const yNum = parseFloat(yAttr[1]);
-            if (!Number.isFinite(yNum)) return full;
-            const looksLikeBodyLift =
-              (yNum <= -0.52 && yNum >= -0.88) ||
-              (charY != null && Math.abs(yNum - charY) < 0.051);
-            if (!looksLikeBodyLift) return full;
-            fixedWearableY = true;
-            const stripped = inner.replace(/\s+y\s*=\s*"[^"]*"/gi, '');
-            return '<m-model' + stripped + '>';
+            let out = inner;
+            if (mmlInnerLooksLikeEyesWearable(inner)) {
+              const strippedT = out.replace(/\s+[xyz]\s*=\s*"[^"]*"/gi, '');
+              if (strippedT !== out) {
+                strippedEyesXYZ = true;
+                out = strippedT;
+              }
+            } else {
+              const yAttr = out.match(/\s+y\s*=\s*"([^"]*)"/i);
+              if (yAttr) {
+                const yNum = parseFloat(yAttr[1]);
+                if (Number.isFinite(yNum)) {
+                  const looksLikeBodyLift =
+                    (yNum <= -0.52 && yNum >= -0.88) ||
+                    (charY != null && Math.abs(yNum - charY) < 0.051);
+                  if (looksLikeBodyLift) {
+                    out = out.replace(/\s+y\s*=\s*"[^"]*"/gi, '');
+                    fixedBodyLiftY = true;
+                  }
+                }
+              }
+            }
+            if (out === inner) return full;
+            return '<m-model' + out + '>';
           });
-          return { html: next, fixedWearableY: fixedWearableY };
+          const fixedWearableY = strippedEyesXYZ || fixedBodyLiftY;
+          return { html: next, fixedWearableY, strippedEyesXYZ, fixedBodyLiftY };
         }
 
         function ensureHeroPreview() {
@@ -769,8 +795,11 @@
           if (strippedAnim.didStrip) {
             wornYFix += 'Removed incompatible public.mml.io human idle for this otter body so head sockets (eyes) match the rig. ';
           }
-          if (sanitized.fixedWearableY) {
-            wornYFix += 'Removed character-scale y on socketed m-model (keep y on m-character only — otherwise glasses sit in mid-air). ';
+          if (sanitized.strippedEyesXYZ) {
+            wornYFix += 'Removed x/y/z on eyes m-model (socket-only). ';
+          }
+          if (sanitized.fixedBodyLiftY) {
+            wornYFix += 'Removed mistaken character-scale y on other wearables. ';
           }
           if ((sanitized.fixedWearableY || strippedAnim.didStrip) && dataUrlTooLarge) {
             wornYFix +=
@@ -898,10 +927,9 @@
           const wornYFix = sanAnim.didStrip
             ? 'Removed incompatible public.mml.io human idle for this otter body (saved in editor). '
             : '';
-          const wornYFix2 = sanRun.fixedWearableY
-            ? 'Removed character-scale y on socketed m-model (saved in editor; use m-character for body lift only). '
-            : '';
-          const mismatch = (wornYFix + wornYFix2 + combineMmlWarnings(html)).trim();
+          const wornYFix2 = sanRun.strippedEyesXYZ ? 'Removed x/y/z on eyes m-model (saved in editor). ' : '';
+          const wornYFix3 = sanRun.fixedBodyLiftY ? 'Removed mistaken character-scale y on wearables (saved in editor). ' : '';
+          const mismatch = (wornYFix + wornYFix2 + wornYFix3 + combineMmlWarnings(html)).trim();
           if (mismatch) {
             setStatus(
               mismatch + ' (Preview still opened — fix src=/anim= URLs.)',
