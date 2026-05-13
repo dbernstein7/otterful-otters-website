@@ -463,8 +463,8 @@
 
         function applyOrbitSliderToViewer() {
           const distStr = readOrbitSliderDistanceStr();
-          if (!distStr || !orbitValEl) return;
-          orbitValEl.textContent = distStr;
+          if (!distStr) return;
+          if (orbitValEl) orbitValEl.textContent = distStr;
           queueOrbitDistancePost(distStr);
         }
 
