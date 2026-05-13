@@ -188,10 +188,10 @@
                         <button type="button" id="builder-mml-sample-btn" class="mml-playground-btn">Sample otter</button>
                     </div>
                     <div class="mml-playground-checks">
-                        <label><input type="checkbox" id="builder-mml-opt-fit"> Fit camera to contents</label>
+                        <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
-                    <p class="mml-playground-checks-hint">Fit zooms the orbit camera to the model bounds. If the otter looks <strong>too small</strong> with Fit off, turn Fit on, or add <code>sx</code>/<code>sy</code>/<code>sz</code> on <code>m-character</code> (see docs). If it feels too tight, turn Fit off again.</p>
+                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Socketed wearables: put vertical lift on <code>m-character</code> (<code>y</code>), not on <code>m-model</code> — copying <code>y="-0.72"</code> onto glasses floats them off the head.</p>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
                         <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
@@ -535,6 +535,24 @@
           return [mmlDemoAnimOnWrongBodyMessage(html), mCharacterWrongBodySrcMessage(html)].filter(Boolean).join(' ');
         }
 
+        /**
+         * Common mistake: copying m-character's y="-0.72" onto a socketed m-model offsets the mesh in the wrong space
+         * (glasses float in front of the face and do not track the head cleanly).
+         */
+        function sanitizeMmlSocketedModels(html) {
+          let fixedWearableY = false;
+          const yMistake = /\s+y\s*=\s*"(?:-0*\.72(?:0+)?|-\.72)"/gi;
+          const next = html.replace(/<m-model([^>]*)>/gi, function (full, inner) {
+            if (!/\bsocket\s*=/i.test(inner)) return full;
+            const stripped = inner.replace(yMistake, function () {
+              fixedWearableY = true;
+              return '';
+            });
+            return '<m-model' + stripped + '>';
+          });
+          return { html: next, fixedWearableY: fixedWearableY };
+        }
+
         function ensureHeroPreview() {
           if (heroPreviewLoaded || !heroIframe) return;
           heroPreviewLoaded = true;
@@ -665,6 +683,9 @@
             return;
           }
 
+          const sanitized = sanitizeMmlSocketedModels(bodyText);
+          bodyText = sanitized.html;
+
           lastFetchedSource = bodyText;
           try {
             const du = new URL(docUrl);
@@ -684,7 +705,10 @@
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
-          const mismatch = combineMmlWarnings(bodyText);
+          const wornYFix = sanitized.fixedWearableY
+            ? 'Removed mistaken y="-0.72" from socketed m-model — that belongs on m-character only (otherwise glasses float off the head). '
+            : '';
+          const mismatch = (wornYFix + combineMmlWarnings(bodyText)).trim();
           if (mismatch) setStatus(mismatch, 'warn');
           else setStatus('', false);
 
@@ -702,17 +726,19 @@
           const v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
-          /* Orbit distance: viewer default 10; lower = closer. Fit tightens framing so we keep a bit more distance when fit is on. */
-          v.searchParams.set('cameraOrbitPitch', '50');
+          /*
+           * Do not use cameraFitContents with environmentMap=cloudysky — the viewer often fits the whole HDR scene
+           * and the otter becomes a speck. Fixed orbit + moderate FOV keeps the character readable.
+           */
+          v.searchParams.set('cameraOrbitPitch', fit.checked ? '38' : '42');
           v.searchParams.set('cameraOrbitSpeed', '10');
-          v.searchParams.set('cameraOrbitDistance', fit.checked ? '12' : '8');
-          v.searchParams.set('cameraFov', fit.checked ? '54' : '68');
+          v.searchParams.set('cameraOrbitDistance', fit.checked ? '3.15' : '4.25');
+          v.searchParams.set('cameraFov', fit.checked ? '58' : '54');
           v.searchParams.set('ambientLight', '5');
           v.searchParams.set('ambientLightColor', 'cfd3dd');
           /* MSquared / MML viewer preset: cloudy sky HDR (not flat backgroundColor). */
           v.searchParams.set('environmentMap', 'cloudysky');
           if (noUi.checked) v.searchParams.set('noUI', 'true');
-          if (fit.checked) v.searchParams.set('cameraFitContents', 'true');
           v.searchParams.set('_mmlv', String(Date.now()));
           return v.toString();
         }
@@ -765,6 +791,12 @@
             }
             html = mergedH.html;
           }
+          const sanRun = sanitizeMmlSocketedModels(html);
+          html = sanRun.html;
+          if (sanRun.fixedWearableY) {
+            editor.value = html;
+            syncGutter();
+          }
           if (!html.trim()) {
             setStatus('Editor is empty.', true);
             return;
@@ -787,7 +819,10 @@
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
-          const mismatch = combineMmlWarnings(html);
+          const wornYFix = sanRun.fixedWearableY
+            ? 'Removed mistaken y="-0.72" from socketed m-model (saved in editor). '
+            : '';
+          const mismatch = (wornYFix + combineMmlWarnings(html)).trim();
           if (mismatch) {
             setStatus(
               mismatch + ' (Preview still opened — fix src=/anim= URLs.)',
