@@ -891,16 +891,16 @@
            * and the otter becomes a speck. Fixed orbit + moderate FOV keeps the character readable.
            */
           /*
-           * cameraOrbitPitch is spherical phi (degrees from +Y): low values = bird's-eye; ~90° = eye-level orbit.
-           * ~86° matches a forward, full-body hero shot at distance 2.34 (was 40° which looked straight down).
+           * cameraOrbitPitch is spherical phi (degrees from +Y): ~90° = eye-level ring around the subject.
+           * Orbit pivot (cameraLookAt) should sit near the rig root: a high pivot (e.g. 0.35) shifts the otter
+           * downward in frame (lots of sky above, feet cramped at the bottom).
            */
-          v.searchParams.set('cameraOrbitPitch', fit.checked ? '83' : '86');
+          v.searchParams.set('cameraOrbitPitch', fit.checked ? '86' : '88');
           /* 0 = no auto-spin; non-zero makes the orbit target drift and wheel zoom feel "jumpy". */
           v.searchParams.set('cameraOrbitSpeed', '0');
           v.searchParams.set('cameraOrbitDistance', fit.checked ? '1.75' : '2.34');
-          v.searchParams.set('cameraFov', fit.checked ? '56' : '52');
-          /* Aim slightly above origin so otters with negative m-character y read as centered / forward. */
-          v.searchParams.set('cameraLookAt', '0,0.35,0');
+          v.searchParams.set('cameraFov', fit.checked ? '58' : '56');
+          v.searchParams.set('cameraLookAt', '0,0.02,0');
           /*
            * Ambient is Three.js intensity (viewer default 0). We previously used 5, which blows out the subject.
            * Keep a low fill + muted color; IBL comes from environmentMap below.
