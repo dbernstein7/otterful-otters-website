@@ -174,6 +174,16 @@
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             ></iframe>
                         </div>
+                        <div class="mml-playground-orbit-zoom" aria-label="Smooth camera distance">
+                            <label class="mml-playground-orbit-zoom-label" for="builder-mml-orbit-zoom">Orbit distance (smooth)</label>
+                            <div class="mml-playground-orbit-zoom-row">
+                                <input type="range" id="builder-mml-orbit-zoom" min="1.2" max="10" step="0.02" value="4.25" />
+                                <span id="builder-mml-orbit-zoom-val" class="mml-playground-orbit-zoom-val" aria-live="polite">4.25</span>
+                            </div>
+                            <p class="mml-playground-orbit-zoom-hint">
+                                viewer.mml.io uses a coarse scroll step inside the frame. Use the slider, or <strong>scroll while the pointer is here</strong> (same smooth step). Shift slows it further.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -371,6 +381,98 @@
         const heroIframe = document.getElementById('builder-mml-hero-iframe');
         const motionDetails = document.getElementById('mml-motion-details');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit || !editor) return;
+
+        const orbitSlider = document.getElementById('builder-mml-orbit-zoom');
+        const orbitValEl = document.getElementById('builder-mml-orbit-zoom-val');
+        const orbitZoomRow = document.querySelector('.mml-playground-orbit-zoom');
+        const VIEWER_PM_ORIGIN = 'https://viewer.mml.io';
+        const ORBIT_ZOOM_MIN = 1.2;
+        const ORBIT_ZOOM_MAX = 10;
+
+        let orbitPostRaf = 0;
+        let pendingOrbitDistanceStr = null;
+
+        function clampOrbitDistance(n) {
+          if (typeof n !== 'number' || isNaN(n)) return fit.checked ? 3.15 : 4.25;
+          return Math.min(ORBIT_ZOOM_MAX, Math.max(ORBIT_ZOOM_MIN, n));
+        }
+
+        function formatOrbitDist(n) {
+          return clampOrbitDistance(n).toFixed(2);
+        }
+
+        function syncOrbitSliderFromViewerUrlString(viewerUrl) {
+          if (!orbitSlider) return;
+          let dist = fit.checked ? 3.15 : 4.25;
+          try {
+            const u = new URL(viewerUrl, window.location.href);
+            const raw = u.searchParams.get('cameraOrbitDistance');
+            if (raw != null && raw !== '') {
+              const p = parseFloat(raw);
+              if (!isNaN(p)) dist = p;
+            }
+          } catch (_) { /* ignore */ }
+          dist = clampOrbitDistance(dist);
+          orbitSlider.min = String(ORBIT_ZOOM_MIN);
+          orbitSlider.max = String(ORBIT_ZOOM_MAX);
+          orbitSlider.value = String(dist);
+          if (orbitValEl) orbitValEl.textContent = formatOrbitDist(dist);
+        }
+
+        function patchViewerOutputsDistance(distStr) {
+          const viewVis = document.getElementById('builder-mml-viewer-visible');
+          const src = (viewVis && viewVis.value) || iframe.src || '';
+          if (!src) return;
+          try {
+            const u = new URL(src, window.location.href);
+            u.searchParams.set('cameraOrbitDistance', distStr);
+            const s = u.toString();
+            if (viewVis) viewVis.value = s;
+            if (viewerOut) viewerOut.textContent = s;
+          } catch (_) { /* ignore */ }
+        }
+
+        function flushOrbitDistancePost() {
+          orbitPostRaf = 0;
+          if (pendingOrbitDistanceStr == null) return;
+          const distStr = pendingOrbitDistanceStr;
+          pendingOrbitDistanceStr = null;
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.postMessage(
+                { type: 'updateParams', params: { cameraOrbitDistance: distStr } },
+                VIEWER_PM_ORIGIN
+              );
+            }
+          } catch (_) { /* ignore */ }
+          patchViewerOutputsDistance(distStr);
+        }
+
+        function queueOrbitDistancePost(distStr) {
+          pendingOrbitDistanceStr = distStr;
+          if (orbitPostRaf) return;
+          orbitPostRaf = requestAnimationFrame(flushOrbitDistancePost);
+        }
+
+        function readOrbitSliderDistanceStr() {
+          if (!orbitSlider) return null;
+          const v = parseFloat(orbitSlider.value);
+          if (isNaN(v)) return null;
+          return formatOrbitDist(v);
+        }
+
+        function applyOrbitSliderToViewer() {
+          const distStr = readOrbitSliderDistanceStr();
+          if (!distStr || !orbitValEl) return;
+          orbitValEl.textContent = distStr;
+          queueOrbitDistancePost(distStr);
+        }
+
+        function assignIframeViewerSrc(viewerUrl) {
+          iframe.removeAttribute('src');
+          iframe.src = viewerUrl;
+          syncOrbitSliderFromViewerUrlString(viewerUrl);
+        }
 
         let lastFetchedSource = '';
         let lastHttpsDocUrl = '';
@@ -789,8 +891,7 @@
 
           const viewerUrlFinal = buildViewerUrl(viewerDocUrl);
           setOuts(docUrl, viewerUrlFinal);
-          iframe.removeAttribute('src');
-          iframe.src = viewerUrlFinal;
+          assignIframeViewerSrc(viewerUrlFinal);
           let wornYFix = '';
           if (strippedAnim.didStrip) {
             wornYFix += 'Removed incompatible public.mml.io human idle for this otter body so head sockets (eyes) match the rig. ';
@@ -922,8 +1023,7 @@
           }
           const viewerUrl = buildViewerUrl(dataUrl);
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
-          iframe.removeAttribute('src');
-          iframe.src = viewerUrl;
+          assignIframeViewerSrc(viewerUrl);
           const wornYFix = sanAnim.didStrip
             ? 'Removed incompatible public.mml.io human idle for this otter body (saved in editor). '
             : '';
@@ -950,8 +1050,7 @@
           if (lastHttpsDocUrl) {
             const v = buildViewerUrl(lastHttpsDocUrl);
             setOuts(lastHttpsDocUrl, v);
-            iframe.removeAttribute('src');
-            iframe.src = v;
+            assignIframeViewerSrc(v);
             setStatus('Restored last fetched document and viewer.', false);
           } else {
             setStatus('Editor restored. Use Run to preview if you only have local edits.', false);
@@ -1041,6 +1140,25 @@
           });
         }
 
+        if (orbitSlider) {
+          orbitSlider.addEventListener('input', applyOrbitSliderToViewer);
+        }
+        if (orbitZoomRow && orbitSlider) {
+          orbitZoomRow.addEventListener(
+            'wheel',
+            function (e) {
+              e.preventDefault();
+              const cur = parseFloat(orbitSlider.value);
+              if (isNaN(cur)) return;
+              const mult = (e.shiftKey ? 0.001 : 0.0032) * (e.deltaMode === 1 ? 0.85 : 1);
+              const next = clampOrbitDistance(cur + e.deltaY * mult);
+              orbitSlider.value = String(next);
+              applyOrbitSliderToViewer();
+            },
+            { passive: false }
+          );
+        }
+
         function reloadViewerKeepingDocument() {
           if (!iframe || !iframe.src) return;
           try {
@@ -1048,7 +1166,7 @@
             const doc = cur.searchParams.get('url');
             if (!doc) return;
             const next = buildViewerUrl(doc);
-            iframe.src = next;
+            assignIframeViewerSrc(next);
             if (viewerOut) viewerOut.textContent = next;
             const viewVis = document.getElementById('builder-mml-viewer-visible');
             if (viewVis) viewVis.value = next;
