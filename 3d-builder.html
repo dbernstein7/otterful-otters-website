@@ -111,22 +111,23 @@
         </div>
 
         <div id="builder-panel-mml" class="builder-page-panel mml-doc-workbench" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
-            <div class="mml-doc-workbench-bar">
-                <div class="mml-doc-workbench-bar-main">
-                    <h2 class="mml-doc-workbench-title">MML playground</h2>
-                    <p class="mml-doc-workbench-sub"><strong>Two flows:</strong> <strong>Preview</strong> (otter #) loads <code>/api/mml?id=…</code> (optional <code>?hat=</code> / <code>?anim=</code> from the fields below). <strong>Load</strong> (under More options) fetches whatever MML <strong>document URL</strong> is in the box — e.g. sample <code>/mml/MMLOtter-preview.html</code> or any <code>https://…</code> page. <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character docs</a></p>
+            <div class="mml-hero-search" aria-label="Load otter by number">
+                <p class="mml-hero-search-title">Preview your otter in MML</p>
+                <div class="mml-hero-search-row">
+                    <span class="mml-hero-search-prefix" aria-hidden="true">#</span>
+                    <input type="number" id="builder-mml-nft-input" class="mml-hero-search-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number 1 to 2222">
+                    <button type="button" id="builder-mml-preview-btn" class="mml-hero-search-btn">Preview</button>
                 </div>
-                <div class="mml-doc-workbench-bar-actions">
-                    <label class="mml-doc-workbench-nft-label" for="builder-mml-nft-input">Otter #</label>
-                    <input type="number" id="builder-mml-nft-input" class="mml-doc-workbench-nft" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number">
-                    <button type="button" id="builder-mml-preview-btn" class="mml-doc-workbench-preview">Preview</button>
-                    <a class="mml-doc-workbench-docs" href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">MML reference</a>
-                </div>
+                <p class="mml-hero-search-links">
+                    <a href="https://mml.io/docs/reference/elements/m-character" target="_blank" rel="noopener noreferrer">m-character</a>
+                    <span aria-hidden="true"> · </span>
+                    <a href="glb-anim-preview.html">GLB clip preview</a>
+                </p>
             </div>
 
             <div class="mml-playground">
                 <div class="mml-playground-chrome">
-                    <span class="mml-playground-chrome-title" id="builder-mml-playground-label">MML document</span>
+                    <span class="mml-playground-chrome-title" id="builder-mml-playground-label">Code &amp; viewer</span>
                     <div class="mml-playground-chrome-actions">
                         <button type="button" id="builder-mml-run-btn" class="mml-playground-btn mml-playground-btn--primary" title="Send editor contents to viewer (inline data URL)">Run</button>
                         <button type="button" id="builder-mml-reset-editor-btn" class="mml-playground-btn" title="Restore last document loaded from the server">Reset</button>
@@ -135,23 +136,9 @@
                 </div>
                 <p id="builder-mml-status" class="mml-playground-status" role="status" aria-live="polite"></p>
 
-                <div class="mml-playground-resolved" aria-label="Active document and viewer links">
-                    <label class="mml-playground-label mml-playground-resolved-label" for="builder-mml-doc-visible">Resolved document URL</label>
-                    <input type="text" id="builder-mml-doc-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="Load or Preview to fill">
-                    <label class="mml-playground-label mml-playground-resolved-label" for="builder-mml-viewer-visible">Viewer URL</label>
-                    <input type="text" id="builder-mml-viewer-visible" class="mml-playground-input mml-playground-input--readonly" readonly autocomplete="off" spellcheck="false" aria-readonly="true" placeholder="Load or Preview to fill">
-                </div>
-
-                <div class="mml-playground-anim-row">
-                    <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb) — optional</label>
-                    <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb — paste full link, then Preview or Run" autocomplete="off" spellcheck="false">
-                    <p class="mml-playground-anim-hint">Do <strong>not</strong> use <code>public.mml.io/character-*-animation.glb</code> on the otter — those clips are for MML’s tall demo mannequin only. One link = one movement file for <strong>your</strong> rig; change the link, then <strong>Preview</strong> or <strong>Run</strong>.</p>
-                </div>
-
-                <div class="mml-playground-anim-row">
-                    <label class="mml-playground-label" for="builder-mml-hat-override">Hat — optional (Preview /api/mml)</label>
-                    <input type="text" id="builder-mml-hat-override" class="mml-playground-input" placeholder="antler (trait file stem) or full https://…/antler.glb?alt=media&amp;token=…" autocomplete="off" spellcheck="false">
-                    <p class="mml-playground-anim-hint">Adds <code>?hat=…</code> to the preview URL. Use a <strong>full Firebase download URL</strong> if each file has its own token. Trait stem (e.g. <code>antler</code>) needs <code>MML_HAT_STORAGE_PATH=Hats</code> and bucket env on the server.</p>
+                <div class="mml-url-row">
+                    <label class="mml-playground-label" for="builder-mml-doc-url">Document URL</label>
+                    <input type="text" id="builder-mml-doc-url" class="mml-playground-input" placeholder="https://…/page.html or Preview fills /api/mml?id=…" autocomplete="off" spellcheck="false">
                 </div>
 
                 <div class="mml-playground-body">
@@ -161,7 +148,7 @@
                             <div class="mml-editor-gutter" id="builder-mml-gutter" aria-hidden="true">1</div>
                             <textarea id="builder-mml-editor" class="mml-editor-textarea" spellcheck="false" wrap="off" autocomplete="off" aria-label="MML and HTML source" placeholder="Load with Preview or open More options, then edit…"></textarea>
                         </div>
-                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Large documents may need the hosted URL (use <strong>Load</strong> in More options) instead of Run.</p>
+                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Optional movement / hat: <strong>More options</strong>.</p>
                     </div>
                     <div class="mml-playground-preview">
                         <div class="mml-playground-preview-frame">
@@ -174,24 +161,27 @@
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             ></iframe>
                         </div>
-                        <div class="mml-playground-orbit-zoom" aria-label="Smooth camera distance">
-                            <label class="mml-playground-orbit-zoom-label" for="builder-mml-orbit-zoom">Orbit distance (smooth)</label>
+                        <div class="mml-playground-orbit-zoom" aria-label="Camera distance">
+                            <label class="mml-playground-orbit-zoom-label" for="builder-mml-orbit-zoom">Distance</label>
                             <div class="mml-playground-orbit-zoom-row">
                                 <input type="range" id="builder-mml-orbit-zoom" min="1.2" max="10" step="0.02" value="4.25" />
                                 <span id="builder-mml-orbit-zoom-val" class="mml-playground-orbit-zoom-val" aria-live="polite">4.25</span>
                             </div>
-                            <p class="mml-playground-orbit-zoom-hint">
-                                viewer.mml.io uses a coarse scroll step inside the frame. Use the slider, or <strong>scroll while the pointer is here</strong> (same smooth step). Shift slows it further.
-                            </p>
                         </div>
                     </div>
                 </div>
 
                 <details class="mml-playground-advanced">
                     <summary>More options</summary>
-                    <p class="mml-playground-advanced-tip">Use a full <code>https://</code> MML document URL (not a raw <code>.glb</code>). <strong>Load</strong> fetches into the editor and viewer.</p>
-                    <label class="mml-playground-label" for="builder-mml-doc-url">Document URL</label>
-                    <input type="text" id="builder-mml-doc-url" class="mml-playground-input" placeholder="https://…/page.html" autocomplete="off" spellcheck="false">
+                    <p class="mml-playground-advanced-tip">Optional <code>?anim=</code> / <code>?hat=</code> for Preview, or <strong>Load</strong> any hosted MML <code>https://…</code> page.</p>
+                    <div class="mml-playground-anim-row">
+                        <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb)</label>
+                        <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="mml-playground-anim-row">
+                        <label class="mml-playground-label" for="builder-mml-hat-override">Hat override</label>
+                        <input type="text" id="builder-mml-hat-override" class="mml-playground-input" placeholder="Trait stem or full hat .glb URL" autocomplete="off" spellcheck="false">
+                    </div>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-load-btn" class="mml-playground-btn">Load</button>
                         <button type="button" id="builder-mml-open-tab-btn" class="mml-playground-btn">Open viewer tab</button>
@@ -201,24 +191,10 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
-                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Eyes GLBs: <code>x</code>/<code>y</code>/<code>z</code> on <code>m-model</code> are removed on preview (socket-only); use <code>m-character</code> for body lift, not duplicate big <code>y</code> on wearables.</p>
+                    <p class="mml-playground-checks-hint">Closer orbit uses a shorter camera distance. Copy links after Preview.</p>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
                         <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
-                    </div>
-                </details>
-
-                <details class="mml-motion-sandbox" id="mml-motion-details">
-                    <summary>Mixamo clip sandbox (optional)</summary>
-                    <p class="mml-motion-sandbox-lead">Separate GLB preview for trying clips and <strong>Save PNG</strong> — not your MML document.</p>
-                    <div class="mml-motion-sandbox-viewport">
-                        <iframe
-                            id="builder-mml-hero-iframe"
-                            class="mml-motion-sandbox-iframe"
-                            title="Animated otter (embedded GLB clips)"
-                            loading="lazy"
-                            referrerpolicy="no-referrer"
-                        ></iframe>
                     </div>
                 </details>
             </div>
@@ -378,19 +354,15 @@
         const hatOverrideInput = document.getElementById('builder-mml-hat-override');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
-        const heroIframe = document.getElementById('builder-mml-hero-iframe');
-        const motionDetails = document.getElementById('mml-motion-details');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit || !editor) return;
 
         const orbitSlider = document.getElementById('builder-mml-orbit-zoom');
         const orbitValEl = document.getElementById('builder-mml-orbit-zoom-val');
-        const orbitZoomRow = document.querySelector('.mml-playground-orbit-zoom');
         const VIEWER_PM_ORIGIN = 'https://viewer.mml.io';
         const ORBIT_ZOOM_MIN = 1.2;
         const ORBIT_ZOOM_MAX = 10;
 
-        let orbitPostRaf = 0;
-        let pendingOrbitDistanceStr = null;
+        let orbitDebounceTimer = null;
 
         function clampOrbitDistance(n) {
           if (typeof n !== 'number' || isNaN(n)) return fit.checked ? 3.15 : 4.25;
@@ -420,27 +392,24 @@
         }
 
         function patchViewerOutputsDistance(distStr) {
-          const viewVis = document.getElementById('builder-mml-viewer-visible');
-          const src = (viewVis && viewVis.value) || iframe.src || '';
+          const src =
+            viewerOut && viewerOut.textContent && viewerOut.textContent !== '—'
+              ? viewerOut.textContent.trim()
+              : iframe.src || '';
           if (!src) return;
           try {
             const u = new URL(src, window.location.href);
             u.searchParams.set('cameraOrbitDistance', distStr);
             const s = u.toString();
-            if (viewVis) viewVis.value = s;
             if (viewerOut) viewerOut.textContent = s;
           } catch (_) { /* ignore */ }
         }
 
-        function flushOrbitDistancePost() {
-          orbitPostRaf = 0;
-          if (pendingOrbitDistanceStr == null) return;
-          const distStr = pendingOrbitDistanceStr;
-          pendingOrbitDistanceStr = null;
+        function postOrbitDistanceToViewerNow(distStr) {
           try {
             if (iframe.contentWindow) {
               iframe.contentWindow.postMessage(
-                { type: 'updateParams', params: { cameraOrbitDistance: distStr } },
+                { type: 'updateParams', params: { cameraOrbitDistance: String(distStr) } },
                 VIEWER_PM_ORIGIN
               );
             }
@@ -448,10 +417,20 @@
           patchViewerOutputsDistance(distStr);
         }
 
-        function queueOrbitDistancePost(distStr) {
-          pendingOrbitDistanceStr = distStr;
-          if (orbitPostRaf) return;
-          orbitPostRaf = requestAnimationFrame(flushOrbitDistancePost);
+        function scheduleOrbitDistancePost(distStr) {
+          if (orbitValEl) orbitValEl.textContent = distStr;
+          clearTimeout(orbitDebounceTimer);
+          orbitDebounceTimer = setTimeout(function () {
+            orbitDebounceTimer = null;
+            postOrbitDistanceToViewerNow(distStr);
+          }, 500);
+        }
+
+        function flushOrbitSliderPost() {
+          clearTimeout(orbitDebounceTimer);
+          orbitDebounceTimer = null;
+          const distStr = readOrbitSliderDistanceStr();
+          if (distStr) postOrbitDistanceToViewerNow(distStr);
         }
 
         function readOrbitSliderDistanceStr() {
@@ -464,11 +443,12 @@
         function applyOrbitSliderToViewer() {
           const distStr = readOrbitSliderDistanceStr();
           if (!distStr) return;
-          if (orbitValEl) orbitValEl.textContent = distStr;
-          queueOrbitDistancePost(distStr);
+          scheduleOrbitDistancePost(distStr);
         }
 
         function assignIframeViewerSrc(viewerUrl) {
+          clearTimeout(orbitDebounceTimer);
+          orbitDebounceTimer = null;
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
           syncOrbitSliderFromViewerUrlString(viewerUrl);
@@ -476,7 +456,6 @@
 
         let lastFetchedSource = '';
         let lastHttpsDocUrl = '';
-        let heroPreviewLoaded = false;
 
         function escapeHtmlAttr(s) {
           return String(s)
@@ -723,26 +702,6 @@
           return { html: next, fixedWearableY, strippedEyesXYZ, fixedBodyLiftY };
         }
 
-        function ensureHeroPreview() {
-          if (heroPreviewLoaded || !heroIframe) return;
-          heroPreviewLoaded = true;
-          try {
-            const origin = window.location.origin || '';
-            if (!/^https:/i.test(origin)) return;
-            const glbUrl = new URL('games/shell-snag/otter-shell-avatar-mixamo.glb', `${origin}/`).href;
-            const preview = new URL('glb-anim-preview.html', window.location.href);
-            preview.searchParams.set('url', glbUrl);
-            preview.searchParams.set('hideDupBodies', '1');
-            heroIframe.src = preview.toString();
-          } catch (_) { /* ignore */ }
-        }
-
-        if (motionDetails && heroIframe) {
-          motionDetails.addEventListener('toggle', function () {
-            if (motionDetails.open) ensureHeroPreview();
-          });
-        }
-
         function syncGutter() {
           if (!gutter || !editor) return;
           const n = editor.value.split('\n').length;
@@ -950,10 +909,6 @@
         function setOuts(docUrl, viewerUrl) {
           if (docOut) docOut.textContent = docUrl;
           if (viewerOut) viewerOut.textContent = viewerUrl;
-          const docVis = document.getElementById('builder-mml-doc-visible');
-          const viewVis = document.getElementById('builder-mml-viewer-visible');
-          if (docVis) docVis.value = docUrl || '';
-          if (viewVis) viewVis.value = viewerUrl || '';
         }
 
         function setStatus(msg, mode) {
@@ -1142,21 +1097,7 @@
 
         if (orbitSlider) {
           orbitSlider.addEventListener('input', applyOrbitSliderToViewer);
-        }
-        if (orbitZoomRow && orbitSlider) {
-          orbitZoomRow.addEventListener(
-            'wheel',
-            function (e) {
-              e.preventDefault();
-              const cur = parseFloat(orbitSlider.value);
-              if (isNaN(cur)) return;
-              const mult = (e.shiftKey ? 0.001 : 0.0032) * (e.deltaMode === 1 ? 0.85 : 1);
-              const next = clampOrbitDistance(cur + e.deltaY * mult);
-              orbitSlider.value = String(next);
-              applyOrbitSliderToViewer();
-            },
-            { passive: false }
-          );
+          orbitSlider.addEventListener('change', flushOrbitSliderPost);
         }
 
         function reloadViewerKeepingDocument() {
@@ -1168,8 +1109,6 @@
             const next = buildViewerUrl(doc);
             assignIframeViewerSrc(next);
             if (viewerOut) viewerOut.textContent = next;
-            const viewVis = document.getElementById('builder-mml-viewer-visible');
-            if (viewVis) viewVis.value = next;
           } catch (_) { /* ignore */ }
         }
         noUi.addEventListener('change', reloadViewerKeepingDocument);
