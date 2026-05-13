@@ -191,7 +191,7 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                     </div>
-                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Socketed wearables: put vertical lift on <code>m-character</code> (<code>y</code>), not on <code>m-model</code> — copying <code>y="-0.72"</code> onto glasses floats them off the head.</p>
+                    <p class="mml-playground-checks-hint">The cloudy sky preset uses a <strong>fixed</strong> orbit (HDR scenes break “fit to contents,” which shrinks the otter). Use this checkbox for an extra-close camera. Socketed wearables: put vertical lift on <code>m-character</code> (<code>y</code>) only — do not reuse that same <code>y</code> on <code>m-model</code> (e.g. <code>-0.7</code> / <code>-0.72</code> on glasses pushes them off the face).</p>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-copy-viewer" class="mml-playground-btn mml-playground-btn--ghost">Copy viewer link</button>
                         <button type="button" id="builder-mml-copy-doc" class="mml-playground-btn mml-playground-btn--ghost">Copy document link</button>
@@ -536,18 +536,34 @@
         }
 
         /**
-         * Common mistake: copying m-character's y="-0.72" onto a socketed m-model offsets the mesh in the wrong space
-         * (glasses float in front of the face and do not track the head cleanly).
+         * Copying m-character's vertical lift (y ≈ -0.5 … -0.85) onto a socketed m-model is a common mistake:
+         * it offsets wearables in the wrong space so glasses sit in mid-air instead of on the head.
+         * Also strip when y nearly equals the document's m-character y (duplicate paste).
          */
+        function parseMCharacterYFromHtml(html) {
+          const open = html.match(/<m-character\b[^>]*>/i);
+          if (!open) return null;
+          const ym = open[0].match(/\sy\s*=\s*"([^"]+)"/i);
+          if (!ym) return null;
+          const v = parseFloat(ym[1]);
+          return Number.isFinite(v) ? v : null;
+        }
+
         function sanitizeMmlSocketedModels(html) {
           let fixedWearableY = false;
-          const yMistake = /\s+y\s*=\s*"(?:-0*\.72(?:0+)?|-\.72)"/gi;
+          const charY = parseMCharacterYFromHtml(html);
           const next = html.replace(/<m-model([^>]*)>/gi, function (full, inner) {
             if (!/\bsocket\s*=/i.test(inner)) return full;
-            const stripped = inner.replace(yMistake, function () {
-              fixedWearableY = true;
-              return '';
-            });
+            const yAttr = inner.match(/\s+y\s*=\s*"([^"]*)"/i);
+            if (!yAttr) return full;
+            const yNum = parseFloat(yAttr[1]);
+            if (!Number.isFinite(yNum)) return full;
+            const looksLikeBodyLift =
+              (yNum <= -0.52 && yNum >= -0.88) ||
+              (charY != null && Math.abs(yNum - charY) < 0.051);
+            if (!looksLikeBodyLift) return full;
+            fixedWearableY = true;
+            const stripped = inner.replace(/\s+y\s*=\s*"[^"]*"/gi, '');
             return '<m-model' + stripped + '>';
           });
           return { html: next, fixedWearableY: fixedWearableY };
@@ -721,7 +737,7 @@
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
           let wornYFix = sanitized.fixedWearableY
-            ? 'Removed mistaken y="-0.72" from socketed m-model — that belongs on m-character only (otherwise glasses float off the head). '
+            ? 'Removed character-scale y on socketed m-model (keep y on m-character only — otherwise glasses sit in mid-air). '
             : '';
           if (sanitized.fixedWearableY && dataUrlTooLarge) {
             wornYFix +=
@@ -845,7 +861,7 @@
           iframe.removeAttribute('src');
           iframe.src = viewerUrl;
           const wornYFix = sanRun.fixedWearableY
-            ? 'Removed mistaken y="-0.72" from socketed m-model (saved in editor). '
+            ? 'Removed character-scale y on socketed m-model (saved in editor; use m-character for body lift only). '
             : '';
           const mismatch = (wornYFix + combineMmlWarnings(html)).trim();
           if (mismatch) {
