@@ -337,10 +337,12 @@ function buildHtml({ id, traits, urls, sockets, documentUrl }) {
     const vu = new URL('https://viewer.mml.io/main/v1/');
     vu.searchParams.set('url', documentUrl);
     vu.searchParams.set('environmentMap', 'cloudysky');
+    vu.searchParams.set('showEnvironmentMapField', 'true');
     vu.searchParams.set('cameraMode', 'orbit');
-    vu.searchParams.set('cameraOrbitPitch', '40');
+    vu.searchParams.set('cameraOrbitPitch', '86');
     vu.searchParams.set('cameraOrbitDistance', '2.34');
     vu.searchParams.set('cameraFov', '52');
+    vu.searchParams.set('cameraLookAt', '0,0.35,0');
     vu.searchParams.set('cameraOrbitSpeed', '0');
     vu.searchParams.set('ambientLight', '0.22');
     vu.searchParams.set('ambientLightColor', '8b95a8');
