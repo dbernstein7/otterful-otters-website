@@ -701,13 +701,32 @@
           extractAnimFromMmlApiUrl(docUrl);
           extractHatFromMmlApiUrl(docUrl);
 
-          const viewerUrlFinal = buildViewerUrl(docUrl);
+          /* viewer.mml.io cannot load blob: from our origin; use inline data URL so fixes apply to the iframe. */
+          let viewerDocUrl = docUrl;
+          let dataUrlTooLarge = false;
+          if (sanitized.fixedWearableY) {
+            if (bodyText.length <= DATA_URL_MAX) {
+              try {
+                viewerDocUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(bodyText);
+              } catch (_) {
+                viewerDocUrl = docUrl;
+              }
+            } else {
+              dataUrlTooLarge = true;
+            }
+          }
+
+          const viewerUrlFinal = buildViewerUrl(viewerDocUrl);
           setOuts(docUrl, viewerUrlFinal);
           iframe.removeAttribute('src');
           iframe.src = viewerUrlFinal;
-          const wornYFix = sanitized.fixedWearableY
+          let wornYFix = sanitized.fixedWearableY
             ? 'Removed mistaken y="-0.72" from socketed m-model — that belongs on m-character only (otherwise glasses float off the head). '
             : '';
+          if (sanitized.fixedWearableY && dataUrlTooLarge) {
+            wornYFix +=
+              'Document is too large for inline-fixed preview; the iframe still loads the remote URL. Shorten the markup or remove the stray y on the glasses m-model at the source. ';
+          }
           const mismatch = (wornYFix + combineMmlWarnings(bodyText)).trim();
           if (mismatch) setStatus(mismatch, 'warn');
           else setStatus('', false);
