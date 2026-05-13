@@ -164,8 +164,8 @@
                         <div class="mml-playground-orbit-zoom" aria-label="Camera distance">
                             <label class="mml-playground-orbit-zoom-label" for="builder-mml-orbit-zoom">Distance</label>
                             <div class="mml-playground-orbit-zoom-row">
-                                <input type="range" id="builder-mml-orbit-zoom" min="1.2" max="10" step="0.02" value="4.25" />
-                                <span id="builder-mml-orbit-zoom-val" class="mml-playground-orbit-zoom-val" aria-live="polite">4.25</span>
+                                <input type="range" id="builder-mml-orbit-zoom" min="1.2" max="10" step="0.02" value="2.34" />
+                                <span id="builder-mml-orbit-zoom-val" class="mml-playground-orbit-zoom-val" aria-live="polite">2.34</span>
                             </div>
                         </div>
                     </div>
@@ -361,11 +361,14 @@
         const VIEWER_PM_ORIGIN = 'https://viewer.mml.io';
         const ORBIT_ZOOM_MIN = 1.2;
         const ORBIT_ZOOM_MAX = 10;
+        /* Default orbit matches reference framing (cloudysky, full-body, camera toward character front). */
+        const ORBIT_DIST_DEFAULT = 2.34;
+        const ORBIT_DIST_FIT = 1.75;
 
         let orbitDebounceTimer = null;
 
         function clampOrbitDistance(n) {
-          if (typeof n !== 'number' || isNaN(n)) return fit.checked ? 3.15 : 4.25;
+          if (typeof n !== 'number' || isNaN(n)) return fit.checked ? ORBIT_DIST_FIT : ORBIT_DIST_DEFAULT;
           return Math.min(ORBIT_ZOOM_MAX, Math.max(ORBIT_ZOOM_MIN, n));
         }
 
@@ -375,7 +378,7 @@
 
         function syncOrbitSliderFromViewerUrlString(viewerUrl) {
           if (!orbitSlider) return;
-          let dist = fit.checked ? 3.15 : 4.25;
+          let dist = fit.checked ? ORBIT_DIST_FIT : ORBIT_DIST_DEFAULT;
           try {
             const u = new URL(viewerUrl, window.location.href);
             const raw = u.searchParams.get('cameraOrbitDistance');
@@ -887,11 +890,12 @@
            * Do not use cameraFitContents with environmentMap=cloudysky — the viewer often fits the whole HDR scene
            * and the otter becomes a speck. Fixed orbit + moderate FOV keeps the character readable.
            */
-          v.searchParams.set('cameraOrbitPitch', fit.checked ? '38' : '42');
+          /* Pitch in degrees: slightly lower than before for a straighter, more “front” hero shot. */
+          v.searchParams.set('cameraOrbitPitch', fit.checked ? '36' : '40');
           /* 0 = no auto-spin; non-zero makes the orbit target drift and wheel zoom feel "jumpy". */
           v.searchParams.set('cameraOrbitSpeed', '0');
-          v.searchParams.set('cameraOrbitDistance', fit.checked ? '3.15' : '4.25');
-          v.searchParams.set('cameraFov', fit.checked ? '58' : '54');
+          v.searchParams.set('cameraOrbitDistance', fit.checked ? '1.75' : '2.34');
+          v.searchParams.set('cameraFov', fit.checked ? '56' : '52');
           /*
            * Ambient is Three.js intensity (viewer default 0). We previously used 5, which blows out the subject.
            * Keep a low fill + muted color; IBL comes from environmentMap below.
