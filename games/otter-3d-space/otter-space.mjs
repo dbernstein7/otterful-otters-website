@@ -31,12 +31,134 @@ export function parseMmlHtml(html) {
   return { bodySrc, animSrc, wearables };
 }
 
-function findMainSkinned(root) {
-  let found = null;
+function findDominantSkinnedMesh(root) {
+  const list = [];
   root.traverse((o) => {
-    if (o.isSkinnedMesh && !found) found = o;
+    if (o.isSkinnedMesh) list.push(o);
   });
-  return found;
+  if (!list.length) return null;
+  const score = (m) => {
+    const n = m.skeleton?.bones?.length ?? 0;
+    const box = new THREE.Box3().setFromObject(m);
+    const vol = box.isEmpty() ? 0 : box.getSize(new THREE.Vector3()).length();
+    return n * 1000 + vol;
+  };
+  list.sort((a, b) => score(b) - score(a));
+  return list[0];
+}
+
+function socketNameVariants(socket) {
+  const s = String(socket || '').trim();
+  const out = new Set([s]);
+  const noColon = s.replace(/mixamorig:/gi, 'mixamorig');
+  if (noColon !== s) out.add(noColon);
+  const m = s.match(/^mixamorig:([A-Za-z0-9_]+)$/i);
+  if (m) out.add(`mixamorig${m[1]}`);
+  const m2 = s.match(/^(mixamorig)([A-Z][a-zA-Z0-9_]+)$/);
+  if (m2) out.add(`${m2[1]}:${m2[2]}`);
+  const tail = s.replace(/^mixamorig:?/i, '');
+  if (tail && tail !== s) {
+    out.add(tail);
+    out.add(`mixamorig${tail}`);
+    out.add(`mixamorig:${tail}`);
+    out.add(`mixamorig:${tail.charAt(0).toUpperCase()}${tail.slice(1)}`);
+  }
+  const tl = tail.toLowerCase();
+  if (tl === 'head' || tl.endsWith('head')) {
+    ['Head', 'mixamorigHead', 'mixamorig:Head', 'mixamorighead'].forEach((x) => out.add(x));
+  }
+  if (tl === 'spine2' || tl.endsWith('spine2')) {
+    ['Spine2', 'mixamorigSpine2', 'mixamorig:Spine2', 'mixamorigspine2'].forEach((x) => out.add(x));
+  }
+  return [...out];
+}
+
+function boneMatchesVariant(boneName, variant) {
+  if (boneName === variant) return true;
+  if (boneName.toLowerCase() === variant.toLowerCase()) return true;
+  const bn = boneName.replace(/:/g, '');
+  const vn = variant.replace(/:/g, '');
+  if (bn.toLowerCase() === vn.toLowerCase()) return true;
+  return false;
+}
+
+function findBoneForSocket(bodyRoot, socketName) {
+  const variants = socketNameVariants(socketName);
+  const meshes = [];
+  bodyRoot.traverse((o) => {
+    if (o.isSkinnedMesh) meshes.push(o);
+  });
+  meshes.sort((a, b) => (b.skeleton?.bones?.length ?? 0) - (a.skeleton?.bones?.length ?? 0));
+  for (const sm of meshes) {
+    const bones = sm.skeleton?.bones;
+    if (!bones) continue;
+    for (const variant of variants) {
+      const bone = bones.find((b) => boneMatchesVariant(b.name, variant));
+      if (bone) return bone;
+    }
+  }
+  return null;
+}
+
+function prepareWearableRoot(obj) {
+  obj.position.set(0, 0, 0);
+  obj.rotation.set(0, 0, 0);
+  obj.scale.set(1, 1, 1);
+  obj.updateMatrixWorld(true);
+}
+
+function collectRigBoneNames(root) {
+  const names = new Set();
+  root.traverse((o) => {
+    if (o.isSkinnedMesh && o.skeleton?.bones) {
+      for (const b of o.skeleton.bones) names.add(b.name);
+    }
+  });
+  return names;
+}
+
+function clipTrackMatchesSkeleton(clip, root) {
+  const names = collectRigBoneNames(root);
+  let hits = 0;
+  for (const tr of clip.tracks) {
+    const dot = tr.name.indexOf('.');
+    const prefix = dot >= 0 ? tr.name.slice(0, dot) : tr.name;
+    if (names.has(prefix)) hits++;
+  }
+  return hits;
+}
+
+function pickBestClipForRig(clips, root) {
+  if (!clips.length) return null;
+  let best = null;
+  let bestScore = -1;
+  for (const c of clips) {
+    const s = clipTrackMatchesSkeleton(c, root);
+    if (s > bestScore) {
+      bestScore = s;
+      best = c;
+    }
+  }
+  if (bestScore > 0) return best;
+  return clips[0];
+}
+
+function mountBodyPrimaryAnimation(mixer, modelRoot, bodyAnimations, externalAnimGltf) {
+  mixer.stopAllAction();
+  let clip = null;
+  if (externalAnimGltf?.animations?.length) {
+    const picked = pickBestClipForRig(externalAnimGltf.animations, modelRoot);
+    if (picked && clipTrackMatchesSkeleton(picked, modelRoot) > 0) clip = picked;
+  }
+  if (!clip && bodyAnimations.length) {
+    clip = pickBestClipForRig(bodyAnimations, modelRoot);
+  }
+  if (clip) {
+    const act = mixer.clipAction(clip);
+    act.reset().setEffectiveWeight(1).fadeIn(0.15).play();
+    return act;
+  }
+  return null;
 }
 
 function fitAndGround(root, targetHeight) {
@@ -64,10 +186,9 @@ function loadGltf(url) {
   });
 }
 
-function attachToBone(rootSkinned, boneName, object3d) {
-  const skinned = findMainSkinned(rootSkinned);
-  if (!skinned || !skinned.skeleton) return false;
-  const bone = skinned.skeleton.bones.find((b) => b.name === boneName);
+function attachToBone(bodyRoot, socketName, object3d) {
+  prepareWearableRoot(object3d);
+  const bone = findBoneForSocket(bodyRoot, socketName);
   if (!bone) return false;
   bone.add(object3d);
   return true;
@@ -241,18 +362,23 @@ export function mountOtterSpace(opts) {
     }
 
     mixer = new THREE.AnimationMixer(model);
-    const bodyAnims = bodyGltf.animations || [];
-    if (bodyAnims.length) {
-      idleAction = mixer.clipAction(bodyAnims[0]);
-      idleAction.play();
+    let externalAnimGltf = null;
+    if (parsed.animSrc) {
+      try {
+        externalAnimGltf = await loadGltf(parsed.animSrc);
+      } catch (_) {
+        externalAnimGltf = null;
+      }
     }
+    idleAction = mountBodyPrimaryAnimation(mixer, model, bodyGltf.animations || [], externalAnimGltf);
 
     async function tryWalkClip(url) {
       if (!url || !mixer) return;
       try {
         const ag = await loadGltf(url);
-        if (ag.animations && ag.animations[0]) {
-          walkAction = mixer.clipAction(ag.animations[0]);
+        const clip = pickBestClipForRig(ag.animations || [], model);
+        if (clip) {
+          walkAction = mixer.clipAction(clip);
           walkAction.setEffectiveWeight(0);
           walkAction.play();
         }
@@ -262,8 +388,7 @@ export function mountOtterSpace(opts) {
     }
 
     const walkField = String(getWalkUrl() || '').trim();
-    if (parsed.animSrc) await tryWalkClip(parsed.animSrc);
-    else if (walkField) await tryWalkClip(new URL(walkField, window.location.origin).href);
+    if (walkField) await tryWalkClip(new URL(walkField, window.location.origin).href);
 
     const resize = () => {
       if (!container || !renderer || !camera) return;
@@ -284,7 +409,7 @@ export function mountOtterSpace(opts) {
     canvas.addEventListener('click', onCanvasClick);
 
     setHud('Click the scene to grab the mouse and run around');
-    onStatus('Ready — WASD. Walk clip: MML anim, else the walk URL field.');
+    onStatus('Ready — WASD. Idle from MML body or anim= (one clip). Walk from the walk URL field only.');
 
     function tick() {
       if (!running) return;

@@ -3,7 +3,7 @@ import { Clone, Grid, Html } from '@react-three/drei';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { ParsedMml } from './parseMml';
-import { attachToBone, fitAndGround, loadGltf } from './avatarUtils';
+import { attachToBone, fitAndGround, loadGltf, mountBodyPrimaryAnimation } from './avatarUtils';
 
 function ChaseCamera({ target }: { target: React.RefObject<THREE.Group> }) {
   const { camera } = useThree();
@@ -137,22 +137,16 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
         }
 
         mixer = new THREE.AnimationMixer(model);
-        const clips = bodyGltf.animations || [];
-        if (clips.length) {
-          mixer.clipAction(clips[0]).play();
-        }
-
+        let externalAnim: { animations: THREE.AnimationClip[] } | null = null;
         if (parsed.animSrc) {
           try {
-            const ag = await loadGltf(parsed.animSrc);
-            if (cancelled) return;
-            if (ag.animations?.[0]) {
-              mixer.clipAction(ag.animations[0]).play();
-            }
+            externalAnim = await loadGltf(parsed.animSrc);
           } catch {
-            /* anim glb may not match rig */
+            externalAnim = null;
           }
         }
+        if (cancelled) return;
+        mountBodyPrimaryAnimation(mixer, model, bodyGltf.animations || [], externalAnim);
 
         if (!cancelled) onBuiltRef.current(built, mixer);
       } catch {
