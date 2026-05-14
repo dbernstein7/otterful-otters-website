@@ -33,7 +33,6 @@
         <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
         <a href="nifty-island-gallery.html" class="nav-pill">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-pill active" aria-current="page">3D Builder</a>
-        <a href="/hub/" class="nav-pill">Hub</a>
         <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
@@ -48,7 +47,6 @@
         <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
         <a href="nifty-island-gallery.html" class="nav-drawer-pill">Nifty Island Gallery</a>
         <a href="3d-builder.html" class="nav-drawer-pill active" aria-current="page">3D Builder</a>
-        <a href="/hub/" class="nav-drawer-pill">Hub</a>
         <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
         <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
         <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
@@ -77,7 +75,6 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
-            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">Run around</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -216,49 +213,6 @@
             <pre id="builder-mml-doc-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
             <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
-
-        <div id="builder-panel-experience" class="builder-page-panel mml-experience-panel" role="tabpanel" aria-labelledby="builder-tab-experience" hidden>
-            <div class="mml-experience-intro">
-                <p class="mml-experience-intro-title">Run around in Three.js</p>
-                <p class="mml-experience-intro-body">
-                    Paste any <strong>MML document URL</strong> (your <code class="mml-experience-code">https://…/mml/&lt;#&gt;.mml</code> page or <code class="mml-experience-code">/api/mml?id=</code>).
-                    We <strong>fetch that HTML</strong>, read <code class="mml-experience-code">&lt;m-character&gt;</code> + <code class="mml-experience-code">&lt;m-model&gt;</code>, load the GLBs here, and you move with <strong>WASD</strong> (click the scene first for mouse look).
-                    Movement clip: the document’s <code class="mml-experience-code">anim=</code> on <code class="mml-experience-code">m-character</code> if present, otherwise the <strong>Walk clip URL</strong> (default Mixamo walk on this site).
-                </p>
-                <p class="mml-experience-intro-body">
-                    This tab is a <strong>solo</strong> playground in the browser (no sync with other players). For <strong>multiplayer</strong>, you run your own world server on the public internet (HTTPS)—same as any game backend, not a “localhost-only” setup.
-                    The repo’s <a href="otterful-mml-world/README.md">otterful-mml-world/</a> is an optional starting point (MML’s 3d-web-experience stack) you can build and deploy to <em>your</em> host; wire avatars there with your live <code class="mml-experience-code">/mml/&lt;#&gt;.mml</code> URLs in world config.
-                </p>
-            </div>
-            <div class="mml-experience-toolbar mml-experience-toolbar--stack">
-                <div class="mml-experience-toolbar-row">
-                    <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>
-                    <div class="mml-experience-nft-row">
-                        <span class="mml-experience-hash" aria-hidden="true">#</span>
-                        <input type="text" id="builder-experience-nft-input" class="mml-experience-nft-input" maxlength="4" placeholder="e.g. 14" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" aria-label="Otter number 1 to 2222" title="Digits only">
-                    </div>
-                    <button type="button" id="builder-experience-apply-num" class="mml-playground-btn">Fill URL from #</button>
-                </div>
-                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--full">
-                    <label class="mml-experience-label" for="builder-experience-doc-url">MML document URL</label>
-                    <input type="text" id="builder-experience-doc-url" class="mml-experience-url-input mml-experience-url-input--wide" placeholder="https://…/mml/14.mml" autocomplete="off" spellcheck="false" aria-label="MML document URL to fetch">
-                </div>
-                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--full">
-                    <label class="mml-experience-label" for="builder-experience-walk-url">Walk clip URL (optional)</label>
-                    <input type="text" id="builder-experience-walk-url" class="mml-experience-url-input mml-experience-url-input--wide" placeholder="/mixamo/walk.glb or full https://…glb" autocomplete="off" spellcheck="false" aria-label="Mixamo or other walk animation GLB">
-                </div>
-                <div class="mml-experience-actions">
-                    <button type="button" id="builder-experience-run" class="mml-playground-btn mml-playground-btn--primary">Load / reload 3D space</button>
-                    <button type="button" id="builder-experience-open-viewer" class="mml-playground-btn">Open in MML viewer tab</button>
-                    <button type="button" id="builder-experience-copy-mml" class="mml-playground-btn mml-playground-btn--ghost">Copy MML URL</button>
-                </div>
-            </div>
-            <p id="builder-experience-status" class="mml-playground-status" role="status" aria-live="polite"></p>
-            <div id="builder-experience-host" class="mml-experience-host">
-                <canvas id="builder-experience-canvas" class="mml-experience-canvas"></canvas>
-                <div id="builder-experience-hud" class="mml-experience-hud" aria-live="polite">Click the scene to grab the mouse</div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -337,15 +291,12 @@
         const pageTabs = Array.from(document.querySelectorAll('.builder-page-tab'));
         const panelOtter = document.getElementById('builder-panel-otter');
         const panelMml = document.getElementById('builder-panel-mml');
-        const panelExperience = document.getElementById('builder-panel-experience');
-        if (pageTabs.length === 0 || !panelOtter || !panelMml || !panelExperience) return;
+        if (pageTabs.length === 0 || !panelOtter || !panelMml) return;
 
         function setBuilderPage(which) {
-          const mode = which === 'mml' || which === 'experience' ? which : 'otter';
+          const mode = which === 'mml' ? 'mml' : 'otter';
           const isOtter = mode === 'otter';
           const isMml = mode === 'mml';
-          const isExperience = mode === 'experience';
-          const wasExpVisible = !panelExperience.hasAttribute('hidden');
           pageTabs.forEach((btn) => {
             const on = btn.dataset.builderPage === mode;
             btn.classList.toggle('is-active', on);
@@ -355,8 +306,6 @@
           panelOtter.toggleAttribute('hidden', !isOtter);
           panelMml.classList.toggle('is-active', isMml);
           panelMml.toggleAttribute('hidden', !isMml);
-          panelExperience.classList.toggle('is-active', isExperience);
-          panelExperience.toggleAttribute('hidden', !isExperience);
           if (isMml) {
             const o = document.getElementById('builder-nft-input');
             const m = document.getElementById('builder-mml-nft-input');
@@ -364,33 +313,16 @@
               m.value = o.value.trim();
             }
           }
-          if (isExperience) {
-            const o = document.getElementById('builder-nft-input');
-            const m = document.getElementById('builder-mml-nft-input');
-            const e = document.getElementById('builder-experience-nft-input');
-            if (e) {
-              if (!String(e.value || '').trim()) {
-                if (o && String(o.value || '').trim()) e.value = String(o.value || '').trim();
-                else if (m && String(m.value || '').trim()) e.value = String(m.value || '').trim();
-              }
-              if (!String(e.value || '').trim()) e.value = '1';
-            }
-            window.dispatchEvent(new CustomEvent('otterful-experience-panel-open'));
-          }
           try {
             let nextHash = '';
             if (isMml) nextHash = '#mml';
-            else if (isExperience) nextHash = '#experience';
             const cur = window.location.hash || '';
             if (nextHash && cur !== nextHash) {
               window.history.replaceState(null, '', '3d-builder.html' + nextHash);
-            } else if (!nextHash && (cur === '#mml' || cur === '#experience')) {
+            } else if (!nextHash && cur === '#mml') {
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
-          if (wasExpVisible && !isExperience) {
-            window.dispatchEvent(new CustomEvent('otterful-experience-panel-close'));
-          }
           if (isMml) window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
         }
 
@@ -404,7 +336,6 @@
         function syncFromHash() {
           const h = window.location.hash;
           if (h === '#mml') setBuilderPage('mml');
-          else if (h === '#experience') setBuilderPage('experience');
           else setBuilderPage('otter');
         }
         window.addEventListener('hashchange', syncFromHash);
@@ -412,224 +343,6 @@
         try {
           if (new URLSearchParams(window.location.search).get('url')) setBuilderPage('mml');
         } catch (_) { /* ignore */ }
-      })();
-    </script>
-
-    <script>
-      (function () {
-        var LS_MML = 'otterful-experience-mml-doc-url';
-        var LS_WALK = 'otterful-experience-walk-url';
-        var DEFAULT_WALK = '/mixamo/walk.glb';
-        var VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
-
-        var nftInput = document.getElementById('builder-experience-nft-input');
-        var docUrlInput = document.getElementById('builder-experience-doc-url');
-        var walkUrlInput = document.getElementById('builder-experience-walk-url');
-        var statusEl = document.getElementById('builder-experience-status');
-        var container = document.getElementById('builder-experience-host');
-        var canvas = document.getElementById('builder-experience-canvas');
-        var hud = document.getElementById('builder-experience-hud');
-        var btnApply = document.getElementById('builder-experience-apply-num');
-        var btnRun = document.getElementById('builder-experience-run');
-        var btnOpen = document.getElementById('builder-experience-open-viewer');
-        var btnCopy = document.getElementById('builder-experience-copy-mml');
-
-        if (!nftInput || !docUrlInput || !walkUrlInput || !container || !canvas || !hud || !btnRun || !btnOpen || !btnCopy) return;
-
-        var mount = null;
-        var spaceModulePromise = null;
-
-        function setStatus(msg) {
-          if (statusEl) statusEl.textContent = msg || '';
-        }
-
-        function siteOrigin() {
-          try {
-            return window.location.origin.replace(/\/$/, '');
-          } catch (_) {
-            return '';
-          }
-        }
-
-        function canonicalMmlUrlForToken(numStr) {
-          var t = String(numStr || '').trim();
-          if (!/^\d{1,4}$/.test(t)) return '';
-          var n = parseInt(t, 10);
-          if (isNaN(n) || n < 1 || n > 2222) return '';
-          return siteOrigin() + '/mml/' + n + '.mml';
-        }
-
-        function currentDocUrl() {
-          var raw = String(docUrlInput.value || '').trim();
-          if (raw) return raw;
-          return canonicalMmlUrlForToken(nftInput.value);
-        }
-
-        function buildOtterViewerUrl(docUrl) {
-          var v = new URL(VIEWER_BASE);
-          v.searchParams.set('url', docUrl.trim());
-          v.searchParams.set('cameraMode', 'orbit');
-          v.searchParams.set('cameraOrbitPitch', '88');
-          v.searchParams.set('cameraOrbitSpeed', '0');
-          v.searchParams.set('cameraOrbitDistance', '2.34');
-          v.searchParams.set('cameraFov', '56');
-          v.searchParams.set('cameraLookAt', '0,0.02,0');
-          v.searchParams.set('ambientLight', '0.22');
-          v.searchParams.set('ambientLightColor', '8b95a8');
-          v.searchParams.set('environmentMap', 'cloudysky');
-          v.searchParams.set('showEnvironmentMapField', 'true');
-          v.searchParams.set('noUI', 'true');
-          v.searchParams.set('_mmlv', String(Date.now()));
-          return v.toString();
-        }
-
-        try {
-          var savedM = localStorage.getItem(LS_MML);
-          if (savedM && String(savedM).trim()) docUrlInput.value = String(savedM).trim();
-        } catch (_) { /* ignore */ }
-        try {
-          var savedW = localStorage.getItem(LS_WALK);
-          if (savedW != null && String(savedW).trim()) walkUrlInput.value = String(savedW).trim();
-          else walkUrlInput.value = DEFAULT_WALK;
-        } catch (_) {
-          walkUrlInput.value = DEFAULT_WALK;
-        }
-
-        function persistInputs() {
-          try {
-            localStorage.setItem(LS_MML, String(docUrlInput.value || '').trim());
-            localStorage.setItem(LS_WALK, String(walkUrlInput.value || '').trim());
-          } catch (_) { /* ignore */ }
-        }
-
-        function loadSpaceModule() {
-          if (!spaceModulePromise) {
-            var href = new URL('./games/otter-3d-space/otter-space.mjs', window.location.href).href;
-            spaceModulePromise = import(href);
-          }
-          return spaceModulePromise;
-        }
-
-        function ensureDisposed() {
-          if (mount && typeof mount.dispose === 'function') {
-            try {
-              mount.dispose();
-            } catch (_) { /* ignore */ }
-          }
-          mount = null;
-        }
-
-        function startSpace() {
-          persistInputs();
-          var mmlUrl = String(docUrlInput.value || '').trim();
-          if (!mmlUrl) {
-            setStatus('Set an MML document URL, or use “Fill URL from #”.');
-            return Promise.resolve();
-          }
-          ensureDisposed();
-          return loadSpaceModule()
-            .then(function (mod) {
-              mount = mod.mountOtterSpace({
-                container: container,
-                canvas: canvas,
-                hud: hud,
-                getMmlUrl: function () {
-                  return String(docUrlInput.value || '').trim();
-                },
-                getWalkUrl: function () {
-                  var w = String(walkUrlInput.value || '').trim();
-                  return w || DEFAULT_WALK;
-                },
-                onStatus: setStatus,
-              });
-              return mount.start();
-            })
-            .catch(function (e) {
-              var msg = e && e.message ? e.message : String(e);
-              setStatus(msg);
-              ensureDisposed();
-            });
-        }
-
-        if (btnApply) {
-          btnApply.addEventListener('click', function () {
-            var u = canonicalMmlUrlForToken(nftInput.value);
-            if (!u) {
-              setStatus('Enter otter # 1–2222 (digits only).');
-              return;
-            }
-            docUrlInput.value = u;
-            persistInputs();
-            setStatus('Filled MML URL from #.');
-          });
-        }
-
-        btnRun.addEventListener('click', function () {
-          startSpace();
-        });
-
-        btnOpen.addEventListener('click', function () {
-          var doc = currentDocUrl();
-          if (!doc) {
-            setStatus('Enter an MML document URL or otter #.');
-            return;
-          }
-          window.open(buildOtterViewerUrl(doc), '_blank', 'noopener,noreferrer');
-          setStatus('Opened MML viewer in a new tab.');
-        });
-
-        btnCopy.addEventListener('click', function () {
-          var u = currentDocUrl();
-          if (!u) {
-            setStatus('Enter an MML document URL or otter #.');
-            return;
-          }
-          function run(ok) {
-            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL in the field.');
-          }
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(u).then(function () { run(true); }).catch(function () { run(false); });
-          } else {
-            try {
-              var ta = document.createElement('textarea');
-              ta.value = u;
-              ta.setAttribute('readonly', '');
-              ta.style.position = 'fixed';
-              ta.style.left = '-9999px';
-              document.body.appendChild(ta);
-              ta.select();
-              run(document.execCommand('copy'));
-              document.body.removeChild(ta);
-            } catch (_) {
-              run(false);
-            }
-          }
-        });
-
-        window.addEventListener('otterful-experience-panel-open', function () {
-          if (!String(docUrlInput.value || '').trim()) {
-            var u = canonicalMmlUrlForToken(nftInput.value);
-            if (u) docUrlInput.value = u;
-          }
-          startSpace();
-        });
-
-        window.addEventListener('otterful-experience-panel-close', function () {
-          ensureDisposed();
-        });
-
-        (function initialIfExperienceTab() {
-          try {
-            var p = document.getElementById('builder-panel-experience');
-            if (p && !p.hasAttribute('hidden')) {
-              if (!String(docUrlInput.value || '').trim()) {
-                var u2 = canonicalMmlUrlForToken(nftInput.value);
-                if (u2) docUrlInput.value = u2;
-              }
-              startSpace();
-            }
-          } catch (_) { /* ignore */ }
-        })();
       })();
     </script>
 
