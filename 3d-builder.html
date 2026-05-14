@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
+    <!-- GLTFLoader imports bare "three"; map it so the browser can resolve the module. -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+    </script>
     <title>3D Builder • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -216,7 +224,8 @@
                     Movement clip: the document’s <code class="mml-experience-code">anim=</code> on <code class="mml-experience-code">m-character</code> if present, otherwise the <strong>Walk clip URL</strong> (default Mixamo walk on this site).
                 </p>
                 <p class="mml-experience-intro-body">
-                    <strong>Real multiplayer</strong> (other people in the same world) still needs the separate Node app in <a href="otterful-mml-world/README.md">otterful-mml-world/</a>.
+                    This tab is a <strong>solo</strong> playground in the browser (no sync with other players). For <strong>multiplayer</strong>, you run your own world server on the public internet (HTTPS)—same as any game backend, not a “localhost-only” setup.
+                    The repo’s <a href="otterful-mml-world/README.md">otterful-mml-world/</a> is an optional starting point (MML’s 3d-web-experience stack) you can build and deploy to <em>your</em> host; wire avatars there with your live <code class="mml-experience-code">/mml/&lt;#&gt;.mml</code> URLs in world config.
                 </p>
             </div>
             <div class="mml-experience-toolbar mml-experience-toolbar--stack">
