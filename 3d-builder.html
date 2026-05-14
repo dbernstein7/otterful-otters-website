@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https:; worker-src 'self' blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
     <title>3D Builder • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,6 +67,7 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
+            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">3D experience</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -205,6 +206,56 @@
             <pre id="builder-mml-doc-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
             <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
+
+        <div id="builder-panel-experience" class="builder-page-panel mml-experience-panel" role="tabpanel" aria-labelledby="builder-tab-experience" hidden>
+            <div class="mml-experience-intro">
+                <p class="mml-experience-intro-title">Multi-user MML world</p>
+                <p class="mml-experience-intro-body">
+                    This tab is for apps built with
+                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>
+                    (browser client + Node server, MML composition and avatars). Run the repo’s example locally with
+                    <code class="mml-experience-code">npm install</code> then <code class="mml-experience-code">npm run iterate</code>
+                    and open the <strong>multi-user</strong> example (see that README; default port is often 8080), or deploy your fork and paste its <strong>HTTPS</strong> origin below.
+                </p>
+                <p class="mml-experience-intro-note">
+                    Browsers block embedding <code class="mml-experience-code">http://</code> pages inside this site when it is served over HTTPS. Use <strong>Open in new tab</strong> for local <code class="mml-experience-code">http://127.0.0.1:8080</code>, or deploy the experience behind HTTPS to use <strong>Load embedded</strong>.
+                </p>
+            </div>
+            <div class="mml-experience-toolbar">
+                <div class="mml-experience-toolbar-row">
+                    <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>
+                    <div class="mml-experience-nft-row">
+                        <span class="mml-experience-hash" aria-hidden="true">#</span>
+                        <input type="number" id="builder-experience-nft-input" class="mml-experience-nft-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number for MML document link">
+                    </div>
+                </div>
+                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--grow">
+                    <label class="mml-experience-label" for="builder-experience-url-input">Experience URL</label>
+                    <input type="url" id="builder-experience-url-input" class="mml-experience-url-input" placeholder="https://… or http://127.0.0.1:8080" autocomplete="off" spellcheck="false" aria-describedby="builder-experience-url-hint">
+                </div>
+                <p id="builder-experience-url-hint" class="mml-experience-hint">Saved in this browser only.</p>
+                <div class="mml-experience-actions">
+                    <button type="button" id="builder-experience-open-tab" class="mml-playground-btn mml-playground-btn--primary">Open in new tab</button>
+                    <button type="button" id="builder-experience-embed" class="mml-playground-btn">Load embedded</button>
+                    <button type="button" id="builder-experience-copy-mml" class="mml-playground-btn mml-playground-btn--ghost">Copy MML link</button>
+                </div>
+            </div>
+            <p id="builder-experience-mml-line" class="mml-experience-mml-line" aria-live="polite">
+                <span class="mml-experience-mml-label">Canonical document for this #:</span>
+                <code id="builder-experience-mml-url" class="mml-experience-mml-code">—</code>
+            </p>
+            <p id="builder-experience-status" class="mml-playground-status" role="status" aria-live="polite"></p>
+            <div class="mml-experience-frame-wrap">
+                <iframe
+                    id="builder-experience-iframe"
+                    class="mml-experience-iframe"
+                    title="MML 3D web experience (mml-io)"
+                    loading="lazy"
+                    referrerpolicy="no-referrer"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                ></iframe>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -283,19 +334,25 @@
         const pageTabs = Array.from(document.querySelectorAll('.builder-page-tab'));
         const panelOtter = document.getElementById('builder-panel-otter');
         const panelMml = document.getElementById('builder-panel-mml');
-        if (pageTabs.length === 0 || !panelOtter || !panelMml) return;
+        const panelExperience = document.getElementById('builder-panel-experience');
+        if (pageTabs.length === 0 || !panelOtter || !panelMml || !panelExperience) return;
 
         function setBuilderPage(which) {
-          const isMml = which === 'mml';
+          const mode = which === 'mml' || which === 'experience' ? which : 'otter';
+          const isOtter = mode === 'otter';
+          const isMml = mode === 'mml';
+          const isExperience = mode === 'experience';
           pageTabs.forEach((btn) => {
-            const on = btn.dataset.builderPage === which;
+            const on = btn.dataset.builderPage === mode;
             btn.classList.toggle('is-active', on);
             btn.setAttribute('aria-selected', on ? 'true' : 'false');
           });
-          panelOtter.classList.toggle('is-active', !isMml);
-          panelOtter.toggleAttribute('hidden', isMml);
+          panelOtter.classList.toggle('is-active', isOtter);
+          panelOtter.toggleAttribute('hidden', !isOtter);
           panelMml.classList.toggle('is-active', isMml);
           panelMml.toggleAttribute('hidden', !isMml);
+          panelExperience.classList.toggle('is-active', isExperience);
+          panelExperience.toggleAttribute('hidden', !isExperience);
           if (isMml) {
             const o = document.getElementById('builder-nft-input');
             const m = document.getElementById('builder-mml-nft-input');
@@ -303,10 +360,22 @@
               m.value = o.value.trim();
             }
           }
+          if (isExperience) {
+            const o = document.getElementById('builder-nft-input');
+            const e = document.getElementById('builder-experience-nft-input');
+            if (o && e && !String(e.value || '').trim() && String(o.value || '').trim()) {
+              e.value = o.value.trim();
+            }
+            window.dispatchEvent(new CustomEvent('otterful-experience-panel-open'));
+          }
           try {
-            if (isMml) {
-              if (window.location.hash !== '#mml') window.history.replaceState(null, '', '3d-builder.html#mml');
-            } else if (window.location.hash === '#mml') {
+            let nextHash = '';
+            if (isMml) nextHash = '#mml';
+            else if (isExperience) nextHash = '#experience';
+            const cur = window.location.hash || '';
+            if (nextHash && cur !== nextHash) {
+              window.history.replaceState(null, '', '3d-builder.html' + nextHash);
+            } else if (!nextHash && (cur === '#mml' || cur === '#experience')) {
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
@@ -321,7 +390,9 @@
         });
 
         function syncFromHash() {
-          if (window.location.hash === '#mml') setBuilderPage('mml');
+          const h = window.location.hash;
+          if (h === '#mml') setBuilderPage('mml');
+          else if (h === '#experience') setBuilderPage('experience');
           else setBuilderPage('otter');
         }
         window.addEventListener('hashchange', syncFromHash);
@@ -329,6 +400,136 @@
         try {
           if (new URLSearchParams(window.location.search).get('url')) setBuilderPage('mml');
         } catch (_) { /* ignore */ }
+      })();
+    </script>
+
+    <script>
+      (function () {
+        const LS_URL = 'otterful-mml-experience-url';
+        const urlInput = document.getElementById('builder-experience-url-input');
+        const nftInput = document.getElementById('builder-experience-nft-input');
+        const mmlCode = document.getElementById('builder-experience-mml-url');
+        const statusEl = document.getElementById('builder-experience-status');
+        const iframe = document.getElementById('builder-experience-iframe');
+        const btnOpen = document.getElementById('builder-experience-open-tab');
+        const btnEmbed = document.getElementById('builder-experience-embed');
+        const btnCopy = document.getElementById('builder-experience-copy-mml');
+        if (!urlInput || !nftInput || !mmlCode || !iframe || !btnOpen || !btnEmbed || !btnCopy) return;
+
+        function setStatus(msg) {
+          if (statusEl) statusEl.textContent = msg || '';
+        }
+
+        function siteOrigin() {
+          try {
+            return window.location.origin.replace(/\/$/, '');
+          } catch (_) {
+            return '';
+          }
+        }
+
+        function canonicalMmlUrlForToken(numStr) {
+          const n = parseInt(String(numStr || '').trim(), 10);
+          if (isNaN(n) || n < 1 || n > 2222) return '';
+          return `${siteOrigin()}/mml/${n}.mml`;
+        }
+
+        function refreshMmlLine() {
+          const u = canonicalMmlUrlForToken(nftInput.value);
+          mmlCode.textContent = u || '—';
+        }
+
+        try {
+          const saved = localStorage.getItem(LS_URL);
+          if (saved) urlInput.value = saved;
+        } catch (_) { /* ignore */ }
+
+        urlInput.addEventListener('change', function () {
+          try {
+            localStorage.setItem(LS_URL, String(urlInput.value || '').trim());
+          } catch (_) { /* ignore */ }
+        });
+
+        nftInput.addEventListener('input', refreshMmlLine);
+        nftInput.addEventListener('change', refreshMmlLine);
+        window.addEventListener('otterful-experience-panel-open', refreshMmlLine);
+        refreshMmlLine();
+
+        function normalizeExperienceUrl(raw) {
+          const s = String(raw || '').trim();
+          if (!s) return null;
+          try {
+            const u = new URL(s, window.location.href);
+            if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+            let out = u.toString();
+            if (out.endsWith('/')) out = out.slice(0, -1);
+            return out;
+          } catch (_) {
+            return null;
+          }
+        }
+
+        function parentIsHttps() {
+          return window.location.protocol === 'https:';
+        }
+
+        btnOpen.addEventListener('click', function () {
+          const exp = normalizeExperienceUrl(urlInput.value);
+          if (!exp) {
+            setStatus('Enter a valid experience URL (http or https).');
+            return;
+          }
+          try {
+            localStorage.setItem(LS_URL, exp);
+          } catch (_) { /* ignore */ }
+          window.open(exp, '_blank', 'noopener,noreferrer');
+          setStatus('Opened in a new tab.');
+        });
+
+        btnEmbed.addEventListener('click', function () {
+          const exp = normalizeExperienceUrl(urlInput.value);
+          if (!exp) {
+            setStatus('Enter a valid experience URL.');
+            return;
+          }
+          if (parentIsHttps() && exp.indexOf('http://') === 0) {
+            setStatus('This page is HTTPS; the browser will not embed an http:// experience. Open in new tab instead, or use an https:// deployment.');
+            return;
+          }
+          try {
+            localStorage.setItem(LS_URL, exp);
+          } catch (_) { /* ignore */ }
+          iframe.src = exp;
+          setStatus('Loaded in the frame below.');
+        });
+
+        btnCopy.addEventListener('click', function () {
+          const u = canonicalMmlUrlForToken(nftInput.value);
+          if (!u) {
+            setStatus('Enter an otter # between 1 and 2222.');
+            return;
+          }
+          const run = function (ok) {
+            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL in the line above.');
+          };
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(u).then(() => run(true)).catch(() => run(false));
+          } else {
+            try {
+              const ta = document.createElement('textarea');
+              ta.value = u;
+              ta.setAttribute('readonly', '');
+              ta.style.position = 'fixed';
+              ta.style.left = '-9999px';
+              document.body.appendChild(ta);
+              ta.select();
+              run(document.execCommand('copy'));
+              document.body.removeChild(ta);
+            } catch (_) {
+              run(false);
+            }
+          }
+        });
       })();
     </script>
 
