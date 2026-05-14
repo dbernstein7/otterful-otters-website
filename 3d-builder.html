@@ -227,7 +227,7 @@
                     <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>
                     <div class="mml-experience-nft-row">
                         <span class="mml-experience-hash" aria-hidden="true">#</span>
-                        <input type="number" id="builder-experience-nft-input" class="mml-experience-nft-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number for MML document">
+                        <input type="text" id="builder-experience-nft-input" class="mml-experience-nft-input" maxlength="4" placeholder="e.g. 14" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" aria-label="Otter number 1 to 2222" title="One number only, digits 1–2222">
                     </div>
                 </div>
                 <div class="mml-experience-toolbar-row mml-experience-toolbar-row--checks">
@@ -249,7 +249,7 @@
                     id="builder-experience-iframe"
                     class="mml-experience-iframe"
                     title="Your otter (MML viewer)"
-                    loading="lazy"
+                    loading="eager"
                     referrerpolicy="no-referrer"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 ></iframe>
@@ -372,9 +372,14 @@
           }
           if (isExperience) {
             const o = document.getElementById('builder-nft-input');
+            const m = document.getElementById('builder-mml-nft-input');
             const e = document.getElementById('builder-experience-nft-input');
-            if (o && e && !String(e.value || '').trim() && String(o.value || '').trim()) {
-              e.value = o.value.trim();
+            if (e) {
+              if (!String(e.value || '').trim()) {
+                if (o && String(o.value || '').trim()) e.value = String(o.value || '').trim();
+                else if (m && String(m.value || '').trim()) e.value = String(m.value || '').trim();
+              }
+              if (!String(e.value || '').trim()) e.value = '1';
             }
             window.dispatchEvent(new CustomEvent('otterful-experience-panel-open'));
           }
@@ -444,7 +449,9 @@
         }
 
         function canonicalMmlUrlForToken(numStr) {
-          const n = parseInt(String(numStr || '').trim(), 10);
+          const t = String(numStr || '').trim();
+          if (!/^\d{1,4}$/.test(t)) return '';
+          const n = parseInt(t, 10);
           if (isNaN(n) || n < 1 || n > 2222) return '';
           return `${siteOrigin()}/mml/${n}.mml`;
         }
@@ -476,7 +483,7 @@
           const doc = canonicalMmlUrlForToken(nftInput.value);
           refreshMmlLine();
           if (!doc) {
-            setStatus('Enter an otter # between 1 and 2222.');
+            setStatus('Enter one otter # from 1 to 2222 (digits only). Example: 14. Ranges like 1-2222 are not valid here.');
             try {
               iframe.removeAttribute('src');
             } catch (_) { /* ignore */ }
@@ -484,10 +491,6 @@
           }
           iframe.src = buildOtterViewerUrl(doc);
           setStatus('Loading your otter in the MML viewer…');
-        }
-
-        function parentIsHttps() {
-          return window.location.protocol === 'https:';
         }
 
         function normalizeHttpsUrl(raw) {
@@ -515,20 +518,18 @@
         btnOpen.addEventListener('click', function () {
           const doc = canonicalMmlUrlForToken(nftInput.value);
           if (!doc) {
-            setStatus('Enter an otter # between 1 and 2222.');
+            setStatus('Enter one otter # (digits only), e.g. 14.');
             return;
           }
-          window.open(buildOtterViewerUrl(doc), '_blank', 'noopener,noreferrer');
           setStatus('Opened viewer in a new tab.');
         });
 
         btnCopy.addEventListener('click', function () {
           const u = canonicalMmlUrlForToken(nftInput.value);
           if (!u) {
-            setStatus('Enter an otter # between 1 and 2222.');
+            setStatus('Enter one otter # (digits only), e.g. 14.');
             return;
           }
-          const run = function (ok) {
             setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL above.');
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
