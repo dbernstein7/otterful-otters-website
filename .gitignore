@@ -14,6 +14,7 @@ yarn-error.log*
 .next
 dist
 build
+/hub/
 
 # OS files
 .DS_Store
@@ -53,6 +54,4 @@ ENV/
 # Avatar Builder (handled separately)
 AvatarBuilder/.git
 
-
-.vercel
 .env*.local

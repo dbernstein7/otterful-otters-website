@@ -1,0 +1,202 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: #050810;
+  color: #e8eef8;
+}
+
+.otterful-hub {
+  min-height: 100%;
+}
+
+.otterful-hub-main {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+}
+
+.otterful-hub-canvas {
+  flex: 1 1 auto;
+  min-height: 100vh;
+  min-width: 0;
+  position: relative;
+}
+
+.otterful-hub-canvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100vh !important;
+}
+
+.otterful-hub-canvas-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem;
+  font-size: 1.1rem;
+  color: #9aa8bc;
+}
+
+.otterful-hub-panel {
+  flex: 0 0 min(380px, 100vw);
+  max-width: 100%;
+  padding: 1.25rem 1.35rem 2rem;
+  border-left: 1px solid rgba(90, 255, 180, 0.28);
+  background: rgba(7, 14, 22, 0.96);
+  overflow: auto;
+}
+
+.otterful-hub-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7dffb3;
+}
+
+.otterful-hub-lede {
+  margin: 0 0 1.25rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #9aa8bc;
+}
+
+.otterful-hub-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a8aa0;
+  margin-bottom: 0.4rem;
+}
+
+.otterful-hub-textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: #e8eef8;
+  font-size: 0.82rem;
+  margin-bottom: 0.65rem;
+}
+
+.otterful-hub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 255, 179, 0.45);
+  background: rgba(40, 120, 80, 0.35);
+  color: #d8ffe8;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.otterful-hub-btn:hover {
+  background: rgba(60, 160, 100, 0.45);
+}
+
+.otterful-hub-hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.25rem 0;
+}
+
+.otterful-hub-stat {
+  margin-bottom: 1rem;
+}
+
+.otterful-hub-stat-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7a8aa0;
+  margin-bottom: 0.35rem;
+}
+
+.otterful-hub-stat-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.otterful-hub-code {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  word-break: break-all;
+  padding: 0.45rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(90, 255, 180, 0.2);
+  color: #b8f5d0;
+}
+
+.otterful-hub-list {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.otterful-hub-list li {
+  margin-bottom: 0.35rem;
+}
+
+.otterful-hub-muted {
+  color: #6a7a8c;
+  font-size: 0.88rem;
+}
+
+.otterful-hub-error {
+  margin-top: 1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(120, 30, 30, 0.45);
+  border: 1px solid rgba(255, 120, 120, 0.45);
+  color: #ffc8c8;
+  font-size: 0.88rem;
+}
+
+.hub-portal-label {
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(5, 10, 20, 0.88);
+  border: 1px solid rgba(125, 255, 179, 0.35);
+  color: #e8f8ee;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .otterful-hub-main {
+    flex-direction: column;
+  }
+
+  .otterful-hub-panel {
+    flex: none;
+    border-left: none;
+    border-top: 1px solid rgba(90, 255, 180, 0.28);
+  }
+
+  .otterful-hub-canvas canvas {
+    height: min(55vh, 480px) !important;
+  }
+}

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": null,
+  "buildCommand": "cd otterful-hub && npm install && npm run build",
   "outputDirectory": ".",
   "env": {
     "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",
@@ -58,7 +58,7 @@
       "dest": "/games/shell-snag/$1"
     },
     {
-      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/).*)",
+      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/)(?!hub/).*)",
       "dest": "/index.html"
     }
   ]
