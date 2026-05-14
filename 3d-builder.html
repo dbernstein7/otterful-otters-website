@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://mml.io https://www.mml.io https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https://mml.io https://www.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
     <title>3D Builder • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,7 +67,7 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
-            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">3D experience</button>
+            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">Otter 3D</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -209,17 +209,17 @@
 
         <div id="builder-panel-experience" class="builder-page-panel mml-experience-panel" role="tabpanel" aria-labelledby="builder-tab-experience" hidden>
             <div class="mml-experience-intro">
-                <p class="mml-experience-intro-title">Multi-user MML world</p>
+                <p class="mml-experience-intro-title">Your otter in 3D</p>
                 <p class="mml-experience-intro-body">
-                    The <strong>same interactive demo</strong> as
-                    <a href="https://mml.io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml.io/3d-web-experience</a>
-                    loads in the frame below over HTTPS (no local server). It uses MML’s in-browser client; WASD to move, edit code on their page, two avatars side by side.
+                    The frame below loads <strong>only your collection’s MML</strong> (<code class="mml-experience-code">/mml/&lt;#&gt;.mml</code>) through the same
+                    <a href="https://viewer.mml.io" target="_blank" rel="noopener noreferrer">viewer.mml.io</a> engine as <strong>MML preview</strong>, without mml.io’s multiplayer marketing page.
+                    Pick a number and the otter should appear here. For code edits, overrides, and <code class="mml-experience-code">?anim=</code> / hat / shirt, use the <strong>MML preview</strong> tab.
                 </p>
                 <p class="mml-experience-intro-body">
-                    To run <strong>your own</strong> fork (avatars, <code class="mml-experience-code">world.json</code>, WebSockets), deploy it with HTTPS and paste that URL here, or use <strong>Open in new tab</strong> for
-                    <code class="mml-experience-code">http://127.0.0.1:8080</code> after <code class="mml-experience-code">npm run iterate</code> from
-                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>
-                    (localhost cannot be embedded inside this HTTPS site — browser security).
+                    A full <strong>walkable multiplayer world</strong> (WASD + other players) is a separate app
+                    (<a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">3d-web-experience</a>,
+                    <a href="https://mml.io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml.io overview</a>).
+                    You can embed your own deployment only over <strong>HTTPS</strong>; <code class="mml-experience-code">http://127.0.0.1</code> must be opened in a new tab, not inside this site.
                 </p>
             </div>
             <div class="mml-experience-toolbar">
@@ -227,22 +227,20 @@
                     <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>
                     <div class="mml-experience-nft-row">
                         <span class="mml-experience-hash" aria-hidden="true">#</span>
-                        <input type="number" id="builder-experience-nft-input" class="mml-experience-nft-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number for MML document link">
+                        <input type="number" id="builder-experience-nft-input" class="mml-experience-nft-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number for MML document">
                     </div>
                 </div>
-                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--grow">
-                    <label class="mml-experience-label" for="builder-experience-url-input">Experience URL</label>
-                    <input type="url" id="builder-experience-url-input" class="mml-experience-url-input" placeholder="https://mml.io/3d-web-experience (default)" autocomplete="off" spellcheck="false" aria-describedby="builder-experience-url-hint">
+                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--checks">
+                    <label class="mml-experience-fit-label"><input type="checkbox" id="builder-exp-fit"> Closer camera</label>
                 </div>
-                <p id="builder-experience-url-hint" class="mml-experience-hint">Saved in this browser only.</p>
                 <div class="mml-experience-actions">
-                    <button type="button" id="builder-experience-open-tab" class="mml-playground-btn mml-playground-btn--primary">Open in new tab</button>
-                    <button type="button" id="builder-experience-embed" class="mml-playground-btn">Load embedded</button>
+                    <button type="button" id="builder-experience-reload" class="mml-playground-btn mml-playground-btn--primary">Load otter</button>
+                    <button type="button" id="builder-experience-open-tab" class="mml-playground-btn">Open viewer tab</button>
                     <button type="button" id="builder-experience-copy-mml" class="mml-playground-btn mml-playground-btn--ghost">Copy MML link</button>
                 </div>
             </div>
             <p id="builder-experience-mml-line" class="mml-experience-mml-line" aria-live="polite">
-                <span class="mml-experience-mml-label">Canonical document for this #:</span>
+                <span class="mml-experience-mml-label">MML document (this site):</span>
                 <code id="builder-experience-mml-url" class="mml-experience-mml-code">—</code>
             </p>
             <p id="builder-experience-status" class="mml-playground-status" role="status" aria-live="polite"></p>
@@ -250,12 +248,23 @@
                 <iframe
                     id="builder-experience-iframe"
                     class="mml-experience-iframe"
-                    title="MML 3D web experience (mml-io)"
+                    title="Your otter (MML viewer)"
                     loading="lazy"
                     referrerpolicy="no-referrer"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 ></iframe>
             </div>
+            <details class="mml-experience-advanced">
+                <summary>Advanced: embed another HTTPS page</summary>
+                <p class="mml-experience-advanced-tip">Optional. For a <strong>custom</strong> 3D app you host (HTTPS only). Local <code class="mml-experience-code">http://</code> servers cannot be framed on this HTTPS site.</p>
+                <label class="mml-experience-label" for="builder-experience-custom-url">Page URL</label>
+                <input type="url" id="builder-experience-custom-url" class="mml-experience-url-input" placeholder="https://your-app.example.com/…" autocomplete="off" spellcheck="false">
+                <div class="mml-experience-advanced-actions">
+                    <button type="button" id="builder-experience-custom-embed" class="mml-playground-btn">Replace frame with this URL</button>
+                    <button type="button" id="builder-experience-custom-open" class="mml-playground-btn mml-playground-btn--ghost">Open in new tab</button>
+                    <button type="button" id="builder-experience-back-otter" class="mml-playground-btn mml-playground-btn--ghost">Back to my otter</button>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -406,18 +415,21 @@
 
     <script>
       (function () {
-        const LS_URL = 'otterful-mml-experience-url';
-        /** Same HTTPS app as https://mml.io/3d-web-experience — works embedded on Otterful (no localhost). */
-        const DEFAULT_OFFICIAL = 'https://mml.io/3d-web-experience';
-        const urlInput = document.getElementById('builder-experience-url-input');
+        const LS_CUSTOM = 'otterful-mml-experience-custom-url';
+        const VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
         const nftInput = document.getElementById('builder-experience-nft-input');
         const mmlCode = document.getElementById('builder-experience-mml-url');
         const statusEl = document.getElementById('builder-experience-status');
         const iframe = document.getElementById('builder-experience-iframe');
+        const btnReload = document.getElementById('builder-experience-reload');
         const btnOpen = document.getElementById('builder-experience-open-tab');
-        const btnEmbed = document.getElementById('builder-experience-embed');
         const btnCopy = document.getElementById('builder-experience-copy-mml');
-        if (!urlInput || !nftInput || !mmlCode || !iframe || !btnOpen || !btnEmbed || !btnCopy) return;
+        const fitChk = document.getElementById('builder-exp-fit');
+        const customUrl = document.getElementById('builder-experience-custom-url');
+        const btnCustomEmbed = document.getElementById('builder-experience-custom-embed');
+        const btnCustomOpen = document.getElementById('builder-experience-custom-open');
+        const btnBackOtter = document.getElementById('builder-experience-back-otter');
+        if (!nftInput || !mmlCode || !iframe || !btnReload || !btnOpen || !btnCopy || !fitChk) return;
 
         function setStatus(msg) {
           if (statusEl) statusEl.textContent = msg || '';
@@ -442,84 +454,72 @@
           mmlCode.textContent = u || '—';
         }
 
-        try {
-          const saved = localStorage.getItem(LS_URL);
-          if (saved && String(saved).trim()) urlInput.value = String(saved).trim();
-          else urlInput.value = DEFAULT_OFFICIAL;
-        } catch (_) {
-          urlInput.value = DEFAULT_OFFICIAL;
+        function buildOtterViewerUrl(docUrl) {
+          const v = new URL(VIEWER_BASE);
+          v.searchParams.set('url', docUrl.trim());
+          v.searchParams.set('cameraMode', 'orbit');
+          v.searchParams.set('cameraOrbitPitch', fitChk.checked ? '86' : '88');
+          v.searchParams.set('cameraOrbitSpeed', '0');
+          v.searchParams.set('cameraOrbitDistance', fitChk.checked ? '1.75' : '2.34');
+          v.searchParams.set('cameraFov', fitChk.checked ? '58' : '56');
+          v.searchParams.set('cameraLookAt', '0,0.02,0');
+          v.searchParams.set('ambientLight', '0.22');
+          v.searchParams.set('ambientLightColor', '8b95a8');
+          v.searchParams.set('environmentMap', 'cloudysky');
+          v.searchParams.set('showEnvironmentMapField', 'true');
+          v.searchParams.set('noUI', 'true');
+          v.searchParams.set('_mmlv', String(Date.now()));
+          return v.toString();
         }
 
-        function persistUrl() {
-          try {
-            localStorage.setItem(LS_URL, String(urlInput.value || '').trim());
-          } catch (_) { /* ignore */ }
-        }
-
-        urlInput.addEventListener('change', persistUrl);
-        urlInput.addEventListener('blur', persistUrl);
-
-        nftInput.addEventListener('input', refreshMmlLine);
-        nftInput.addEventListener('change', refreshMmlLine);
-        refreshMmlLine();
-
-        function normalizeExperienceUrl(raw) {
-          const s = String(raw || '').trim();
-          if (!s) return null;
-          try {
-            const u = new URL(s, window.location.href);
-            if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
-            let out = u.toString();
-            if (out.endsWith('/')) out = out.slice(0, -1);
-            return out;
-          } catch (_) {
-            return null;
+        function loadOtterInFrame() {
+          const doc = canonicalMmlUrlForToken(nftInput.value);
+          refreshMmlLine();
+          if (!doc) {
+            setStatus('Enter an otter # between 1 and 2222.');
+            try {
+              iframe.removeAttribute('src');
+            } catch (_) { /* ignore */ }
+            return;
           }
+          iframe.src = buildOtterViewerUrl(doc);
+          setStatus('Loading your otter in the MML viewer…');
         }
 
         function parentIsHttps() {
           return window.location.protocol === 'https:';
         }
 
-        /**
-         * @returns {{ src: string, status: string }}
-         */
-        function resolveEmbedTarget() {
-          const exp = normalizeExperienceUrl(urlInput.value);
-          if (exp && !(parentIsHttps() && exp.indexOf('http://') === 0)) {
-            return { src: exp, status: exp === DEFAULT_OFFICIAL ? 'Embedded: official MML demo (mml.io).' : 'Loaded embedded experience.' };
+        function normalizeHttpsUrl(raw) {
+          const s = String(raw || '').trim();
+          if (!s) return null;
+          try {
+            const u = new URL(s, window.location.href);
+            if (u.protocol !== 'https:') return null;
+            return u.toString().replace(/\/$/, '');
+          } catch (_) {
+            return null;
           }
-          if (exp && parentIsHttps() && exp.indexOf('http://') === 0) {
-            return {
-              src: DEFAULT_OFFICIAL,
-              status:
-                'This site is HTTPS, so http://localhost cannot appear inside the frame. Showing the official mml.io demo here; use Open in new tab for your local server.',
-            };
-          }
-          return { src: DEFAULT_OFFICIAL, status: 'Embedded: official MML demo (mml.io).' };
         }
 
-        function applyEmbed() {
-          const t = resolveEmbedTarget();
-          iframe.src = t.src;
-          setStatus(t.status);
-        }
+        try {
+          const saved = localStorage.getItem(LS_CUSTOM);
+          if (saved && String(saved).trim()) customUrl.value = String(saved).trim();
+        } catch (_) { /* ignore */ }
 
-        window.addEventListener('otterful-experience-panel-open', function () {
-          refreshMmlLine();
-          applyEmbed();
-        });
+        nftInput.addEventListener('input', refreshMmlLine);
+        nftInput.addEventListener('change', loadOtterInFrame);
+        fitChk.addEventListener('change', loadOtterInFrame);
+        btnReload.addEventListener('click', loadOtterInFrame);
 
         btnOpen.addEventListener('click', function () {
-          const exp = normalizeExperienceUrl(urlInput.value) || DEFAULT_OFFICIAL;
-          persistUrl();
-          window.open(exp, '_blank', 'noopener,noreferrer');
-          setStatus('Opened in a new tab.');
-        });
-
-        btnEmbed.addEventListener('click', function () {
-          persistUrl();
-          applyEmbed();
+          const doc = canonicalMmlUrlForToken(nftInput.value);
+          if (!doc) {
+            setStatus('Enter an otter # between 1 and 2222.');
+            return;
+          }
+          window.open(buildOtterViewerUrl(doc), '_blank', 'noopener,noreferrer');
+          setStatus('Opened viewer in a new tab.');
         });
 
         btnCopy.addEventListener('click', function () {
@@ -529,7 +529,7 @@
             return;
           }
           const run = function (ok) {
-            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL in the line above.');
+            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL above.');
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(u).then(() => run(true)).catch(() => run(false));
@@ -549,10 +549,60 @@
             }
           }
         });
-        (function initialEmbedIfExperienceTab() {
+
+        if (customUrl && btnCustomEmbed && btnCustomOpen && btnBackOtter) {
+          function persistCustom() {
+            try {
+              localStorage.setItem(LS_CUSTOM, String(customUrl.value || '').trim());
+            } catch (_) { /* ignore */ }
+          }
+
+          btnCustomEmbed.addEventListener('click', function () {
+            const u = normalizeHttpsUrl(customUrl.value);
+            if (!u) {
+              setStatus('Enter a valid https:// URL (HTTP cannot be embedded on this HTTPS site).');
+              return;
+            }
+            persistCustom();
+            iframe.src = u;
+            setStatus('Replaced frame with your custom page.');
+          });
+
+          btnCustomOpen.addEventListener('click', function () {
+            const raw = String(customUrl.value || '').trim();
+            const u = normalizeHttpsUrl(raw);
+            if (u) {
+              persistCustom();
+              window.open(u, '_blank', 'noopener,noreferrer');
+              setStatus('Opened in a new tab.');
+              return;
+            }
+            try {
+              const loose = new URL(raw, window.location.href);
+              if (loose.protocol === 'http:' || loose.protocol === 'https:') {
+                persistCustom();
+                window.open(loose.toString(), '_blank', 'noopener,noreferrer');
+                setStatus('Opened in a new tab.');
+              } else setStatus('Enter a valid URL.');
+            } catch (_) {
+              setStatus('Enter a valid URL.');
+            }
+          });
+
+          btnBackOtter.addEventListener('click', function () {
+            loadOtterInFrame();
+          });
+        }
+
+        window.addEventListener('otterful-experience-panel-open', function () {
+          refreshMmlLine();
+          loadOtterInFrame();
+        });
+
+        (function initialIfExperienceTab() {
           try {
             var p = document.getElementById('builder-panel-experience');
-            if (p && !p.hasAttribute('hidden')) applyEmbed();
+            if (p && !p.hasAttribute('hidden')) loadOtterInFrame();
           } catch (_) { /* ignore */ }
         })();
       })();

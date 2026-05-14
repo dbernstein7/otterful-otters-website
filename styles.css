@@ -1535,7 +1535,7 @@ body::before {
     }
 }
 
-/* 3D Builder: main mode tabs (Otter / MML / 3D experience) */
+/* 3D Builder: main mode tabs (Otter / MML / Otter 3D) */
 .builder-page-tabs {
     display: flex;
     flex-wrap: wrap;
@@ -1778,6 +1778,63 @@ body::before {
     min-height: 400px;
     border: 0;
     background: #050810;
+}
+
+.mml-experience-toolbar-row--checks {
+    flex: 0 0 auto;
+    justify-content: center;
+    min-width: auto;
+}
+
+.mml-experience-fit-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    cursor: pointer;
+    margin: 0;
+    padding: 8px 0 0;
+}
+
+.mml-experience-fit-label input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--panel-blue-alt);
+}
+
+.mml-experience-advanced {
+    margin-top: 8px;
+    padding: 12px 14px 14px;
+    border-radius: 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.22);
+    background: rgba(0, 0, 0, 0.2);
+    max-width: 720px;
+}
+
+.mml-experience-advanced summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+}
+
+.mml-experience-advanced-tip {
+    margin: 10px 0 8px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.mml-experience-advanced .mml-experience-label {
+    margin-top: 8px;
+}
+
+.mml-experience-advanced-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .mml-viewer-lede--inline {
