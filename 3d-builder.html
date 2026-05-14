@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://mml.io https://www.mml.io https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https://mml.io https://www.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
     <title>3D Builder • Otterful Otters</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -211,14 +211,15 @@
             <div class="mml-experience-intro">
                 <p class="mml-experience-intro-title">Multi-user MML world</p>
                 <p class="mml-experience-intro-body">
-                    This tab is for apps built with
-                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>
-                    (browser client + Node server, MML composition and avatars). Run the repo’s example locally with
-                    <code class="mml-experience-code">npm install</code> then <code class="mml-experience-code">npm run iterate</code>
-                    and open the <strong>multi-user</strong> example (see that README; default port is often 8080), or deploy your fork and paste its <strong>HTTPS</strong> origin below.
+                    The <strong>same interactive demo</strong> as
+                    <a href="https://mml.io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml.io/3d-web-experience</a>
+                    loads in the frame below over HTTPS (no local server). It uses MML’s in-browser client; WASD to move, edit code on their page, two avatars side by side.
                 </p>
-                <p class="mml-experience-intro-note">
-                    Browsers block embedding <code class="mml-experience-code">http://</code> pages inside this site when it is served over HTTPS. Use <strong>Open in new tab</strong> for local <code class="mml-experience-code">http://127.0.0.1:8080</code>, or deploy the experience behind HTTPS to use <strong>Load embedded</strong>.
+                <p class="mml-experience-intro-body">
+                    To run <strong>your own</strong> fork (avatars, <code class="mml-experience-code">world.json</code>, WebSockets), deploy it with HTTPS and paste that URL here, or use <strong>Open in new tab</strong> for
+                    <code class="mml-experience-code">http://127.0.0.1:8080</code> after <code class="mml-experience-code">npm run iterate</code> from
+                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>
+                    (localhost cannot be embedded inside this HTTPS site — browser security).
                 </p>
             </div>
             <div class="mml-experience-toolbar">
@@ -231,7 +232,7 @@
                 </div>
                 <div class="mml-experience-toolbar-row mml-experience-toolbar-row--grow">
                     <label class="mml-experience-label" for="builder-experience-url-input">Experience URL</label>
-                    <input type="url" id="builder-experience-url-input" class="mml-experience-url-input" placeholder="https://… or http://127.0.0.1:8080" autocomplete="off" spellcheck="false" aria-describedby="builder-experience-url-hint">
+                    <input type="url" id="builder-experience-url-input" class="mml-experience-url-input" placeholder="https://mml.io/3d-web-experience (default)" autocomplete="off" spellcheck="false" aria-describedby="builder-experience-url-hint">
                 </div>
                 <p id="builder-experience-url-hint" class="mml-experience-hint">Saved in this browser only.</p>
                 <div class="mml-experience-actions">
@@ -406,6 +407,8 @@
     <script>
       (function () {
         const LS_URL = 'otterful-mml-experience-url';
+        /** Same HTTPS app as https://mml.io/3d-web-experience — works embedded on Otterful (no localhost). */
+        const DEFAULT_OFFICIAL = 'https://mml.io/3d-web-experience';
         const urlInput = document.getElementById('builder-experience-url-input');
         const nftInput = document.getElementById('builder-experience-nft-input');
         const mmlCode = document.getElementById('builder-experience-mml-url');
@@ -441,18 +444,23 @@
 
         try {
           const saved = localStorage.getItem(LS_URL);
-          if (saved) urlInput.value = saved;
-        } catch (_) { /* ignore */ }
+          if (saved && String(saved).trim()) urlInput.value = String(saved).trim();
+          else urlInput.value = DEFAULT_OFFICIAL;
+        } catch (_) {
+          urlInput.value = DEFAULT_OFFICIAL;
+        }
 
-        urlInput.addEventListener('change', function () {
+        function persistUrl() {
           try {
             localStorage.setItem(LS_URL, String(urlInput.value || '').trim());
           } catch (_) { /* ignore */ }
-        });
+        }
+
+        urlInput.addEventListener('change', persistUrl);
+        urlInput.addEventListener('blur', persistUrl);
 
         nftInput.addEventListener('input', refreshMmlLine);
         nftInput.addEventListener('change', refreshMmlLine);
-        window.addEventListener('otterful-experience-panel-open', refreshMmlLine);
         refreshMmlLine();
 
         function normalizeExperienceUrl(raw) {
@@ -473,34 +481,45 @@
           return window.location.protocol === 'https:';
         }
 
-        btnOpen.addEventListener('click', function () {
+        /**
+         * @returns {{ src: string, status: string }}
+         */
+        function resolveEmbedTarget() {
           const exp = normalizeExperienceUrl(urlInput.value);
-          if (!exp) {
-            setStatus('Enter a valid experience URL (http or https).');
-            return;
+          if (exp && !(parentIsHttps() && exp.indexOf('http://') === 0)) {
+            return { src: exp, status: exp === DEFAULT_OFFICIAL ? 'Embedded: official MML demo (mml.io).' : 'Loaded embedded experience.' };
           }
-          try {
-            localStorage.setItem(LS_URL, exp);
-          } catch (_) { /* ignore */ }
+          if (exp && parentIsHttps() && exp.indexOf('http://') === 0) {
+            return {
+              src: DEFAULT_OFFICIAL,
+              status:
+                'This site is HTTPS, so http://localhost cannot appear inside the frame. Showing the official mml.io demo here; use Open in new tab for your local server.',
+            };
+          }
+          return { src: DEFAULT_OFFICIAL, status: 'Embedded: official MML demo (mml.io).' };
+        }
+
+        function applyEmbed() {
+          const t = resolveEmbedTarget();
+          iframe.src = t.src;
+          setStatus(t.status);
+        }
+
+        window.addEventListener('otterful-experience-panel-open', function () {
+          refreshMmlLine();
+          applyEmbed();
+        });
+
+        btnOpen.addEventListener('click', function () {
+          const exp = normalizeExperienceUrl(urlInput.value) || DEFAULT_OFFICIAL;
+          persistUrl();
           window.open(exp, '_blank', 'noopener,noreferrer');
           setStatus('Opened in a new tab.');
         });
 
         btnEmbed.addEventListener('click', function () {
-          const exp = normalizeExperienceUrl(urlInput.value);
-          if (!exp) {
-            setStatus('Enter a valid experience URL.');
-            return;
-          }
-          if (parentIsHttps() && exp.indexOf('http://') === 0) {
-            setStatus('This page is HTTPS; the browser will not embed an http:// experience. Open in new tab instead, or use an https:// deployment.');
-            return;
-          }
-          try {
-            localStorage.setItem(LS_URL, exp);
-          } catch (_) { /* ignore */ }
-          iframe.src = exp;
-          setStatus('Loaded in the frame below.');
+          persistUrl();
+          applyEmbed();
         });
 
         btnCopy.addEventListener('click', function () {
@@ -530,6 +549,12 @@
             }
           }
         });
+        (function initialEmbedIfExperienceTab() {
+          try {
+            var p = document.getElementById('builder-panel-experience');
+            if (p && !p.hasAttribute('hidden')) applyEmbed();
+          } catch (_) { /* ignore */ }
+        })();
       })();
     </script>
 
