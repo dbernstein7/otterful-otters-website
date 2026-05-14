@@ -148,7 +148,7 @@
                             <div class="mml-editor-gutter" id="builder-mml-gutter" aria-hidden="true">1</div>
                             <textarea id="builder-mml-editor" class="mml-editor-textarea" spellcheck="false" wrap="off" autocomplete="off" aria-label="MML and HTML source" placeholder="Load with Preview or open More options, then edit…"></textarea>
                         </div>
-                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Optional movement / hat: <strong>More options</strong>.</p>
+                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Optional movement / hat / shirt: <strong>More options</strong>.</p>
                     </div>
                     <div class="mml-playground-preview">
                         <div class="mml-playground-preview-frame">
@@ -173,7 +173,7 @@
 
                 <details class="mml-playground-advanced">
                     <summary>More options</summary>
-                    <p class="mml-playground-advanced-tip">Optional <code>?anim=</code> / <code>?hat=</code> for Preview, or <strong>Load</strong> any hosted MML <code>https://…</code> page.</p>
+                    <p class="mml-playground-advanced-tip">Optional <code>?anim=</code> / <code>?hat=</code> / <code>?shirt=</code> for Preview, or <strong>Load</strong> any hosted MML <code>https://…</code> page.</p>
                     <div class="mml-playground-anim-row">
                         <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb)</label>
                         <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb" autocomplete="off" spellcheck="false">
@@ -181,6 +181,10 @@
                     <div class="mml-playground-anim-row">
                         <label class="mml-playground-label" for="builder-mml-hat-override">Hat override</label>
                         <input type="text" id="builder-mml-hat-override" class="mml-playground-input" placeholder="Trait stem or full hat .glb URL" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="mml-playground-anim-row">
+                        <label class="mml-playground-label" for="builder-mml-shirt-override">Shirt override</label>
+                        <input type="text" id="builder-mml-shirt-override" class="mml-playground-input" placeholder="Trait stem or full shirt .glb URL (adds ?shirt= to Preview)" autocomplete="off" spellcheck="false">
                     </div>
                     <div class="mml-playground-advanced-btns">
                         <button type="button" id="builder-mml-load-btn" class="mml-playground-btn">Load</button>
@@ -352,6 +356,7 @@
         const fit = document.getElementById('builder-mml-opt-fit');
         const animOverrideInput = document.getElementById('builder-mml-anim-override');
         const hatOverrideInput = document.getElementById('builder-mml-hat-override');
+        const shirtOverrideInput = document.getElementById('builder-mml-shirt-override');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit || !editor) return;
@@ -535,6 +540,17 @@
           } catch (_) { /* ignore */ }
         }
 
+        function extractShirtFromMmlApiUrl(docUrl) {
+          if (!shirtOverrideInput || !docUrl) return;
+          try {
+            const u = new URL(docUrl, window.location.href);
+            const path = (u.pathname || '').replace(/\/+$/, '') || '/';
+            if (!path.endsWith('/api/mml')) return;
+            const s = u.searchParams.get('shirt');
+            if (s) shirtOverrideInput.value = s;
+          } catch (_) { /* ignore */ }
+        }
+
         function appendAnimToApiMmlUrl(baseUrl, animUrl) {
           const trimmed = animUrl.trim();
           if (!trimmed) return baseUrl;
@@ -553,6 +569,18 @@
           try {
             const out = new URL(baseUrl, window.location.href);
             out.searchParams.set('hat', trimmed);
+            return out.href;
+          } catch (_) {
+            return baseUrl;
+          }
+        }
+
+        function appendShirtToApiMmlUrl(baseUrl, shirtVal) {
+          const trimmed = shirtVal.trim();
+          if (!trimmed) return baseUrl;
+          try {
+            const out = new URL(baseUrl, window.location.href);
+            out.searchParams.set('shirt', trimmed);
             return out.href;
           } catch (_) {
             return baseUrl;
@@ -724,6 +752,7 @@
           if (raw) input.value = raw;
           extractAnimFromMmlApiUrl(absoluteDocUrl(input.value));
           extractHatFromMmlApiUrl(absoluteDocUrl(input.value));
+          extractShirtFromMmlApiUrl(absoluteDocUrl(input.value));
         }
 
         function looksLikeMmlUrl(s) {
@@ -835,6 +864,7 @@
           syncGutter();
           extractAnimFromMmlApiUrl(docUrl);
           extractHatFromMmlApiUrl(docUrl);
+          extractShirtFromMmlApiUrl(docUrl);
 
           /* viewer.mml.io cannot load blob: from our origin; use inline data URL so fixes apply to the iframe. */
           let viewerDocUrl = docUrl;
@@ -1067,6 +1097,9 @@
           }
           if (hatOverrideInput && hatOverrideInput.value.trim()) {
             docUrl = appendHatToApiMmlUrl(docUrl, hatOverrideInput.value.trim());
+          }
+          if (shirtOverrideInput && shirtOverrideInput.value.trim()) {
+            docUrl = appendShirtToApiMmlUrl(docUrl, shirtOverrideInput.value.trim());
           }
           input.value = docUrl;
           void apply();

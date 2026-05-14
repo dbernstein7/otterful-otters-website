@@ -43,6 +43,7 @@
  *
  * Optional separate animation file (body GLB + linked anim GLB):
  *   ?anim= on this endpoint — full https://…glb or a wearable path (e.g. WEARABLES/Animations/Walk.glb). Easiest way to try walk/run/idle without editing metadata.
+ *   ?shirt= — full https://…glb or a **Shirts/** filename stem (same as ?hat=). Overrides MML_SHIRT_OVERRIDE env, then metadata Shirt/Shirts trait.
  *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
  *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
  *   Priority: ?anim= > trait > MML_CHARACTER_ANIM > MML_DEFAULT_CHARACTER_ANIM (unless MML_SKIP_DEFAULT_ANIM).
@@ -51,6 +52,11 @@
  *   ?hat= — wins over metadata Hats/Hat trait. Value is either (a) a filename stem, e.g. antler → Hats/antler.glb via
  *   MML_HAT_STORAGE_PATH / WEARABLES/Hats, same as metadata; or (b) a full https://… URL to the hat .glb (use when each
  *   Firebase object has its own download token — FIREBASE_STORAGE_TOKEN is one token for all paths and may not match).
+ *
+ * Shirt (Firebase `Shirts/{stem}.glb`):
+ *   Metadata trait **Shirt** or **Shirts** (case-insensitive) sets the stem. Stems are normalized (trim, strip `.glb`,
+ *   fancy dashes → `-`, spaces → `-`) so trait CSV values line up with Storage file names.
+ *   ?shirt= — same as ?hat=: full https URL or stem; wins over MML_SHIRT_OVERRIDE env, then metadata.
  */
 
 function siteOriginFromRequest(req) {
@@ -117,6 +123,18 @@ function buildEyesWearableUrl(siteOrigin, eyeTraitName) {
   return `${base}/${sitePath}`;
 }
 
+/** Match metadata / CSV stems to Firebase `Shirts/{stem}.glb` keys (case-sensitive in Storage). */
+function normalizeWearableFilenameStem(raw) {
+  let s = String(raw || '').trim();
+  if (!s) return s;
+  if (/\.glb$/i.test(s)) s = s.replace(/\.glb$/i, '');
+  s = s.replace(/[\u2013\u2014\u2212]/g, '-');
+  s = s.replace(/\s+/g, '-');
+  s = s.replace(/-+/g, '-');
+  s = s.replace(/^-+|-+$/g, '');
+  return s;
+}
+
 function parseTraits(metadata) {
   const traits = {};
   const attrs = metadata.attributes;
@@ -127,7 +145,7 @@ function parseTraits(metadata) {
     const traitValue = String(attr.value).trim();
     if (!traitValue || traitValue.toLowerCase() === 'none') continue;
     if (traitType === 'fur') traits.fur = traitValue;
-    else if (traitType === 'shirt') traits.shirt = traitValue;
+    else if (traitType === 'shirt' || traitType === 'shirts') traits.shirt = traitValue;
     else if (traitType === 'eyes') traits.eyes = traitValue;
     else if (traitType === 'hats' || traitType === 'hat') traits.hat = traitValue;
     else if (traitType === 'mml anim' || traitType === 'mml_anim') traits.mmlAnim = traitValue;
@@ -456,17 +474,28 @@ module.exports = async (req, res) => {
     if (/^https?:\/\//i.test(ho)) {
       urls.hat = ho;
     } else {
-      urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', ho));
+      const hatStem = normalizeWearableFilenameStem(ho);
+      urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', hatStem || ho));
     }
   } else if (traits.hat) {
-    urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', traits.hat));
+    const hatStem = normalizeWearableFilenameStem(traits.hat);
+    urls.hat = buildWearableUrl(origin, glbObjectPath('MML_HAT_STORAGE_PATH', wp, 'Hats', hatStem || traits.hat));
   }
   const skipShirt = truthyEnv(process.env.MML_SKIP_SHIRT);
-  const shirtOverride = (process.env.MML_SHIRT_OVERRIDE || '').trim();
+  const shirtQuery = getQueryParam(req, 'shirt');
+  const shirtEnv = (process.env.MML_SHIRT_OVERRIDE || '').trim();
   if (!skipShirt) {
-    const shirtName = shirtOverride || traits.shirt;
-    if (shirtName) {
-      urls.shirt = buildWearableUrl(origin, glbObjectPath('MML_SHIRT_STORAGE_PATH', wp, 'Shirts', shirtName));
+    let shirtRaw = '';
+    if (shirtQuery) shirtRaw = shirtQuery.trim();
+    else if (shirtEnv) shirtRaw = shirtEnv;
+    else if (traits.shirt) shirtRaw = traits.shirt;
+    if (shirtRaw) {
+      if (/^https?:\/\//i.test(shirtRaw)) {
+        urls.shirt = shirtRaw;
+      } else {
+        const stem = normalizeWearableFilenameStem(shirtRaw);
+        urls.shirt = buildWearableUrl(origin, glbObjectPath('MML_SHIRT_STORAGE_PATH', wp, 'Shirts', stem || shirtRaw));
+      }
     }
   }
   if (traits.eyes) {
