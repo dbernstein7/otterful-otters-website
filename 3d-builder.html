@@ -67,7 +67,7 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
-            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">Otter 3D</button>
+            <button type="button" class="builder-page-tab" data-builder-page="experience" role="tab" aria-selected="false" aria-controls="builder-panel-experience" id="builder-tab-experience">Run around</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -209,73 +209,44 @@
 
         <div id="builder-panel-experience" class="builder-page-panel mml-experience-panel" role="tabpanel" aria-labelledby="builder-tab-experience" hidden>
             <div class="mml-experience-intro">
-                <p class="mml-experience-intro-title">Your otter in 3D</p>
+                <p class="mml-experience-intro-title">Run around in Three.js</p>
                 <p class="mml-experience-intro-body">
-                    The frame below loads <strong>only your collection’s MML</strong> (<code class="mml-experience-code">/mml/&lt;#&gt;.mml</code>) through the same
-                    <a href="https://viewer.mml.io" target="_blank" rel="noopener noreferrer">viewer.mml.io</a> engine as <strong>MML preview</strong>, without mml.io’s multiplayer marketing page.
-                    Pick a number and the otter should appear here. For code edits, overrides, and <code class="mml-experience-code">?anim=</code> / hat / shirt, use the <strong>MML preview</strong> tab.
+                    Paste any <strong>MML document URL</strong> (your <code class="mml-experience-code">https://…/mml/&lt;#&gt;.mml</code> page or <code class="mml-experience-code">/api/mml?id=</code>).
+                    We <strong>fetch that HTML</strong>, read <code class="mml-experience-code">&lt;m-character&gt;</code> + <code class="mml-experience-code">&lt;m-model&gt;</code>, load the GLBs here, and you move with <strong>WASD</strong> (click the scene first for mouse look).
+                    Movement clip: the document’s <code class="mml-experience-code">anim=</code> on <code class="mml-experience-code">m-character</code> if present, otherwise the <strong>Walk clip URL</strong> (default Mixamo walk on this site).
                 </p>
                 <p class="mml-experience-intro-body">
-                    A full <strong>walkable multiplayer world</strong> (WASD + other players) is a separate app
-                    (<a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">3d-web-experience</a>,
-                    <a href="https://mml.io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml.io overview</a>).
-                    You can embed your own deployment only over <strong>HTTPS</strong>; <code class="mml-experience-code">http://127.0.0.1</code> must be opened in a new tab, not inside this site.
+                    <strong>Real multiplayer</strong> (other people in the same world) still needs the separate Node app in <a href="otterful-mml-world/README.md">otterful-mml-world/</a>.
                 </p>
             </div>
-            <div class="mml-experience-deploy" role="note">
-                <p class="mml-experience-deploy-title">Multiplayer (WASD + other people)</p>
-                <p class="mml-experience-deploy-body">
-                    That mode needs the <strong>Node</strong> world in this repo: folder <code class="mml-experience-code">otterful-mml-world/</code> (from
-                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>).
-                    There: <code class="mml-experience-code">npm install</code> then <code class="mml-experience-code">npm run serve</code> → open <code class="mml-experience-code">http://127.0.0.1:8080</code> in <strong>two tabs</strong> to test. Otter avatars are wired in <code class="mml-experience-code">world.json</code> via <code class="mml-experience-code">mmlCharacterUrl</code> to your live <code class="mml-experience-code">/mml/&lt;#&gt;.mml</code> URLs.
-                </p>
-                <p class="mml-experience-deploy-body">
-                    Deploy that same process to <strong>HTTPS</strong> (see <a href="otterful-mml-world/README.md">otterful-mml-world/README.md</a> + <code class="mml-experience-code">Dockerfile</code>), then use <strong>Advanced → Replace frame with this URL</strong> below.
-                </p>
-            </div>
-            <div class="mml-experience-toolbar">
+            <div class="mml-experience-toolbar mml-experience-toolbar--stack">
                 <div class="mml-experience-toolbar-row">
                     <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>
                     <div class="mml-experience-nft-row">
                         <span class="mml-experience-hash" aria-hidden="true">#</span>
-                        <input type="text" id="builder-experience-nft-input" class="mml-experience-nft-input" maxlength="4" placeholder="e.g. 14" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" aria-label="Otter number 1 to 2222" title="One number only, digits 1–2222">
+                        <input type="text" id="builder-experience-nft-input" class="mml-experience-nft-input" maxlength="4" placeholder="e.g. 14" inputmode="numeric" pattern="[0-9]*" autocomplete="off" spellcheck="false" aria-label="Otter number 1 to 2222" title="Digits only">
                     </div>
+                    <button type="button" id="builder-experience-apply-num" class="mml-playground-btn">Fill URL from #</button>
                 </div>
-                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--checks">
-                    <label class="mml-experience-fit-label"><input type="checkbox" id="builder-exp-fit"> Closer camera</label>
+                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--full">
+                    <label class="mml-experience-label" for="builder-experience-doc-url">MML document URL</label>
+                    <input type="text" id="builder-experience-doc-url" class="mml-experience-url-input mml-experience-url-input--wide" placeholder="https://…/mml/14.mml" autocomplete="off" spellcheck="false" aria-label="MML document URL to fetch">
+                </div>
+                <div class="mml-experience-toolbar-row mml-experience-toolbar-row--full">
+                    <label class="mml-experience-label" for="builder-experience-walk-url">Walk clip URL (optional)</label>
+                    <input type="text" id="builder-experience-walk-url" class="mml-experience-url-input mml-experience-url-input--wide" placeholder="/mixamo/walk.glb or full https://…glb" autocomplete="off" spellcheck="false" aria-label="Mixamo or other walk animation GLB">
                 </div>
                 <div class="mml-experience-actions">
-                    <button type="button" id="builder-experience-reload" class="mml-playground-btn mml-playground-btn--primary">Load otter</button>
-                    <button type="button" id="builder-experience-open-tab" class="mml-playground-btn">Open viewer tab</button>
-                    <button type="button" id="builder-experience-copy-mml" class="mml-playground-btn mml-playground-btn--ghost">Copy MML link</button>
+                    <button type="button" id="builder-experience-run" class="mml-playground-btn mml-playground-btn--primary">Load / reload 3D space</button>
+                    <button type="button" id="builder-experience-open-viewer" class="mml-playground-btn">Open in MML viewer tab</button>
+                    <button type="button" id="builder-experience-copy-mml" class="mml-playground-btn mml-playground-btn--ghost">Copy MML URL</button>
                 </div>
             </div>
-            <p id="builder-experience-mml-line" class="mml-experience-mml-line" aria-live="polite">
-                <span class="mml-experience-mml-label">MML document (this site):</span>
-                <code id="builder-experience-mml-url" class="mml-experience-mml-code">—</code>
-            </p>
             <p id="builder-experience-status" class="mml-playground-status" role="status" aria-live="polite"></p>
-            <div class="mml-experience-frame-wrap">
-                <iframe
-                    id="builder-experience-iframe"
-                    class="mml-experience-iframe"
-                    title="Your otter (MML viewer)"
-                    loading="eager"
-                    referrerpolicy="no-referrer"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                ></iframe>
+            <div id="builder-experience-host" class="mml-experience-host">
+                <canvas id="builder-experience-canvas" class="mml-experience-canvas"></canvas>
+                <div id="builder-experience-hud" class="mml-experience-hud" aria-live="polite">Click the scene to grab the mouse</div>
             </div>
-            <details class="mml-experience-advanced">
-                <summary>Advanced: embed another HTTPS page</summary>
-                <p class="mml-experience-advanced-tip">Optional. For a <strong>custom</strong> 3D app you host (HTTPS only). Local <code class="mml-experience-code">http://</code> servers cannot be framed on this HTTPS site.</p>
-                <label class="mml-experience-label" for="builder-experience-custom-url">Page URL</label>
-                <input type="url" id="builder-experience-custom-url" class="mml-experience-url-input" placeholder="https://your-app.example.com/…" autocomplete="off" spellcheck="false">
-                <div class="mml-experience-advanced-actions">
-                    <button type="button" id="builder-experience-custom-embed" class="mml-playground-btn">Replace frame with this URL</button>
-                    <button type="button" id="builder-experience-custom-open" class="mml-playground-btn mml-playground-btn--ghost">Open in new tab</button>
-                    <button type="button" id="builder-experience-back-otter" class="mml-playground-btn mml-playground-btn--ghost">Back to my otter</button>
-                </div>
-            </details>
         </div>
     </div>
 
@@ -363,6 +334,7 @@
           const isOtter = mode === 'otter';
           const isMml = mode === 'mml';
           const isExperience = mode === 'experience';
+          const wasExpVisible = !panelExperience.hasAttribute('hidden');
           pageTabs.forEach((btn) => {
             const on = btn.dataset.builderPage === mode;
             btn.classList.toggle('is-active', on);
@@ -405,6 +377,9 @@
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
+          if (wasExpVisible && !isExperience) {
+            window.dispatchEvent(new CustomEvent('otterful-experience-panel-close'));
+          }
           if (isMml) window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
         }
 
@@ -431,21 +406,27 @@
 
     <script>
       (function () {
-        const LS_CUSTOM = 'otterful-mml-experience-custom-url';
-        const VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
-        const nftInput = document.getElementById('builder-experience-nft-input');
-        const mmlCode = document.getElementById('builder-experience-mml-url');
-        const statusEl = document.getElementById('builder-experience-status');
-        const iframe = document.getElementById('builder-experience-iframe');
-        const btnReload = document.getElementById('builder-experience-reload');
-        const btnOpen = document.getElementById('builder-experience-open-tab');
-        const btnCopy = document.getElementById('builder-experience-copy-mml');
-        const fitChk = document.getElementById('builder-exp-fit');
-        const customUrl = document.getElementById('builder-experience-custom-url');
-        const btnCustomEmbed = document.getElementById('builder-experience-custom-embed');
-        const btnCustomOpen = document.getElementById('builder-experience-custom-open');
-        const btnBackOtter = document.getElementById('builder-experience-back-otter');
-        if (!nftInput || !mmlCode || !iframe || !btnReload || !btnOpen || !btnCopy || !fitChk) return;
+        var LS_MML = 'otterful-experience-mml-doc-url';
+        var LS_WALK = 'otterful-experience-walk-url';
+        var DEFAULT_WALK = '/mixamo/walk.glb';
+        var VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
+
+        var nftInput = document.getElementById('builder-experience-nft-input');
+        var docUrlInput = document.getElementById('builder-experience-doc-url');
+        var walkUrlInput = document.getElementById('builder-experience-walk-url');
+        var statusEl = document.getElementById('builder-experience-status');
+        var container = document.getElementById('builder-experience-host');
+        var canvas = document.getElementById('builder-experience-canvas');
+        var hud = document.getElementById('builder-experience-hud');
+        var btnApply = document.getElementById('builder-experience-apply-num');
+        var btnRun = document.getElementById('builder-experience-run');
+        var btnOpen = document.getElementById('builder-experience-open-viewer');
+        var btnCopy = document.getElementById('builder-experience-copy-mml');
+
+        if (!nftInput || !docUrlInput || !walkUrlInput || !container || !canvas || !hud || !btnRun || !btnOpen || !btnCopy) return;
+
+        var mount = null;
+        var spaceModulePromise = null;
 
         function setStatus(msg) {
           if (statusEl) statusEl.textContent = msg || '';
@@ -460,26 +441,27 @@
         }
 
         function canonicalMmlUrlForToken(numStr) {
-          const t = String(numStr || '').trim();
+          var t = String(numStr || '').trim();
           if (!/^\d{1,4}$/.test(t)) return '';
-          const n = parseInt(t, 10);
+          var n = parseInt(t, 10);
           if (isNaN(n) || n < 1 || n > 2222) return '';
-          return `${siteOrigin()}/mml/${n}.mml`;
+          return siteOrigin() + '/mml/' + n + '.mml';
         }
 
-        function refreshMmlLine() {
-          const u = canonicalMmlUrlForToken(nftInput.value);
-          mmlCode.textContent = u || '—';
+        function currentDocUrl() {
+          var raw = String(docUrlInput.value || '').trim();
+          if (raw) return raw;
+          return canonicalMmlUrlForToken(nftInput.value);
         }
 
         function buildOtterViewerUrl(docUrl) {
-          const v = new URL(VIEWER_BASE);
+          var v = new URL(VIEWER_BASE);
           v.searchParams.set('url', docUrl.trim());
           v.searchParams.set('cameraMode', 'orbit');
-          v.searchParams.set('cameraOrbitPitch', fitChk.checked ? '86' : '88');
+          v.searchParams.set('cameraOrbitPitch', '88');
           v.searchParams.set('cameraOrbitSpeed', '0');
-          v.searchParams.set('cameraOrbitDistance', fitChk.checked ? '1.75' : '2.34');
-          v.searchParams.set('cameraFov', fitChk.checked ? '58' : '56');
+          v.searchParams.set('cameraOrbitDistance', '2.34');
+          v.searchParams.set('cameraFov', '56');
           v.searchParams.set('cameraLookAt', '0,0.02,0');
           v.searchParams.set('ambientLight', '0.22');
           v.searchParams.set('ambientLightColor', '8b95a8');
@@ -490,64 +472,115 @@
           return v.toString();
         }
 
-        function loadOtterInFrame() {
-          const doc = canonicalMmlUrlForToken(nftInput.value);
-          refreshMmlLine();
-          if (!doc) {
-            setStatus('Enter one otter # from 1 to 2222 (digits only). Example: 14. Ranges like 1-2222 are not valid here.');
-            try {
-              iframe.removeAttribute('src');
-            } catch (_) { /* ignore */ }
-            return;
-          }
-          iframe.src = buildOtterViewerUrl(doc);
-          setStatus('Loading your otter in the MML viewer…');
-        }
-
-        function normalizeHttpsUrl(raw) {
-          const s = String(raw || '').trim();
-          if (!s) return null;
-          try {
-            const u = new URL(s, window.location.href);
-            if (u.protocol !== 'https:') return null;
-            return u.toString().replace(/\/$/, '');
-          } catch (_) {
-            return null;
-          }
-        }
-
         try {
-          const saved = localStorage.getItem(LS_CUSTOM);
-          if (saved && String(saved).trim()) customUrl.value = String(saved).trim();
+          var savedM = localStorage.getItem(LS_MML);
+          if (savedM && String(savedM).trim()) docUrlInput.value = String(savedM).trim();
         } catch (_) { /* ignore */ }
+        try {
+          var savedW = localStorage.getItem(LS_WALK);
+          if (savedW != null && String(savedW).trim()) walkUrlInput.value = String(savedW).trim();
+          else walkUrlInput.value = DEFAULT_WALK;
+        } catch (_) {
+          walkUrlInput.value = DEFAULT_WALK;
+        }
 
-        nftInput.addEventListener('input', refreshMmlLine);
-        nftInput.addEventListener('change', loadOtterInFrame);
-        fitChk.addEventListener('change', loadOtterInFrame);
-        btnReload.addEventListener('click', loadOtterInFrame);
+        function persistInputs() {
+          try {
+            localStorage.setItem(LS_MML, String(docUrlInput.value || '').trim());
+            localStorage.setItem(LS_WALK, String(walkUrlInput.value || '').trim());
+          } catch (_) { /* ignore */ }
+        }
+
+        function loadSpaceModule() {
+          if (!spaceModulePromise) {
+            var href = new URL('./games/otter-3d-space/otter-space.mjs', window.location.href).href;
+            spaceModulePromise = import(href);
+          }
+          return spaceModulePromise;
+        }
+
+        function ensureDisposed() {
+          if (mount && typeof mount.dispose === 'function') {
+            try {
+              mount.dispose();
+            } catch (_) { /* ignore */ }
+          }
+          mount = null;
+        }
+
+        function startSpace() {
+          persistInputs();
+          var mmlUrl = String(docUrlInput.value || '').trim();
+          if (!mmlUrl) {
+            setStatus('Set an MML document URL, or use “Fill URL from #”.');
+            return Promise.resolve();
+          }
+          ensureDisposed();
+          return loadSpaceModule()
+            .then(function (mod) {
+              mount = mod.mountOtterSpace({
+                container: container,
+                canvas: canvas,
+                hud: hud,
+                getMmlUrl: function () {
+                  return String(docUrlInput.value || '').trim();
+                },
+                getWalkUrl: function () {
+                  var w = String(walkUrlInput.value || '').trim();
+                  return w || DEFAULT_WALK;
+                },
+                onStatus: setStatus,
+              });
+              return mount.start();
+            })
+            .catch(function (e) {
+              var msg = e && e.message ? e.message : String(e);
+              setStatus(msg);
+              ensureDisposed();
+            });
+        }
+
+        if (btnApply) {
+          btnApply.addEventListener('click', function () {
+            var u = canonicalMmlUrlForToken(nftInput.value);
+            if (!u) {
+              setStatus('Enter otter # 1–2222 (digits only).');
+              return;
+            }
+            docUrlInput.value = u;
+            persistInputs();
+            setStatus('Filled MML URL from #.');
+          });
+        }
+
+        btnRun.addEventListener('click', function () {
+          startSpace();
+        });
 
         btnOpen.addEventListener('click', function () {
-          const doc = canonicalMmlUrlForToken(nftInput.value);
+          var doc = currentDocUrl();
           if (!doc) {
-            setStatus('Enter one otter # (digits only), e.g. 14.');
+            setStatus('Enter an MML document URL or otter #.');
             return;
           }
-          setStatus('Opened viewer in a new tab.');
+          window.open(buildOtterViewerUrl(doc), '_blank', 'noopener,noreferrer');
+          setStatus('Opened MML viewer in a new tab.');
         });
 
         btnCopy.addEventListener('click', function () {
-          const u = canonicalMmlUrlForToken(nftInput.value);
+          var u = currentDocUrl();
           if (!u) {
-            setStatus('Enter one otter # (digits only), e.g. 14.');
+            setStatus('Enter an MML document URL or otter #.');
             return;
           }
-            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL above.');
-          };
+          function run(ok) {
+            setStatus(ok ? 'Copied MML document URL.' : 'Copy failed; select the URL in the field.');
+          }
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(u).then(() => run(true)).catch(() => run(false));
+            navigator.clipboard.writeText(u).then(function () { run(true); }).catch(function () { run(false); });
           } else {
             try {
-              const ta = document.createElement('textarea');
+              var ta = document.createElement('textarea');
               ta.value = u;
               ta.setAttribute('readonly', '');
               ta.style.position = 'fixed';
@@ -562,59 +595,28 @@
           }
         });
 
-        if (customUrl && btnCustomEmbed && btnCustomOpen && btnBackOtter) {
-          function persistCustom() {
-            try {
-              localStorage.setItem(LS_CUSTOM, String(customUrl.value || '').trim());
-            } catch (_) { /* ignore */ }
-          }
-
-          btnCustomEmbed.addEventListener('click', function () {
-            const u = normalizeHttpsUrl(customUrl.value);
-            if (!u) {
-              setStatus('Enter a valid https:// URL (HTTP cannot be embedded on this HTTPS site).');
-              return;
-            }
-            persistCustom();
-            iframe.src = u;
-            setStatus('Replaced frame with your custom page.');
-          });
-
-          btnCustomOpen.addEventListener('click', function () {
-            const raw = String(customUrl.value || '').trim();
-            const u = normalizeHttpsUrl(raw);
-            if (u) {
-              persistCustom();
-              window.open(u, '_blank', 'noopener,noreferrer');
-              setStatus('Opened in a new tab.');
-              return;
-            }
-            try {
-              const loose = new URL(raw, window.location.href);
-              if (loose.protocol === 'http:' || loose.protocol === 'https:') {
-                persistCustom();
-                window.open(loose.toString(), '_blank', 'noopener,noreferrer');
-                setStatus('Opened in a new tab.');
-              } else setStatus('Enter a valid URL.');
-            } catch (_) {
-              setStatus('Enter a valid URL.');
-            }
-          });
-
-          btnBackOtter.addEventListener('click', function () {
-            loadOtterInFrame();
-          });
-        }
-
         window.addEventListener('otterful-experience-panel-open', function () {
-          refreshMmlLine();
-          loadOtterInFrame();
+          if (!String(docUrlInput.value || '').trim()) {
+            var u = canonicalMmlUrlForToken(nftInput.value);
+            if (u) docUrlInput.value = u;
+          }
+          startSpace();
+        });
+
+        window.addEventListener('otterful-experience-panel-close', function () {
+          ensureDisposed();
         });
 
         (function initialIfExperienceTab() {
           try {
             var p = document.getElementById('builder-panel-experience');
-            if (p && !p.hasAttribute('hidden')) loadOtterInFrame();
+            if (p && !p.hasAttribute('hidden')) {
+              if (!String(docUrlInput.value || '').trim()) {
+                var u2 = canonicalMmlUrlForToken(nftInput.value);
+                if (u2) docUrlInput.value = u2;
+              }
+              startSpace();
+            }
           } catch (_) { /* ignore */ }
         })();
       })();
