@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const loader = new GLTFLoader();
+loader.setCrossOrigin('anonymous');
 
 /** Same-origin Mixamo clips used by Shell Snag (Vercel routes `/mixamo/*`). */
 export function mixamoAssetUrl(file: string): string {
@@ -164,11 +165,27 @@ function collectRigBoneNames(root: THREE.Object3D): Set<string> {
 
 function clipTrackMatchesSkeleton(clip: THREE.AnimationClip, root: THREE.Object3D): number {
   const names = collectRigBoneNames(root);
+  const stems = new Set<string>();
+  names.forEach((n) => stems.add(boneStem(n)));
   let hits = 0;
   for (const tr of clip.tracks) {
     const dot = tr.name.indexOf('.');
     const prefix = dot >= 0 ? tr.name.slice(0, dot) : tr.name;
-    if (names.has(prefix)) hits++;
+    if (names.has(prefix)) {
+      hits++;
+      continue;
+    }
+    const pst = boneStem(prefix);
+    if (pst.length >= 2 && stems.has(pst)) {
+      hits++;
+      continue;
+    }
+    for (const s of stems) {
+      if (s.length >= 2 && (pst === s || pst.endsWith(s) || s.endsWith(pst))) {
+        hits++;
+        break;
+      }
+    }
   }
   return hits;
 }

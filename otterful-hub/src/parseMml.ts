@@ -1,38 +1,79 @@
 /**
- * Parses Otterful MML HTML (same shape as /api/mml and /mml/&lt;id&gt;.mml).
- * Source of truth is the MML document — no trait/metadata rebuild.
+ * Otterful MML HTML — `<m-character>` / `<m-model>` as emitted by `/api/mml` and `/mml/<id>.mml`.
+ * Supports multiline tags and flexible attribute order (MML-shaped markup).
  */
 export type MmlWearable = { socket: string; src: string };
 
 export type ParsedMml = {
+  /** Absolute URL of the fetched MML document (resolves relative `src` values). */
+  documentUrl: string;
   bodySrc: string;
   animSrc: string | null;
   wearables: MmlWearable[];
 };
 
-export function parseMmlHtml(html: string): ParsedMml {
-  const m = html.match(/<m-character\b[^>]*>/i);
-  if (!m) throw new Error('No <m-character> in MML document.');
-  const openTag = m[0];
-  const srcMatch = openTag.match(/\bsrc="([^"]+)"/i);
-  if (!srcMatch) throw new Error('m-character has no src (body GLB).');
-  const animMatch = openTag.match(/\banim\s*=\s*["']([^"']+)["']/i);
-  const bodySrc = srcMatch[1].trim();
-  const animSrc = animMatch ? animMatch[1].trim() : null;
+function resolveMmlAssetUrl(documentBaseUrl: string, ref: string): string {
+  const s = ref.trim();
+  if (!s) return s;
+  if (/^https?:\/\//i.test(s)) return s;
+  try {
+    return new URL(s, documentBaseUrl).href;
+  } catch {
+    return s;
+  }
+}
+
+/** `/api/mml` uses HTML attribute escaping (`&` → `&amp;`). Regex parsing leaves entities intact — decode before fetch. */
+function decodeHtmlAttributeValue(raw: string): string {
+  return raw
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&');
+}
+
+/** Read `name="..."` or `name='...'` from an attribute block (may include newlines). */
+function readMmlAttr(attrs: string, name: string): string | null {
+  const re = new RegExp(`(?:^|[\\s])${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'i');
+  const m = attrs.match(re);
+  if (!m) return null;
+  const inner = m[2].trim().replace(/\s+/g, ' ');
+  return decodeHtmlAttributeValue(inner);
+}
+
+/**
+ * @param html Raw HTML of the MML document
+ * @param documentBaseUrl Absolute URL of that document (for relative `src` values)
+ */
+export function parseMmlHtml(html: string, documentBaseUrl: string): ParsedMml {
+  const charOpen = html.match(/<\s*m-character\b([\s\S]*?)>/i);
+  if (!charOpen) throw new Error('No <m-character> in MML document.');
+  const attrBlock = charOpen[1];
+
+  const bodyRaw = readMmlAttr(attrBlock, 'src');
+  if (!bodyRaw) throw new Error('m-character has no src (body GLB).');
+  const bodySrc = resolveMmlAssetUrl(documentBaseUrl, bodyRaw);
+
+  const animRaw = readMmlAttr(attrBlock, 'anim');
+  const animSrc = animRaw ? resolveMmlAssetUrl(documentBaseUrl, animRaw) : null;
 
   const wearables: MmlWearable[] = [];
-  const blockRe = /<m-character\b[^>]*>([\s\S]*?)<\/m-character>/i;
-  const block = html.match(blockRe);
+  const block = html.match(/<\s*m-character\b[\s\S]*?>([\s\S]*?)<\/\s*m-character\s*>/i);
   const inner = block ? block[1] : html;
-  const modelRe = /<m-model\b([^>]*)>(?:\s*<\/m-model>)?/gi;
+
+  const modelRe = /<\s*m-model\b([\s\S]*?)(?:\/>|>[\s\S]*?<\/\s*m-model\s*>)/gi;
   let mm: RegExpExecArray | null;
   while ((mm = modelRe.exec(inner))) {
-    const attrs = mm[1] || '';
-    const sock = attrs.match(/\bsocket="([^"]+)"/i);
-    const src = attrs.match(/\bsrc="([^"]+)"/i);
-    if (sock && src) wearables.push({ socket: sock[1].trim(), src: src[1].trim() });
+    const a = mm[1];
+    const socket = readMmlAttr(a, 'socket');
+    const srcRaw = readMmlAttr(a, 'src');
+    if (socket && srcRaw) {
+      wearables.push({ socket: socket.trim(), src: resolveMmlAssetUrl(documentBaseUrl, srcRaw) });
+    }
   }
-  return { bodySrc, animSrc, wearables };
+
+  return { documentUrl: documentBaseUrl, bodySrc, animSrc, wearables };
 }
 
 export function tokenIdFromMmlUrl(mmlUrl: string): string | null {

@@ -70,17 +70,29 @@ export type LocomotionActions = {
 type BuiltCb = (root: THREE.Group | null, mixer: THREE.AnimationMixer | null, loco: LocomotionActions | null) => void;
 
 /** Loads GLBs from parsed MML only — no generic substitute avatar. */
-function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: BuiltCb }) {
+function MmlAvatarVisual({
+  parsed,
+  onBuilt,
+  onSceneStatus,
+}: {
+  parsed: ParsedMml;
+  onBuilt: BuiltCb;
+  onSceneStatus?: (msg: string) => void;
+}) {
   const onBuiltRef = useRef(onBuilt);
+  const onSceneStatusRef = useRef(onSceneStatus);
   onBuiltRef.current = onBuilt;
+  onSceneStatusRef.current = onSceneStatus;
 
   useEffect(() => {
     let cancelled = false;
     const built = new THREE.Group();
     let mixer: THREE.AnimationMixer | null = null;
+    const log = (s: string) => onSceneStatusRef.current?.(s);
 
     (async () => {
       try {
+        log('Loading m-character src GLB…');
         const bodyGltf = await loadGltf(parsed.bodySrc);
         if (cancelled) return;
         const model = bodyGltf.scene;
@@ -94,6 +106,7 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
         fitAndGround(model, 2.05);
         model.updateMatrixWorld(true);
         built.add(model);
+        log('Body mesh ready. Loading m-model wearables…');
 
         for (const w of parsed.wearables) {
           try {
@@ -106,9 +119,10 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
             if (!attachWearableGltf(model, w.socket, g)) {
               g.scene.position.set(0, 1.15, 0);
               built.add(g.scene);
+              log(`Wearable fallback (no bone): ${w.socket}`);
             }
-          } catch {
-            /* skip broken wearable */
+          } catch (we) {
+            log(`Wearable skip: ${w.socket} — ${we instanceof Error ? we.message : String(we)}`);
           }
         }
 
@@ -116,16 +130,24 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
         let externalAnim: { animations: THREE.AnimationClip[] } | null = null;
         if (parsed.animSrc) {
           try {
+            log('Loading m-character anim GLB…');
             externalAnim = await loadGltf(parsed.animSrc);
-          } catch {
+          } catch (ae) {
             externalAnim = null;
+            log(`anim= URL failed (idle may use body or /mixamo): ${ae instanceof Error ? ae.message : String(ae)}`);
           }
         }
         if (cancelled) return;
+        log('Binding clips (MML + /mixamo locomotion)…');
         const loco = await mountIdleWalkRun(mixer, model, bodyGltf.animations || [], externalAnim);
+        log(
+          `Ready — wearables: ${parsed.wearables.length}. Clips idle:${loco.idle ? 'on' : 'off'} walk:${loco.walk ? 'on' : 'off'} run:${loco.run ? 'on' : 'off'}`
+        );
 
         if (!cancelled) onBuiltRef.current(built, mixer, loco);
-      } catch {
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        log(`Failed: ${msg}`);
         if (!cancelled) onBuiltRef.current(null, null, null);
       }
     })();
@@ -144,9 +166,11 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
 export function HubCanvas({
   parsed,
   onAvatarRoot,
+  onHubSceneStatus,
 }: {
   parsed: ParsedMml;
   onAvatarRoot: (root: THREE.Group | null, mixer: THREE.AnimationMixer | null) => void;
+  onHubSceneStatus?: (msg: string) => void;
 }) {
   const playerRef = useRef<THREE.Group>(null);
   const mirrorRef = useRef<THREE.Group>(null);
@@ -202,7 +226,7 @@ export function HubCanvas({
     }
 
     const loco = locoRef.current;
-    if (loco?.idle) {
+    if (loco) {
       const sprint = !!(keys.current.ShiftLeft || keys.current.ShiftRight);
       const moving = Math.abs(fwd) > 0.01;
       let walkW = 0;
@@ -216,7 +240,9 @@ export function HubCanvas({
         }
       }
       const moveLayer = Math.max(walkW, runW);
-      loco.idle.setEffectiveWeight(Math.max(0.08, 1 - moveLayer * 0.95));
+      if (loco.idle) {
+        loco.idle.setEffectiveWeight(Math.max(0.08, 1 - moveLayer * 0.95));
+      }
       if (loco.walk) loco.walk.setEffectiveWeight(walkW * (1 - runW * 0.9));
       if (loco.run) loco.run.setEffectiveWeight(runW);
     }
@@ -257,10 +283,10 @@ export function HubCanvas({
       <PortalZone position={[12, 0, -7]} color="#5ad4ff" label="Trait Showroom" />
       <PortalZone position={[0, 0, -16]} color="#c56bff" label="Staking Den" />
 
-      <MmlAvatarVisual parsed={parsed} onBuilt={onBuilt} />
+      <MmlAvatarVisual parsed={parsed} onBuilt={onBuilt} onSceneStatus={onHubSceneStatus} />
 
       <group ref={playerRef}>
-        {visual && <primitive object={visual} />}
+        {visual && <primitive key={parsed.bodySrc + parsed.documentUrl} object={visual} />}
       </group>
 
       {visual && (
@@ -277,9 +303,11 @@ export function HubCanvas({
 export function HubCanvasRoot({
   parsed,
   onAvatarRoot,
+  onHubSceneStatus,
 }: {
   parsed: ParsedMml;
   onAvatarRoot: (root: THREE.Group | null, mixer: THREE.AnimationMixer | null) => void;
+  onHubSceneStatus?: (msg: string) => void;
 }) {
   return (
     <Canvas
@@ -291,7 +319,7 @@ export function HubCanvasRoot({
         gl.setClearColor('#070d1a');
       }}
     >
-      <HubCanvas parsed={parsed} onAvatarRoot={onAvatarRoot} />
+      <HubCanvas parsed={parsed} onAvatarRoot={onAvatarRoot} onHubSceneStatus={onHubSceneStatus} />
     </Canvas>
   );
 }

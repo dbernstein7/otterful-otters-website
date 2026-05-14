@@ -4,7 +4,8 @@ import { HubCanvasRoot } from './HubCanvas';
 import { parseMmlHtml, tokenIdFromMmlUrl, type ParsedMml } from './parseMml';
 import './hub.css';
 
-const DEFAULT_MML_URL = 'https://www.otterfulotters.xyz/api/mml?id=26';
+/** Same-origin MML document (works on any deploy host). */
+const DEFAULT_MML_URL = '/api/mml?id=26';
 
 export default function OtterfulHub() {
   const [mmlUrl, setMmlUrl] = useState(DEFAULT_MML_URL);
@@ -13,21 +14,28 @@ export default function OtterfulHub() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarOk, setAvatarOk] = useState(false);
+  const [hubSceneLog, setHubSceneLog] = useState('');
 
   const tokenId = useMemo(() => tokenIdFromMmlUrl(mmlUrl) ?? '26', [mmlUrl]);
 
+  const appendHubSceneLog = useCallback((msg: string) => {
+    setHubSceneLog((prev) => (prev ? `${prev}\n` : '') + msg);
+  }, []);
+
   const loadFromUrl = useCallback(async (url: string) => {
-    const u = url.trim();
+    const raw = url.trim();
+    const resolved = /^https?:\/\//i.test(raw) ? raw : new URL(raw, window.location.href).href;
     setLoading(true);
     setError(null);
     setParsed(null);
     setAvatarOk(false);
-    setMmlUrl(u);
+    setHubSceneLog('');
+    setMmlUrl(resolved);
     try {
-      const res = await fetch(u, { credentials: 'omit', mode: 'cors' });
+      const res = await fetch(resolved, { credentials: 'omit', mode: 'cors' });
       if (!res.ok) throw new Error(`MML fetch failed (${res.status})`);
       const html = await res.text();
-      const p = parseMmlHtml(html);
+      const p = parseMmlHtml(html, resolved);
       setParsed(p);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -59,7 +67,7 @@ export default function OtterfulHub() {
       <main className="otterful-hub-main">
         <div className="otterful-hub-canvas">
           {parsed ? (
-            <HubCanvasRoot parsed={parsed} onAvatarRoot={onAvatarRoot} />
+            <HubCanvasRoot parsed={parsed} onAvatarRoot={onAvatarRoot} onHubSceneStatus={appendHubSceneLog} />
           ) : (
             <div className="otterful-hub-canvas-fallback">
               {loading ? 'Loading MML…' : error ?? 'No MML loaded.'}
@@ -69,8 +77,10 @@ export default function OtterfulHub() {
         <aside className="otterful-hub-panel" aria-label="MML and asset details">
           <h1 className="otterful-hub-title">Otterful Hub</h1>
           <p className="otterful-hub-lede">
-            MML document is the source of truth. WASD to move. Hold <strong>Shift</strong> while moving for run. If the MML has no{' '}
-            <code className="otterful-hub-code">anim=</code>, the hub loads Shell Snag Mixamo clips from <code className="otterful-hub-code">/mixamo/</code> (idle, walk, run).
+            This hub only loads what your <strong>MML HTML</strong> declares: <code className="otterful-hub-code">m-character</code> body +{' '}
+            <code className="otterful-hub-code">m-model</code> wearables. Same-origin default <code className="otterful-hub-code">/api/mml?id=…</code>. WASD move;{' '}
+            <strong>Shift</strong> + move for run. If <code className="otterful-hub-code">anim=</code> is absent and the body has no clips, idle/walk/run fall back to{' '}
+            <code className="otterful-hub-code">/mixamo/*.glb</code> (Shell Snag assets).
           </p>
 
           <label className="otterful-hub-label" htmlFor="hub-mml-url">
@@ -99,6 +109,13 @@ export default function OtterfulHub() {
             <span className="otterful-hub-stat-label">Active MML URL</span>
             <code className="otterful-hub-code">{mmlUrl}</code>
           </div>
+
+          {parsed && (
+            <div className="otterful-hub-stat">
+              <span className="otterful-hub-stat-label">MML document URL (resolved)</span>
+              <code className="otterful-hub-code">{parsed.documentUrl}</code>
+            </div>
+          )}
 
           <div className="otterful-hub-stat">
             <span className="otterful-hub-stat-label">Body GLB (m-character src)</span>
@@ -131,6 +148,13 @@ export default function OtterfulHub() {
             <span className="otterful-hub-stat-label">Avatar in scene</span>
             <span className="otterful-hub-stat-value">{avatarOk ? 'Loaded from MML' : loading || error ? '—' : 'Not ready'}</span>
           </div>
+
+          {hubSceneLog ? (
+            <div className="otterful-hub-stat">
+              <span className="otterful-hub-stat-label">3D load log</span>
+              <pre className="otterful-hub-scene-log">{hubSceneLog}</pre>
+            </div>
+          ) : null}
 
           {error && <p className="otterful-hub-error">{error}</p>}
         </aside>

@@ -5,30 +5,65 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
 const gltfLoader = new GLTFLoader();
+gltfLoader.setCrossOrigin('anonymous');
 
-export function parseMmlHtml(html) {
-  const m = html.match(/<m-character\b[^>]*>/i);
-  if (!m) throw new Error('No <m-character> in MML document.');
-  const openTag = m[0];
-  const srcMatch = openTag.match(/\bsrc="([^"]+)"/i);
-  if (!srcMatch) throw new Error('m-character has no src (body GLB).');
-  const animMatch = openTag.match(/\banim\s*=\s*["']([^"']+)["']/i);
-  const bodySrc = srcMatch[1].trim();
-  const animSrc = animMatch ? animMatch[1].trim() : null;
+function resolveMmlAssetUrl(documentBaseUrl, ref) {
+  const s = String(ref || '').trim();
+  if (!s) return s;
+  if (/^https?:\/\//i.test(s)) return s;
+  try {
+    return new URL(s, documentBaseUrl).href;
+  } catch (_) {
+    return s;
+  }
+}
 
+/** `/api/mml` escapes `&` as `&amp;` in attributes — decode before fetching GLBs. */
+function decodeHtmlAttributeValue(raw) {
+  return String(raw)
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&amp;/gi, '&');
+}
+
+function readMmlAttr(attrs, name) {
+  const re = new RegExp(`(?:^|[\\s])${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'i');
+  const m = attrs.match(re);
+  if (!m) return null;
+  const inner = m[2].trim().replace(/\s+/g, ' ');
+  return decodeHtmlAttributeValue(inner);
+}
+
+/**
+ * Otterful MML: `<m-character>` + `<m-model>` (multiline-safe). Same rules as `otterful-hub/src/parseMml.ts`.
+ * @param {string} html
+ * @param {string} documentBaseUrl Absolute URL of the fetched MML document (resolves relative `src`).
+ */
+export function parseMmlHtml(html, documentBaseUrl) {
+  const charOpen = html.match(/<\s*m-character\b([\s\S]*?)>/i);
+  if (!charOpen) throw new Error('No <m-character> in MML document.');
+  const attrBlock = charOpen[1];
+  const bodyRaw = readMmlAttr(attrBlock, 'src');
+  if (!bodyRaw) throw new Error('m-character has no src (body GLB).');
+  const bodySrc = resolveMmlAssetUrl(documentBaseUrl, bodyRaw);
+  const animRaw = readMmlAttr(attrBlock, 'anim');
+  const animSrc = animRaw ? resolveMmlAssetUrl(documentBaseUrl, animRaw) : null;
   const wearables = [];
-  const blockRe = /<m-character\b[^>]*>([\s\S]*?)<\/m-character>/i;
-  const block = html.match(blockRe);
+  const block = html.match(/<\s*m-character\b[\s\S]*?>([\s\S]*?)<\/\s*m-character\s*>/i);
   const inner = block ? block[1] : html;
-  const modelRe = /<m-model\b([^>]*)>(?:\s*<\/m-model>)?/gi;
+  const modelRe = /<\s*m-model\b([\s\S]*?)(?:\/>|>[\s\S]*?<\/\s*m-model\s*>)/gi;
   let mm;
   while ((mm = modelRe.exec(inner))) {
-    const attrs = mm[1] || '';
-    const sock = attrs.match(/\bsocket="([^"]+)"/i);
-    const src = attrs.match(/\bsrc="([^"]+)"/i);
-    if (sock && src) wearables.push({ socket: sock[1].trim(), src: src[1].trim() });
+    const a = mm[1];
+    const socket = readMmlAttr(a, 'socket');
+    const srcRaw = readMmlAttr(a, 'src');
+    if (socket && srcRaw) {
+      wearables.push({ socket: socket.trim(), src: resolveMmlAssetUrl(documentBaseUrl, srcRaw) });
+    }
   }
-  return { bodySrc, animSrc, wearables };
+  return { documentUrl: documentBaseUrl, bodySrc, animSrc, wearables };
 }
 
 function findDominantSkinnedMesh(root) {
@@ -151,11 +186,27 @@ function collectRigBoneNames(root) {
 
 function clipTrackMatchesSkeleton(clip, root) {
   const names = collectRigBoneNames(root);
+  const stems = new Set();
+  names.forEach((n) => stems.add(boneStem(n)));
   let hits = 0;
   for (const tr of clip.tracks) {
     const dot = tr.name.indexOf('.');
     const prefix = dot >= 0 ? tr.name.slice(0, dot) : tr.name;
-    if (names.has(prefix)) hits++;
+    if (names.has(prefix)) {
+      hits++;
+      continue;
+    }
+    const pst = boneStem(prefix);
+    if (pst.length >= 2 && stems.has(pst)) {
+      hits++;
+      continue;
+    }
+    for (const s of stems) {
+      if (s.length >= 2 && (pst === s || pst.endsWith(s) || s.endsWith(pst))) {
+        hits++;
+        break;
+      }
+    }
   }
   return hits;
 }
@@ -316,17 +367,18 @@ export function mountOtterSpace(opts) {
     cleanup();
     running = true;
     camInitialized = false;
-    const mmlUrl = String(getMmlUrl() || '').trim();
-    if (!mmlUrl) {
+    const mmlUrlRaw = String(getMmlUrl() || '').trim();
+    if (!mmlUrlRaw) {
       onStatus('Set an MML document URL (https… or same-origin /mml/….mml).');
       running = false;
       return;
     }
+    const mmlUrl = /^https?:\/\//i.test(mmlUrlRaw) ? mmlUrlRaw : new URL(mmlUrlRaw, window.location.href).href;
     onStatus('Fetching MML…');
     const res = await fetch(mmlUrl, { credentials: 'omit', mode: 'cors' });
     if (!res.ok) throw new Error(`MML fetch failed (${res.status})`);
     const html = await res.text();
-    const parsed = parseMmlHtml(html);
+    const parsed = parseMmlHtml(html, mmlUrl);
     onStatus('Loading GLBs…');
 
     scene = new THREE.Scene();
