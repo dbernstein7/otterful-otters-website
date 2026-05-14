@@ -222,6 +222,17 @@
                     You can embed your own deployment only over <strong>HTTPS</strong>; <code class="mml-experience-code">http://127.0.0.1</code> must be opened in a new tab, not inside this site.
                 </p>
             </div>
+            <div class="mml-experience-deploy" role="note">
+                <p class="mml-experience-deploy-title">Multiplayer (WASD + other people)</p>
+                <p class="mml-experience-deploy-body">
+                    That mode needs the <strong>Node</strong> world in this repo: folder <code class="mml-experience-code">otterful-mml-world/</code> (from
+                    <a href="https://github.com/mml-io/3d-web-experience" target="_blank" rel="noopener noreferrer">mml-io/3d-web-experience</a>).
+                    There: <code class="mml-experience-code">npm install</code> then <code class="mml-experience-code">npm run serve</code> → open <code class="mml-experience-code">http://127.0.0.1:8080</code> in <strong>two tabs</strong> to test. Otter avatars are wired in <code class="mml-experience-code">world.json</code> via <code class="mml-experience-code">mmlCharacterUrl</code> to your live <code class="mml-experience-code">/mml/&lt;#&gt;.mml</code> URLs.
+                </p>
+                <p class="mml-experience-deploy-body">
+                    Deploy that same process to <strong>HTTPS</strong> (see <a href="otterful-mml-world/README.md">otterful-mml-world/README.md</a> + <code class="mml-experience-code">Dockerfile</code>), then use <strong>Advanced → Replace frame with this URL</strong> below.
+                </p>
+            </div>
             <div class="mml-experience-toolbar">
                 <div class="mml-experience-toolbar-row">
                     <label class="mml-experience-label" for="builder-experience-nft-input">Otter #</label>

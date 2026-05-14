@@ -1,0 +1,42 @@
+{
+  "chat": true,
+  "auth": {
+    "allowAnonymous": true
+  },
+  "avatars": {
+    "allowCustomAvatars": true,
+    "availableAvatars": [
+      {
+        "name": "Otterful #1",
+        "isDefaultAvatar": true,
+        "mmlCharacterUrl": "https://www.otterfulotters.xyz/mml/1.mml"
+      },
+      {
+        "name": "Otterful #14",
+        "mmlCharacterUrl": "https://www.otterfulotters.xyz/mml/14.mml"
+      },
+      {
+        "name": "Otterful #18",
+        "mmlCharacterUrl": "https://www.otterfulotters.xyz/mml/18.mml"
+      },
+      {
+        "name": "Otterful #100",
+        "mmlCharacterUrl": "https://www.otterfulotters.xyz/mml/100.mml"
+      },
+      {
+        "name": "Otterful #1000",
+        "mmlCharacterUrl": "https://www.otterfulotters.xyz/mml/1000.mml"
+      }
+    ]
+  },
+  "mmlDocuments": {
+    "hello-world.html": {
+      "url": "ws:///mml-documents/hello-world.html",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 10
+      }
+    }
+  }
+}

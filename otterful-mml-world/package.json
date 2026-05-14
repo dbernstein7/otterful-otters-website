@@ -1,0 +1,17 @@
+{
+  "name": "otterful-mml-world",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Otterful multiplayer MML world (mml-io 3d-web-experience). Deploy separately from the static site.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "serve": "3d-web-experience serve world.json",
+    "start": "3d-web-experience serve world.json"
+  },
+  "dependencies": {
+    "@mml-io/3d-web-experience": "^0.28.0"
+  }
+}

@@ -1636,6 +1636,34 @@ body::before {
     color: #c8ffd8;
 }
 
+.mml-experience-deploy {
+    padding: 14px 16px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(120, 180, 255, 0.45);
+    background: rgba(12, 22, 40, 0.75);
+    max-width: 920px;
+}
+
+.mml-experience-deploy-title {
+    margin: 0 0 8px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #a8d4ff;
+}
+
+.mml-experience-deploy-body {
+    margin: 0 0 10px;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.mml-experience-deploy-body:last-child {
+    margin-bottom: 0;
+}
+
 .mml-experience-toolbar {
     display: flex;
     flex-wrap: wrap;
