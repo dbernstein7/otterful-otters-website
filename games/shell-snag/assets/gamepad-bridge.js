@@ -164,7 +164,8 @@
       '#osr-ctrl-panel h3{margin:12px 0 6px;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(125,211,252,.85)}' +
       '#osr-ctrl-panel ul{margin:0;padding-left:1.05rem;line-height:1.5}' +
       '#osr-ctrl-panel li{margin:2px 0}' +
-      '#osr-ctrl-foot{margin-top:12px;padding:8px 10px;font-size:11px;line-height:1.45;color:rgba(226,232,240,.88);background:rgba(0,0,0,.25);border-radius:8px}';
+      '#osr-ctrl-foot{margin-top:12px;padding:8px 10px;font-size:11px;line-height:1.45;color:rgba(226,232,240,.88);background:rgba(0,0,0,.25);border-radius:8px}' +
+      '#osr-ctrl-wrap.osr-ctrl-hidden{display:none!important}';
 
     var st = document.createElement('style');
     st.textContent = css;
@@ -207,9 +208,13 @@
       '<p id="osr-ctrl-foot" class="osr-ctrl-foot">Press any controller button once so the browser detects it. <b>Esc</b> exits pointer lock.</p>';
 
     root.appendChild(btn);
-    document.body.appendChild(scrim);
-    document.body.appendChild(panel);
-    document.body.appendChild(root);
+
+    var wrap = document.createElement('div');
+    wrap.id = 'osr-ctrl-wrap';
+    wrap.appendChild(scrim);
+    wrap.appendChild(panel);
+    wrap.appendChild(root);
+    document.body.appendChild(wrap);
 
     function setOpen(on) {
       btn.setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -218,8 +223,50 @@
       scrim.setAttribute('aria-hidden', on ? 'false' : 'true');
     }
 
+    /** Cog + panel only before a run (start / loading), never during play or results. */
+    function shouldShowPregameControls() {
+      if (document.pointerLockElement) return false;
+      var el = document.getElementById('root');
+      if (!el) return false;
+      var t = el.textContent || '';
+      if (t.indexOf('Play again') !== -1) return false;
+      if (t.indexOf('Claim rewards') !== -1) return false;
+      if (t.indexOf("Time's up") !== -1 || t.indexOf('Crab lunch') !== -1) return false;
+      if (t.indexOf('Time') !== -1 && t.indexOf('Score') !== -1) return false;
+      if (t.indexOf('Start run') !== -1) return true;
+      if (t.indexOf('Loading') !== -1) return true;
+      if (t.indexOf('Beach run') !== -1) return true;
+      return false;
+    }
+
+    var syncTimer = null;
+    function syncPregameControls() {
+      var show = shouldShowPregameControls();
+      if (!show) {
+        setOpen(false);
+        wrap.classList.add('osr-ctrl-hidden');
+      } else {
+        wrap.classList.remove('osr-ctrl-hidden');
+      }
+    }
+
+    function scheduleSync() {
+      if (syncTimer) clearTimeout(syncTimer);
+      syncTimer = setTimeout(syncPregameControls, 50);
+    }
+
+    document.addEventListener('pointerlockchange', syncPregameControls);
+    var rootEl = document.getElementById('root');
+    if (rootEl && typeof MutationObserver !== 'undefined') {
+      var mo = new MutationObserver(scheduleSync);
+      mo.observe(rootEl, { childList: true, subtree: true });
+    }
+    syncPregameControls();
+    setInterval(syncPregameControls, 900);
+
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
+      if (wrap.classList.contains('osr-ctrl-hidden')) return;
       setOpen(!panel.classList.contains('osr-on'));
     });
     scrim.addEventListener('click', function () {
