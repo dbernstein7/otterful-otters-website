@@ -59,3 +59,8 @@ Default MML URL is set in `src/OtterfulHub.tsx` (`DEFAULT_MML_URL`).
 - MML URL is the **source of truth** (fetch HTML → parse → load those URLs).
 - No separate trait/metadata system in this app.
 - No multiplayer / staking / chain in this MVP.
+
+## Wearables & animation (practical notes)
+
+- **You do not need to strip rigs** from hats/shirts for them to follow the otter. Rigged accessories are parented to the socket bone; we **re-center** each wearable GLB on its bounding box first so huge exporter offsets do not leave props floating in space.
+- **Idle / walk / run** when the MML omits `anim=` (common for Otterful bodies after the demo idle is stripped): the hub loads the same **Shell Snag Mixamo** files served at **`/mixamo/idle-00.glb`**, **`/mixamo/walk.glb`**, and **`/mixamo/run-medium.glb`** (same-origin as your site). Hold **Shift** while moving to favor run.

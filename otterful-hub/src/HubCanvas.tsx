@@ -3,7 +3,7 @@ import { Clone, Grid, Html } from '@react-three/drei';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import type { ParsedMml } from './parseMml';
-import { attachToBone, fitAndGround, loadGltf, mountBodyPrimaryAnimation } from './avatarUtils';
+import { attachWearableGltf, fitAndGround, loadGltf, mountIdleWalkRun } from './avatarUtils';
 
 function ChaseCamera({ target }: { target: React.RefObject<THREE.Group> }) {
   const { camera } = useThree();
@@ -18,36 +18,6 @@ function ChaseCamera({ target }: { target: React.RefObject<THREE.Group> }) {
     camera.lookAt(t.position.x, t.position.y + 1.05, t.position.z);
   });
   return null;
-}
-
-function useTankControls(ref: React.RefObject<THREE.Group>) {
-  const keys = useRef<Record<string, boolean>>({});
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      keys.current[e.code] = true;
-    };
-    const up = (e: KeyboardEvent) => {
-      keys.current[e.code] = false;
-    };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup', up);
-    };
-  }, []);
-  useFrame((_, dt) => {
-    const g = ref.current;
-    if (!g) return;
-    let fwd = 0;
-    let steer = 0;
-    if (keys.current.KeyW) fwd += 1;
-    if (keys.current.KeyS) fwd -= 1;
-    if (keys.current.KeyA) steer += 1;
-    if (keys.current.KeyD) steer -= 1;
-    g.rotation.y += steer * 1.85 * dt;
-    g.translateZ(-fwd * 5.8 * dt);
-  });
 }
 
 function PortalZone({
@@ -91,7 +61,13 @@ function disposeGroup(root: THREE.Object3D) {
   });
 }
 
-type BuiltCb = (root: THREE.Group | null, mixer: THREE.AnimationMixer | null) => void;
+export type LocomotionActions = {
+  idle: THREE.AnimationAction | null;
+  walk: THREE.AnimationAction | null;
+  run: THREE.AnimationAction | null;
+};
+
+type BuiltCb = (root: THREE.Group | null, mixer: THREE.AnimationMixer | null, loco: LocomotionActions | null) => void;
 
 /** Loads GLBs from parsed MML only — no generic substitute avatar. */
 function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: BuiltCb }) {
@@ -116,20 +92,20 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
           }
         });
         fitAndGround(model, 2.05);
+        model.updateMatrixWorld(true);
         built.add(model);
 
         for (const w of parsed.wearables) {
           try {
             const g = await loadGltf(w.src);
             if (cancelled) return;
-            const root = g.scene;
-            root.traverse((o) => {
+            g.scene.traverse((o) => {
               const mesh = o as THREE.Mesh;
               if (mesh.isMesh) mesh.castShadow = true;
             });
-            if (!attachToBone(model, w.socket, root)) {
-              root.position.set(0, 1.15, 0);
-              built.add(root);
+            if (!attachWearableGltf(model, w.socket, g)) {
+              g.scene.position.set(0, 1.15, 0);
+              built.add(g.scene);
             }
           } catch {
             /* skip broken wearable */
@@ -146,11 +122,11 @@ function MmlAvatarVisual({ parsed, onBuilt }: { parsed: ParsedMml; onBuilt: Buil
           }
         }
         if (cancelled) return;
-        mountBodyPrimaryAnimation(mixer, model, bodyGltf.animations || [], externalAnim);
+        const loco = await mountIdleWalkRun(mixer, model, bodyGltf.animations || [], externalAnim);
 
-        if (!cancelled) onBuiltRef.current(built, mixer);
+        if (!cancelled) onBuiltRef.current(built, mixer, loco);
       } catch {
-        if (!cancelled) onBuiltRef.current(null, null);
+        if (!cancelled) onBuiltRef.current(null, null, null);
       }
     })();
 
@@ -176,11 +152,27 @@ export function HubCanvas({
   const mirrorRef = useRef<THREE.Group>(null);
   const [visual, setVisual] = useState<THREE.Group | null>(null);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
+  const locoRef = useRef<LocomotionActions | null>(null);
+  const keys = useRef<Record<string, boolean>>({});
   const onAvatarRootRef = useRef(onAvatarRoot);
   onAvatarRootRef.current = onAvatarRoot;
-  useTankControls(playerRef);
 
-  const onBuilt = useCallback<BuiltCb>((root, mixer) => {
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      keys.current[e.code] = true;
+    };
+    const up = (e: KeyboardEvent) => {
+      keys.current[e.code] = false;
+    };
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    return () => {
+      window.removeEventListener('keydown', down);
+      window.removeEventListener('keyup', up);
+    };
+  }, []);
+
+  const onBuilt = useCallback<BuiltCb>((root, mixer, loco) => {
     setVisual((prev) => {
       if (prev) {
         disposeGroup(prev);
@@ -189,11 +181,46 @@ export function HubCanvas({
       return root;
     });
     mixerRef.current = mixer;
+    locoRef.current = loco;
     onAvatarRootRef.current(root, mixer);
   }, []);
 
   useFrame((_, dt) => {
     mixerRef.current?.update(dt);
+
+    const g = playerRef.current;
+    let fwd = 0;
+    let steer = 0;
+    if (keys.current.KeyW) fwd += 1;
+    if (keys.current.KeyS) fwd -= 1;
+    if (keys.current.KeyA) steer += 1;
+    if (keys.current.KeyD) steer -= 1;
+
+    if (g) {
+      g.rotation.y += steer * 1.85 * dt;
+      g.translateZ(-fwd * 5.8 * dt);
+    }
+
+    const loco = locoRef.current;
+    if (loco?.idle) {
+      const sprint = !!(keys.current.ShiftLeft || keys.current.ShiftRight);
+      const moving = Math.abs(fwd) > 0.01;
+      let walkW = 0;
+      let runW = 0;
+      if (moving) {
+        if (sprint && loco.run) {
+          runW = Math.min(1, 0.85 + Math.abs(fwd) * 0.15);
+          walkW = Math.min(0.35, (1 - runW) * 0.5);
+        } else if (loco.walk) {
+          walkW = Math.min(1, 0.65 + Math.abs(fwd) * 0.25);
+        }
+      }
+      const moveLayer = Math.max(walkW, runW);
+      loco.idle.setEffectiveWeight(Math.max(0.08, 1 - moveLayer * 0.95));
+      if (loco.walk) loco.walk.setEffectiveWeight(walkW * (1 - runW * 0.9));
+      if (loco.run) loco.run.setEffectiveWeight(runW);
+    }
+
     if (mirrorRef.current) mirrorRef.current.rotation.y += 0.55 * dt;
   });
 

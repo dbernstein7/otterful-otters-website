@@ -16,7 +16,7 @@ export function parseMmlHtml(html: string): ParsedMml {
   const openTag = m[0];
   const srcMatch = openTag.match(/\bsrc="([^"]+)"/i);
   if (!srcMatch) throw new Error('m-character has no src (body GLB).');
-  const animMatch = openTag.match(/\banim="([^"]+)"/i);
+  const animMatch = openTag.match(/\banim\s*=\s*["']([^"']+)["']/i);
   const bodySrc = srcMatch[1].trim();
   const animSrc = animMatch ? animMatch[1].trim() : null;
 

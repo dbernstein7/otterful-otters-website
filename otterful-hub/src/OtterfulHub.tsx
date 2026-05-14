@@ -68,7 +68,10 @@ export default function OtterfulHub() {
         </div>
         <aside className="otterful-hub-panel" aria-label="MML and asset details">
           <h1 className="otterful-hub-title">Otterful Hub</h1>
-          <p className="otterful-hub-lede">MML document is the source of truth. WASD to move.</p>
+          <p className="otterful-hub-lede">
+            MML document is the source of truth. WASD to move. Hold <strong>Shift</strong> while moving for run. If the MML has no{' '}
+            <code className="otterful-hub-code">anim=</code>, the hub loads Shell Snag Mixamo clips from <code className="otterful-hub-code">/mixamo/</code> (idle, walk, run).
+          </p>
 
           <label className="otterful-hub-label" htmlFor="hub-mml-url">
             MML document URL
@@ -104,7 +107,9 @@ export default function OtterfulHub() {
 
           <div className="otterful-hub-stat">
             <span className="otterful-hub-stat-label">Animation URL (m-character anim)</span>
-            <code className="otterful-hub-code">{modelUrls.anim}</code>
+            <code className="otterful-hub-code">
+              {modelUrls.anim === '—' ? '— (none in MML; hub uses /mixamo/idle-00.glb + walk + run)' : modelUrls.anim}
+            </code>
           </div>
 
           <div className="otterful-hub-stat">

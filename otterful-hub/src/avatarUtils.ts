@@ -3,7 +3,16 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const loader = new GLTFLoader();
 
-/** Otter rigs often have several SkinnedMeshes (body, face, etc.). Use the one that drives the skeleton. */
+/** Same-origin Mixamo clips used by Shell Snag (Vercel routes `/mixamo/*`). */
+export function mixamoAssetUrl(file: string): string {
+  const f = file.replace(/^\/+/, '');
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return `${window.location.origin}/mixamo/${f}`;
+  }
+  return `/mixamo/${f}`;
+}
+
+/** Otter rigs often have several SkinnedMeshes — pick the one that drives the main skeleton. */
 export function findDominantSkinnedMesh(root: THREE.Object3D): THREE.SkinnedMesh | null {
   const list: THREE.SkinnedMesh[] = [];
   root.traverse((o) => {
@@ -18,11 +27,6 @@ export function findDominantSkinnedMesh(root: THREE.Object3D): THREE.SkinnedMesh
   };
   list.sort((a, b) => score(b) - score(a));
   return list[0];
-}
-
-/** @deprecated use findDominantSkinnedMesh */
-export function findMainSkinned(root: THREE.Object3D): THREE.SkinnedMesh | null {
-  return findDominantSkinnedMesh(root);
 }
 
 export function fitAndGround(root: THREE.Object3D, targetHeight: number) {
@@ -45,9 +49,8 @@ export function fitAndGround(root: THREE.Object3D, targetHeight: number) {
   });
 }
 
-/** Normalize wearable root so exporter offset does not fight socket transform. */
-export function prepareWearableRoot(obj: THREE.Object3D) {
-  obj.position.set(0, 0, 0);
+/** Reset exporter rotation/scale only (keep position — e.g. after bbox centering). */
+export function resetWearableRotationScale(obj: THREE.Object3D) {
   obj.rotation.set(0, 0, 0);
   obj.scale.set(1, 1, 1);
   obj.updateMatrixWorld(true);
@@ -88,7 +91,15 @@ function boneMatchesVariant(boneName: string, variant: string): boolean {
   return false;
 }
 
-/** Find a bone for MML `socket="…"` across all body SkinnedMeshes (Mixamo / short names). */
+function boneStem(name: string): string {
+  return name
+    .replace(/^mixamorig:?/i, '')
+    .replace(/^def-/i, '')
+    .replace(/:/g, '')
+    .toLowerCase();
+}
+
+/** Find a bone for MML `socket="…"` across body SkinnedMeshes (Mixamo / short names + stem fallback). */
 export function findBoneForSocket(bodyRoot: THREE.Object3D, socketName: string): THREE.Bone | null {
   const variants = socketNameVariants(socketName);
   const meshes: THREE.SkinnedMesh[] = [];
@@ -105,14 +116,38 @@ export function findBoneForSocket(bodyRoot: THREE.Object3D, socketName: string):
       if (bone) return bone;
     }
   }
+
+  const dom = findDominantSkinnedMesh(bodyRoot);
+  const stem = boneStem(socketName);
+  if (dom?.skeleton?.bones && stem.length >= 3) {
+    const bone = dom.skeleton.bones.find((b) => {
+      const bs = boneStem(b.name);
+      return bs === stem || bs.endsWith(stem) || stem.endsWith(bs);
+    });
+    if (bone) return bone;
+  }
   return null;
 }
 
-export function attachToBone(bodyRoot: THREE.Object3D, socketName: string, object3d: THREE.Object3D): boolean {
-  prepareWearableRoot(object3d);
-  const bone = findBoneForSocket(bodyRoot, socketName);
+/**
+ * Parent a wearable GLB to a body bone.
+ * - Centers the loaded scene on its bbox (fixes huge exporter offsets → “floating” props).
+ * - You do **not** need to strip rigs: skinned hats follow the bone; centering + correct bone fixes placement.
+ */
+export function attachWearableGltf(bodyModel: THREE.Object3D, socket: string, gltf: { scene: THREE.Object3D }): boolean {
+  const scene = gltf.scene;
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  if (!box.isEmpty()) {
+    const c = box.getCenter(new THREE.Vector3());
+    scene.position.sub(c);
+  }
+  resetWearableRotationScale(scene);
+  scene.updateMatrixWorld(true);
+
+  const bone = findBoneForSocket(bodyModel, socket);
   if (!bone) return false;
-  bone.add(object3d);
+  bone.add(scene);
   return true;
 }
 
@@ -138,7 +173,6 @@ function clipTrackMatchesSkeleton(clip: THREE.AnimationClip, root: THREE.Object3
   return hits;
 }
 
-/** Pick clip whose tracks best match this rig (avoid playing unrelated clips at weight 1). */
 export function pickBestClipForRig(clips: THREE.AnimationClip[], root: THREE.Object3D): THREE.AnimationClip | null {
   if (!clips.length) return null;
   let best: THREE.AnimationClip | null = null;
@@ -154,9 +188,92 @@ export function pickBestClipForRig(clips: THREE.AnimationClip[], root: THREE.Obj
   return clips[0];
 }
 
+function pickIdleClip(
+  bodyAnimations: THREE.AnimationClip[],
+  externalAnimGltf: { animations: THREE.AnimationClip[] } | null,
+  modelRoot: THREE.Object3D
+): THREE.AnimationClip | null {
+  if (externalAnimGltf?.animations?.length) {
+    const picked = pickBestClipForRig(externalAnimGltf.animations, modelRoot);
+    if (picked && clipTrackMatchesSkeleton(picked, modelRoot) > 0) return picked;
+  }
+  if (bodyAnimations.length) {
+    return pickBestClipForRig(bodyAnimations, modelRoot);
+  }
+  return null;
+}
+
 /**
- * Drive the body with at most ONE full-body clip at a time.
- * m-character `anim` replaces (not stacks with) embedded body idle when compatible.
+ * Idle: MML `anim=` or embedded body clips, else site `/mixamo/idle-00.glb` (Shell Snag pipeline).
+ * Walk / run: `/mixamo/walk.glb`, `/mixamo/run-medium.glb` — blended from movement in the canvas.
+ */
+export async function mountIdleWalkRun(
+  mixer: THREE.AnimationMixer,
+  modelRoot: THREE.Object3D,
+  bodyAnimations: THREE.AnimationClip[],
+  externalAnimGltf: { animations: THREE.AnimationClip[] } | null
+): Promise<{
+  idle: THREE.AnimationAction | null;
+  walk: THREE.AnimationAction | null;
+  run: THREE.AnimationAction | null;
+}> {
+  mixer.stopAllAction();
+
+  let idleClip = pickIdleClip(bodyAnimations, externalAnimGltf, modelRoot);
+  if (!idleClip) {
+    try {
+      const g = await loadGltf(mixamoAssetUrl('idle-00.glb'));
+      idleClip = pickBestClipForRig(g.animations || [], modelRoot);
+    } catch {
+      idleClip = null;
+    }
+  }
+
+  let idle: THREE.AnimationAction | null = null;
+  if (idleClip) {
+    idle = mixer.clipAction(idleClip);
+    idle.reset().setEffectiveWeight(1).fadeIn(0.12).play();
+  }
+
+  let walk: THREE.AnimationAction | null = null;
+  let run: THREE.AnimationAction | null = null;
+  try {
+    const wg = await loadGltf(mixamoAssetUrl('walk.glb'));
+    const wc = pickBestClipForRig(wg.animations || [], modelRoot);
+    if (wc) {
+      walk = mixer.clipAction(wc);
+      walk.reset().setEffectiveWeight(0).play();
+    }
+  } catch {
+    walk = null;
+  }
+  try {
+    const rg = await loadGltf(mixamoAssetUrl('run-medium.glb'));
+    const rc = pickBestClipForRig(rg.animations || [], modelRoot);
+    if (rc) {
+      run = mixer.clipAction(rc);
+      run.reset().setEffectiveWeight(0).play();
+    }
+  } catch {
+    run = null;
+  }
+
+  return { idle, walk, run };
+}
+
+/** @deprecated prefer attachWearableGltf */
+export function attachToBone(bodyRoot: THREE.Object3D, socketName: string, object3d: THREE.Object3D): boolean {
+  object3d.position.set(0, 0, 0);
+  resetWearableRotationScale(object3d);
+  const bone = findBoneForSocket(bodyRoot, socketName);
+  if (!bone) return false;
+  bone.add(object3d);
+  return true;
+}
+
+/**
+ * Drive the body with at most ONE full-body clip at a time (no dual idle).
+ * Prefer mountIdleWalkRun for the hub player.
  */
 export function mountBodyPrimaryAnimation(
   mixer: THREE.AnimationMixer,
@@ -165,18 +282,7 @@ export function mountBodyPrimaryAnimation(
   externalAnimGltf: { animations: THREE.AnimationClip[] } | null
 ): THREE.AnimationAction | null {
   mixer.stopAllAction();
-  let clip: THREE.AnimationClip | null = null;
-
-  if (externalAnimGltf?.animations?.length) {
-    const picked = pickBestClipForRig(externalAnimGltf.animations, modelRoot);
-    if (picked && clipTrackMatchesSkeleton(picked, modelRoot) > 0) {
-      clip = picked;
-    }
-  }
-  if (!clip && bodyAnimations.length) {
-    clip = pickBestClipForRig(bodyAnimations, modelRoot);
-  }
-
+  const clip = pickIdleClip(bodyAnimations, externalAnimGltf, modelRoot);
   if (clip) {
     const act = mixer.clipAction(clip);
     act.reset().setEffectiveWeight(1).fadeIn(0.15).play();

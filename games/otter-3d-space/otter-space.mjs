@@ -12,7 +12,7 @@ export function parseMmlHtml(html) {
   const openTag = m[0];
   const srcMatch = openTag.match(/\bsrc="([^"]+)"/i);
   if (!srcMatch) throw new Error('m-character has no src (body GLB).');
-  const animMatch = openTag.match(/\banim="([^"]+)"/i);
+  const animMatch = openTag.match(/\banim\s*=\s*["']([^"']+)["']/i);
   const bodySrc = srcMatch[1].trim();
   const animSrc = animMatch ? animMatch[1].trim() : null;
 
@@ -82,6 +82,14 @@ function boneMatchesVariant(boneName, variant) {
   return false;
 }
 
+function boneStem(name) {
+  return String(name || '')
+    .replace(/^mixamorig:?/i, '')
+    .replace(/^def-/i, '')
+    .replace(/:/g, '')
+    .toLowerCase();
+}
+
 function findBoneForSocket(bodyRoot, socketName) {
   const variants = socketNameVariants(socketName);
   const meshes = [];
@@ -97,14 +105,38 @@ function findBoneForSocket(bodyRoot, socketName) {
       if (bone) return bone;
     }
   }
+  const dom = findDominantSkinnedMesh(bodyRoot);
+  const stem = boneStem(socketName);
+  if (dom?.skeleton?.bones && stem.length >= 3) {
+    const bone = dom.skeleton.bones.find((b) => {
+      const bs = boneStem(b.name);
+      return bs === stem || bs.endsWith(stem) || stem.endsWith(bs);
+    });
+    if (bone) return bone;
+  }
   return null;
 }
 
-function prepareWearableRoot(obj) {
-  obj.position.set(0, 0, 0);
+function resetWearableRotationScale(obj) {
   obj.rotation.set(0, 0, 0);
   obj.scale.set(1, 1, 1);
   obj.updateMatrixWorld(true);
+}
+
+function attachWearableGltf(bodyModel, socket, gltf) {
+  const scene = gltf.scene;
+  scene.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(scene);
+  if (!box.isEmpty()) {
+    const c = box.getCenter(new THREE.Vector3());
+    scene.position.sub(c);
+  }
+  resetWearableRotationScale(scene);
+  scene.updateMatrixWorld(true);
+  const bone = findBoneForSocket(bodyModel, socket);
+  if (!bone) return false;
+  bone.add(scene);
+  return true;
 }
 
 function collectRigBoneNames(root) {
@@ -143,8 +175,7 @@ function pickBestClipForRig(clips, root) {
   return clips[0];
 }
 
-function mountBodyPrimaryAnimation(mixer, modelRoot, bodyAnimations, externalAnimGltf) {
-  mixer.stopAllAction();
+function pickIdleClip(bodyAnimations, externalAnimGltf, modelRoot) {
   let clip = null;
   if (externalAnimGltf?.animations?.length) {
     const picked = pickBestClipForRig(externalAnimGltf.animations, modelRoot);
@@ -153,6 +184,12 @@ function mountBodyPrimaryAnimation(mixer, modelRoot, bodyAnimations, externalAni
   if (!clip && bodyAnimations.length) {
     clip = pickBestClipForRig(bodyAnimations, modelRoot);
   }
+  return clip;
+}
+
+function mountBodyPrimaryAnimation(mixer, modelRoot, bodyAnimations, externalAnimGltf) {
+  mixer.stopAllAction();
+  const clip = pickIdleClip(bodyAnimations, externalAnimGltf, modelRoot);
   if (clip) {
     const act = mixer.clipAction(clip);
     act.reset().setEffectiveWeight(1).fadeIn(0.15).play();
@@ -184,14 +221,6 @@ function loadGltf(url) {
   return new Promise((resolve, reject) => {
     gltfLoader.load(url, resolve, undefined, reject);
   });
-}
-
-function attachToBone(bodyRoot, socketName, object3d) {
-  prepareWearableRoot(object3d);
-  const bone = findBoneForSocket(bodyRoot, socketName);
-  if (!bone) return false;
-  bone.add(object3d);
-  return true;
 }
 
 /**
@@ -343,18 +372,18 @@ export function mountOtterSpace(opts) {
       }
     });
     fitAndGround(model, 2.1);
+    model.updateMatrixWorld(true);
     player.add(model);
 
     for (const w of parsed.wearables) {
       try {
         const g = await loadGltf(w.src);
-        const root = g.scene;
-        root.traverse((o) => {
+        g.scene.traverse((o) => {
           if (o.isMesh) o.castShadow = true;
         });
-        if (!attachToBone(model, w.socket, root)) {
-          root.position.set(0, 1.2, 0);
-          player.add(root);
+        if (!attachWearableGltf(model, w.socket, g)) {
+          g.scene.position.set(0, 1.2, 0);
+          player.add(g.scene);
         }
       } catch (_) {
         /* skip broken wearable */
@@ -371,6 +400,15 @@ export function mountOtterSpace(opts) {
       }
     }
     idleAction = mountBodyPrimaryAnimation(mixer, model, bodyGltf.animations || [], externalAnimGltf);
+    if (!idleAction) {
+      try {
+        const mixIdle = `${window.location.origin}/mixamo/idle-00.glb`;
+        const ig = await loadGltf(mixIdle);
+        idleAction = mountBodyPrimaryAnimation(mixer, model, ig.animations || [], null);
+      } catch (_) {
+        /* no fallback idle */
+      }
+    }
 
     async function tryWalkClip(url) {
       if (!url || !mixer) return;
@@ -409,7 +447,7 @@ export function mountOtterSpace(opts) {
     canvas.addEventListener('click', onCanvasClick);
 
     setHud('Click the scene to grab the mouse and run around');
-    onStatus('Ready — WASD. Idle from MML body or anim= (one clip). Walk from the walk URL field only.');
+    onStatus('Ready — WASD. Idle: MML or /mixamo/idle-00.glb. Walk: walk URL field (/mixamo/walk.glb).');
 
     function tick() {
       if (!running) return;
