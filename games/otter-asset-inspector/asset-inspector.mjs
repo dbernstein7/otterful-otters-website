@@ -26,7 +26,7 @@ async function fetchJson(url) {
 }
 
 async function fetchText(url) {
-  const r = await fetch(url);
+  const r = await fetch(url, { cache: 'no-store' });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
   return r.text();
 }
@@ -168,7 +168,7 @@ export function initAssetInspector(opts) {
     currentId = id;
     bodyGlbUrl = null;
     mmlHtml = null;
-    mmlDocUrl = `${siteOrigin}/api/mml?id=${id}`;
+    mmlDocUrl = `${siteOrigin}/api/mml?id=${id}&v=2`;
     const metaUrl = `${siteOrigin}/metadata/${id}.json`;
     const imgUrl = `images_compressed/${id}.png`;
 

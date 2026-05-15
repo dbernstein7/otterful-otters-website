@@ -39,6 +39,26 @@ function isMmlWearableBakedUrl(url) {
   }
 }
 
+/** Always load wearables via our API (bakes + CORS). Handles cached MML that still lists raw Firebase src. */
+function wearableLoadUrl(src, kind, documentBaseUrl) {
+  try {
+    const u = new URL(src, documentBaseUrl || window.location.href);
+    if (isMmlWearableBakedUrl(u.href)) return u.href;
+    const host = u.hostname.toLowerCase();
+    const isRemoteGlb =
+      host.includes('firebasestorage.googleapis.com') ||
+      host.includes('firebasestorage.app') ||
+      host.includes('appspot.com');
+    if (isRemoteGlb) {
+      const origin = new URL(documentBaseUrl || window.location.href).origin;
+      return `${origin}/api/mml-wearable?kind=${encodeURIComponent(kind)}&src=${encodeURIComponent(u.href)}`;
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return src;
+}
+
 export function parseMmlHtml(html, documentBaseUrl) {
   const charOpen = html.match(/<\s*m-character\b([\s\S]*?)>/i);
   if (!charOpen) throw new Error('No <m-character> in MML document.');
@@ -485,12 +505,13 @@ export function mountMmlRigPreview(opts) {
     for (let wi = 0; wi < parsed.wearables.length; wi++) {
       const w = parsed.wearables[wi];
       const kind = wearablesKind(w.src);
+      const loadUrl = wearableLoadUrl(w.src, kind, documentBaseUrl);
       setStatus(`Loading ${kind} (${wi + 1}/${parsed.wearables.length})…`);
       try {
-        const g = await loadGltf(w.src);
+        const g = await loadGltf(loadUrl);
         if (disposed) return;
 
-        if (isMmlWearableBakedUrl(w.src)) {
+        if (isMmlWearableBakedUrl(loadUrl)) {
           const group =
             g.scene.children.length === 1 && g.scene.children[0].name === 'MMLAccessory'
               ? g.scene.children[0]
