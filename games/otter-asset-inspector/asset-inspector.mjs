@@ -2,6 +2,7 @@
  * Otterful asset inspector — 2D image, 3D MML rig preview, core traits, downloads.
  */
 const CORE_TRAIT_SKIP = new Set(['trait count', 'compiler']);
+const RIG_PREVIEW_ORBIT = 2.34;
 
 function parseBodyGlbUrl(html) {
   const char = html.match(/<\s*m-character\b([^>]*)>/i);
@@ -48,21 +49,6 @@ async function downloadUrlAsFile(url, filename) {
   downloadBlob(filename, blob);
 }
 
-const MML_VIEWER_BASE = 'https://viewer.mml.io/main/v1/';
-
-function buildMmlViewerUrl(documentUrl) {
-  const v = new URL(MML_VIEWER_BASE);
-  v.searchParams.set('url', documentUrl);
-  v.searchParams.set('environmentMap', 'cloudysky');
-  v.searchParams.set('cameraMode', 'orbit');
-  v.searchParams.set('cameraOrbitPitch', '88');
-  v.searchParams.set('cameraOrbitDistance', '2.34');
-  v.searchParams.set('cameraFov', '56');
-  v.searchParams.set('cameraLookAt', '0,0.02,0');
-  v.searchParams.set('cameraOrbitSpeed', '0');
-  return v.toString();
-}
-
 /**
  * @param {{ modal: HTMLElement; onClose?: () => void }} opts
  */
@@ -72,8 +58,10 @@ export function initAssetInspector(opts) {
   const traitsEl = modal.querySelector('[data-asset-traits]');
   const statusEl = modal.querySelector('[data-asset-status]');
   const img2d = modal.querySelector('[data-asset-2d]');
+  const previewBox = modal.querySelector('.asset-inspector-preview-box');
   const previewWrap = modal.querySelector('[data-asset-3d-wrap]');
-  const mmlIframe = modal.querySelector('[data-asset-mml-iframe]');
+  const canvas3d = modal.querySelector('[data-asset-3d-canvas]');
+  const backdrop = modal.querySelector('[data-asset-backdrop]');
   const toggle2d = modal.querySelector('[data-asset-mode="2d"]');
   const toggle3d = modal.querySelector('[data-asset-mode="3d"]');
   const btnClose = modal.querySelector('[data-asset-close]');
@@ -87,6 +75,8 @@ export function initAssetInspector(opts) {
   let bodyGlbUrl = null;
   let mmlDocUrl = null;
   let mmlHtml = null;
+  let rigMount = null;
+  let rigModulePromise = null;
   const siteOrigin = window.location.origin;
 
   function setStatus(msg, isError) {
@@ -110,9 +100,42 @@ export function initAssetInspector(opts) {
     if (previewWrap) previewWrap.hidden = mode !== '3d';
   }
 
-  function showMmlViewer() {
-    if (!mmlIframe || !mmlDocUrl) return;
-    mmlIframe.src = buildMmlViewerUrl(mmlDocUrl);
+  function loadRigPreviewModule() {
+    if (!rigModulePromise) {
+      const href = new URL('../mml-rig-preview/mml-rig-preview.mjs', import.meta.url).href;
+      rigModulePromise = import(href);
+    }
+    return rigModulePromise;
+  }
+
+  async function ensureRigPreview() {
+    if (rigMount || !previewBox || !canvas3d) return rigMount;
+    const mod = await loadRigPreviewModule();
+    rigMount = mod.mountMmlRigPreview({
+      container: previewBox,
+      canvas: canvas3d,
+      getOrbitDistance: () => RIG_PREVIEW_ORBIT,
+      onStatus: (msg) => {
+        if (mode === '3d' && msg) setStatus(msg, false);
+      },
+    });
+    return rigMount;
+  }
+
+  async function showRigPreview() {
+    if (!mmlHtml) return;
+    try {
+      setStatus('Loading 3D preview…', false);
+      const mount = await ensureRigPreview();
+      await mount.show(mmlHtml, mmlDocUrl || window.location.href);
+    } catch (e) {
+      setStatus(e?.message || String(e), true);
+    }
+  }
+
+  function disposeRigPreview() {
+    rigMount?.dispose();
+    rigMount = null;
   }
 
   function renderTraits(metadata) {
@@ -164,8 +187,8 @@ export function initAssetInspector(opts) {
       if (btnGlb) btnGlb.disabled = !bodyGlbUrl;
       if (btnCopyGlb) btnCopyGlb.disabled = !bodyGlbUrl;
 
-      if (mode === '3d') showMmlViewer();
-      setStatus('', false);
+      if (mode === '3d') await showRigPreview();
+      else setStatus('', false);
     } catch (e) {
       renderTraits(null);
       if (btnGlb) btnGlb.disabled = true;
@@ -188,6 +211,7 @@ export function initAssetInspector(opts) {
     modal.setAttribute('aria-hidden', 'true');
     modal.classList.remove('is-open');
     document.body.classList.remove('asset-inspector-open');
+    disposeRigPreview();
     currentId = null;
     onClose?.();
   }
@@ -195,13 +219,11 @@ export function initAssetInspector(opts) {
   toggle2d?.addEventListener('click', () => setMode('2d'));
   toggle3d?.addEventListener('click', () => {
     setMode('3d');
-    showMmlViewer();
+    void showRigPreview();
   });
 
   btnClose?.addEventListener('click', close);
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) close();
-  });
+  backdrop?.addEventListener('click', close);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
   });

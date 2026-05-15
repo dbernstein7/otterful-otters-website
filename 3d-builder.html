@@ -231,6 +231,7 @@
         </div>
 
         <div id="asset-inspector-modal" class="asset-inspector-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="asset-inspector-title">
+            <div class="asset-inspector-backdrop" data-asset-backdrop aria-hidden="true"></div>
             <div class="asset-inspector-frame" role="document">
                 <header class="asset-inspector-header">
                     <h2 id="asset-inspector-title" class="asset-inspector-title" data-asset-title>Otterful</h2>
@@ -247,14 +248,7 @@
                         <div class="asset-inspector-preview-box">
                             <img class="asset-inspector-2d" data-asset-2d alt="" width="512" height="512" hidden>
                             <div class="asset-inspector-3d-wrap" data-asset-3d-wrap>
-                                <iframe
-                                    class="asset-inspector-mml-iframe"
-                                    data-asset-mml-iframe
-                                    title="MML.io game-ready preview"
-                                    loading="lazy"
-                                    referrerpolicy="no-referrer"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                                ></iframe>
+                                <canvas class="asset-inspector-3d-canvas" data-asset-3d-canvas aria-label="3D MML preview"></canvas>
                             </div>
                         </div>
                     </div>
@@ -266,7 +260,6 @@
                             <h3 class="asset-inspector-traits-heading">Downloads</h3>
                             <p class="asset-inspector-downloads-hint">MML uses socket-baked wearables for mml.io and Otherside. Open the downloaded HTML in the MML viewer link inside the file, or paste the MML URL into viewer.mml.io.</p>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block" data-asset-dl-mml title="MML document with baked wearable GLBs">Download MML</button>
-                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-spec hidden aria-hidden="true" data-asset-dl-spec-legacy>Download spec MML</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-glb title="Body (fur) GLB only">Download body GLB</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Hosted MML document URL">Copy MML URL</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Body (fur) GLB URL">Copy body GLB URL</button>

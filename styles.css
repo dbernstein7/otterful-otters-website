@@ -4063,6 +4063,11 @@ body.asset-inspector-open {
     align-items: center;
     justify-content: center;
     padding: 16px;
+}
+
+.asset-inspector-backdrop {
+    position: absolute;
+    inset: 0;
     background: rgba(4, 8, 14, 0.88);
     backdrop-filter: blur(6px);
 }
@@ -4072,6 +4077,8 @@ body.asset-inspector-open {
 }
 
 .asset-inspector-frame {
+    position: relative;
+    z-index: 1;
     width: min(1280px, 96vw);
     max-height: min(94vh, 920px);
     display: flex;
@@ -4081,6 +4088,7 @@ body.asset-inspector-open {
     border-radius: 18px;
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
     overflow: hidden;
+    pointer-events: auto;
 }
 
 .asset-inspector-header {
@@ -4224,6 +4232,7 @@ body.asset-inspector-open {
     overflow: hidden;
     background: radial-gradient(ellipse at 50% 30%, #1a3040 0%, #0a1018 70%);
     border: 1px solid rgba(79, 214, 165, 0.2);
+    isolation: isolate;
 }
 
 .asset-inspector-2d {
@@ -4247,21 +4256,28 @@ body.asset-inspector-open {
     display: none !important;
 }
 
-.asset-inspector-mml-iframe {
+.asset-inspector-3d-canvas {
     display: block;
     width: 100%;
     height: 100%;
-    border: 0;
-    background: #0a1018;
+    touch-action: none;
+    cursor: grab;
+}
+
+.asset-inspector-3d-canvas:active {
+    cursor: grabbing;
 }
 
 .asset-inspector-traits-col {
+    position: relative;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     gap: 20px;
     padding: 20px 24px 24px;
     overflow-y: auto;
     min-height: 0;
+    pointer-events: auto;
 }
 
 .asset-inspector-traits-heading {
