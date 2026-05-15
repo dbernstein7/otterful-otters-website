@@ -120,7 +120,7 @@
 
         <div id="builder-panel-mml" class="builder-page-panel mml-doc-workbench" role="tabpanel" aria-labelledby="builder-tab-mml" hidden>
             <div class="mml-hero-search" aria-label="Load otter by number">
-                <p class="mml-hero-search-title">Preview your otter in MML</p>
+                <p class="mml-hero-search-title">Preview your otter (Otterful rig)</p>
                 <div class="mml-hero-search-row">
                     <span class="mml-hero-search-prefix" aria-hidden="true">#</span>
                     <input type="number" id="builder-mml-nft-input" class="mml-hero-search-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number 1 to 2222">
@@ -156,15 +156,16 @@
                             <div class="mml-editor-gutter" id="builder-mml-gutter" aria-hidden="true">1</div>
                             <textarea id="builder-mml-editor" class="mml-editor-textarea" spellcheck="false" wrap="off" autocomplete="off" aria-label="MML and HTML source" placeholder="Load with Preview or open More options, then edit…"></textarea>
                         </div>
-                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs. Optional movement / hat / shirt: <strong>More options</strong>.</p>
+                        <p class="mml-editor-hint"><kbd>Ctrl</kbd>+<kbd>Enter</kbd> runs the <strong>Otterful rig</strong> preview (same attachment as Avatar Builder). Optional MML.io iframe under More options.</p>
                     </div>
                     <div class="mml-playground-preview">
-                        <div class="mml-playground-preview-frame">
+                        <div class="mml-playground-preview-frame" id="builder-mml-preview-frame">
+                            <canvas id="builder-mml-rig-canvas" class="mml-playground-rig-canvas" aria-label="Otterful rig preview"></canvas>
                             <iframe
                                 id="builder-mml-iframe"
-                                class="mml-playground-iframe"
+                                class="mml-playground-iframe mml-playground-iframe--hidden"
                                 title="MML preview (viewer.mml.io)"
-                                loading="eager"
+                                loading="lazy"
                                 referrerpolicy="no-referrer"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             ></iframe>
@@ -203,6 +204,7 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                         <label title="Loads m-character body GLB, reads skeleton bone names, and rewrites m-model socket so viewer.mml.io finds the bone (Epic vs Mixamo naming)."><input type="checkbox" id="builder-mml-align-sockets" checked> Align wearables to body skeleton</label>
+                        <label title="Use viewer.mml.io iframe instead of Otterful rig preview (wearables often float in the generic viewer)."><input type="checkbox" id="builder-mml-use-mml-viewer"> Use MML.io viewer (spec)</label>
                     </div>
                     <p class="mml-playground-checks-hint">Closer orbit uses a shorter camera distance. Copy links after Preview.</p>
                     <div class="mml-playground-advanced-btns">
@@ -374,6 +376,9 @@
         const shirtOverrideInput = document.getElementById('builder-mml-shirt-override');
         const copyViewerBtn = document.getElementById('builder-mml-copy-viewer');
         const copyDocBtn = document.getElementById('builder-mml-copy-doc');
+        const rigCanvas = document.getElementById('builder-mml-rig-canvas');
+        const previewFrame = document.getElementById('builder-mml-preview-frame');
+        const useMmlViewerCb = document.getElementById('builder-mml-use-mml-viewer');
         if (!input || !iframe || !statusEl || !loadBtn || !openTabBtn || !previewBtn || !noUi || !fit || !editor) return;
 
         const orbitSlider = document.getElementById('builder-mml-orbit-zoom');
@@ -386,6 +391,56 @@
         const ORBIT_DIST_FIT = 1.75;
 
         let orbitDebounceTimer = null;
+        let rigPreviewMount = null;
+        let rigPreviewModulePromise = null;
+
+        function shouldUseMmlViewer() {
+          return !!(useMmlViewerCb && useMmlViewerCb.checked);
+        }
+
+        function setPreviewSurface(useMmlViewer) {
+          if (rigCanvas) rigCanvas.style.display = useMmlViewer ? 'none' : 'block';
+          if (iframe) {
+            iframe.classList.toggle('mml-playground-iframe--hidden', !useMmlViewer);
+          }
+        }
+
+        function getRigOrbitDistance() {
+          if (!orbitSlider) return ORBIT_DIST_DEFAULT;
+          const p = parseFloat(orbitSlider.value);
+          return Number.isFinite(p) ? p : ORBIT_DIST_DEFAULT;
+        }
+
+        function loadRigPreviewModule() {
+          if (!rigPreviewModulePromise) {
+            const href = new URL('./games/mml-rig-preview/mml-rig-preview.mjs', window.location.href).href;
+            rigPreviewModulePromise = import(href);
+          }
+          return rigPreviewModulePromise;
+        }
+
+        async function ensureRigPreview() {
+          if (rigPreviewMount || !rigCanvas || !previewFrame) return rigPreviewMount;
+          const mod = await loadRigPreviewModule();
+          rigPreviewMount = mod.mountMmlRigPreview({
+            container: previewFrame,
+            canvas: rigCanvas,
+            getOrbitDistance: getRigOrbitDistance,
+            onStatus: function (msg) {
+              if (msg && !shouldUseMmlViewer()) setStatus(msg, false);
+            },
+          });
+          return rigPreviewMount;
+        }
+
+        async function refreshRigPreview(html, documentBaseUrl) {
+          if (shouldUseMmlViewer()) return;
+          setPreviewSurface(false);
+          const mount = await ensureRigPreview();
+          await mount.show(html, documentBaseUrl || window.location.href);
+        }
+
+        setPreviewSurface(false);
 
         function clampOrbitDistance(n) {
           if (typeof n !== 'number' || isNaN(n)) return fit.checked ? ORBIT_DIST_FIT : ORBIT_DIST_DEFAULT;
@@ -1072,8 +1127,20 @@
 
           const viewerUrlFinal = buildViewerUrl(viewerDocUrl);
           setOuts(docUrl, viewerUrlFinal);
-          assignIframeViewerSrc(viewerUrlFinal);
+          if (shouldUseMmlViewer()) {
+            setPreviewSurface(true);
+            assignIframeViewerSrc(viewerUrlFinal);
+          } else {
+            try {
+              await refreshRigPreview(bodyText, docUrl);
+            } catch (rigErr) {
+              setStatus('Rig preview failed: ' + ((rigErr && rigErr.message) || String(rigErr)), true);
+            }
+          }
           let wornYFix = '';
+          if (!shouldUseMmlViewer()) {
+            wornYFix += 'Using Otterful rig preview (matches Avatar Builder attachment). Enable “Use MML.io viewer” for spec iframe. ';
+          }
           if (strippedAnim.didStrip) {
             wornYFix += 'Removed incompatible public.mml.io human idle for this otter body so head sockets (eyes) match the rig. ';
           }
@@ -1228,7 +1295,12 @@
           }
           const viewerUrl = buildViewerUrl(dataUrl);
           setOuts(lastHttpsDocUrl || absoluteDocUrl(input.value), viewerUrl);
-          assignIframeViewerSrc(viewerUrl);
+          if (shouldUseMmlViewer()) {
+            setPreviewSurface(true);
+            assignIframeViewerSrc(viewerUrl);
+          } else {
+            void refreshRigPreview(html, lastHttpsDocUrl || absoluteDocUrl(input.value) || window.location.href);
+          }
           const wornYFix = sanAnim.didStrip
             ? 'Removed incompatible public.mml.io human idle for this otter body (saved in editor). '
             : '';
@@ -1373,6 +1445,17 @@
             assignIframeViewerSrc(next);
             if (viewerOut) viewerOut.textContent = next;
           } catch (_) { /* ignore */ }
+        }
+        if (useMmlViewerCb) {
+          useMmlViewerCb.addEventListener('change', function () {
+            if (shouldUseMmlViewer()) {
+              reloadViewerKeepingDocument();
+            } else if (editor.value.trim()) {
+              void refreshRigPreview(editor.value, lastHttpsDocUrl || absoluteDocUrl(input.value));
+            } else {
+              setPreviewSurface(false);
+            }
+          });
         }
         noUi.addEventListener('change', reloadViewerKeepingDocument);
         fit.addEventListener('change', reloadViewerKeepingDocument);
