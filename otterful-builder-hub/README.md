@@ -23,7 +23,14 @@ Preferred logical names (empties parented to bones, or bones themselves):
 
 - `HeadSocket`, `FaceSocket`, `ChestSocket`, `BackSocket`, `LeftHandSocket`, `RightHandSocket`
 
-Fallback matching lives in **`src/lib/socketAttach.ts`** (`FALLBACK_NAMES`, `resolveAttachmentObject`). Adjust there if your rig uses different naming (e.g. `mixamorigHead` only).
+Or use **Mixamo-style bone names** directly (`mixamorigHead`, `mixamorigSpine2`, `mixamorigRightHand`, …) — the demo wearables do this for Otterful body GLBs.
+
+**Fallback:** if a socket is missing, **`src/lib/socketAttach.ts`** uses a **region-specific** chain (e.g. `BackSocket` → spine bones, not the head). The old “try every bone in one list” behavior incorrectly parented props to `mixamorigHead`, so shells/sneakers vanished inside the head.
+
+## Troubleshooting
+
+- **Wearables not visible:** confirm `socketName` exists on the rig; watch for `[socketAttach]` warnings. Wearable meshes are **bbox-centered** on attach so large exporter offsets do not float props away from the bone.
+- **T-pose / `PropertyBinding: No target node`:** external Mixamo clips are **retargeted** to your rig’s bone names in `src/lib/clipRemap.ts` before playing.
 
 ## Commands
 

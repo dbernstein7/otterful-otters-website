@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getAvatarByToken, resolveAssetUrl, type AnimationKey, type AvatarConfig } from '@/data/avatars';
 import { attachWearableToSocket } from '@/lib/socketAttach';
+import { remapClipTracksToRig } from '@/lib/clipRemap';
 import { useBuilderStore } from '@/store/builderStore';
 import { getWearableById } from '@/data/wearables';
 import { SocketDebugger } from '@/components/SocketDebugger';
@@ -101,8 +102,11 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
         try {
           const gltf = await loader.loadAsync(abs);
           if (cancelled) return;
-          const clip = pickClip(gltf, key);
-          if (!clip) continue;
+          const clipRaw = pickClip(gltf, key);
+          if (!clipRaw) continue;
+          const remapped = remapClipTracksToRig(clipRaw, root);
+          const clip = remapped ?? clipRaw;
+          if (!clip.tracks.length) continue;
           const act = m.clipAction(clip);
           act.reset();
           act.setEffectiveWeight(0);

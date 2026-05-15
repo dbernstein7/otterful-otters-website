@@ -11,35 +11,42 @@ export type TransformConfig = {
   scale?: number | [number, number, number];
 };
 
-/** When logical socket missing, try these bone / empty names in order (Mixamo + common Otterful names). */
-const FALLBACK_NAMES = [
-  'HeadSocket',
-  'FaceSocket',
-  'mixamorigHead',
-  'Head',
-  'head',
-  'Neck',
-  'mixamorigNeck',
-  'ChestSocket',
-  'mixamorigSpine2',
-  'Spine2',
-  'mixamorigSpine1',
-  'BackSocket',
-  'mixamorigSpine',
-  'RightHandSocket',
-  'mixamorigRightHand',
-  'Hand_R',
-  'LeftHandSocket',
-  'mixamorigLeftHand',
-  'Hand_L',
-];
-
 function norm(name: string) {
   return name.replace(/:/g, '').toLowerCase();
 }
 
 function stem(name: string) {
   return norm(name).replace(/^mixamorig/i, '');
+}
+
+/**
+ * When a logical socket (e.g. BackSocket) is missing on the rig, try **only** bones that make sense
+ * for that region. A single global fallback list was wrong: it always matched mixamorigHead first,
+ * so hand/back props parented to the head and disappeared inside the mesh.
+ *
+ * CHANGE: extend this map for your custom socket names.
+ */
+const SOCKET_FALLBACK_CHAINS: Record<string, string[]> = {
+  headsocket: ['mixamorigHead', 'Head', 'head', 'mixamorigNeck', 'Neck'],
+  facesocket: ['mixamorigHead', 'Head', 'mixamorigNeck'],
+  chestsocket: ['mixamorigSpine2', 'Spine2', 'mixamorigSpine1', 'Spine1', 'mixamorigSpine', 'Spine'],
+  backsocket: ['mixamorigSpine2', 'mixamorigSpine1', 'mixamorigSpine', 'Spine2', 'Spine1', 'Spine'],
+  righthandsocket: ['mixamorigRightHand', 'mixamorigRightHandIndex1', 'RightHand', 'Hand_R', 'mixamorigRightArm'],
+  lefthandsocket: ['mixamorigLeftHand', 'mixamorigLeftHandIndex1', 'LeftHand', 'Hand_L', 'mixamorigLeftArm'],
+};
+
+function fallbackChainForSocket(want: string): string[] {
+  const k = norm(want);
+  if (SOCKET_FALLBACK_CHAINS[k]) return [...SOCKET_FALLBACK_CHAINS[k]!];
+  /* Generic: try exact stem on bones later via findBoneOnSkeleton only — no global head-first list */
+  const s = stem(want);
+  if (s.includes('head') || s.includes('hat')) return [...SOCKET_FALLBACK_CHAINS.headsocket!];
+  if (s.includes('face') || s.includes('eye')) return [...SOCKET_FALLBACK_CHAINS.facesocket!];
+  if (s.includes('chest') || s.includes('torso')) return [...SOCKET_FALLBACK_CHAINS.chestsocket!];
+  if (s.includes('back') || s.includes('spine')) return [...SOCKET_FALLBACK_CHAINS.backsocket!];
+  if (s.includes('right') && s.includes('hand')) return [...SOCKET_FALLBACK_CHAINS.righthandsocket!];
+  if (s.includes('left') && s.includes('hand')) return [...SOCKET_FALLBACK_CHAINS.lefthandsocket!];
+  return ['mixamorigHead', 'mixamorigSpine2', 'mixamorigHips'];
 }
 
 function collectSkinnedMeshes(root: THREE.Object3D): THREE.SkinnedMesh[] {
@@ -70,7 +77,6 @@ function findBoneOnSkeleton(bones: THREE.Bone[], socketName: string): THREE.Bone
 
 /**
  * Resolve an Object3D to parent wearables under: named empties/groups first, then skinned bones.
- * CHANGE FALLBACK_NAMES / matching rules if your rig uses different naming.
  */
 export function resolveAttachmentObject(avatarRoot: THREE.Object3D, socketName: string): THREE.Object3D | null {
   const want = socketName.trim();
@@ -92,14 +98,16 @@ export function resolveAttachmentObject(avatarRoot: THREE.Object3D, socketName: 
     if (b) return b;
   }
 
-  for (const fb of FALLBACK_NAMES) {
-    if (norm(fb) === norm(want)) continue;
+  const chain = fallbackChainForSocket(want);
+  for (const fb of chain) {
     for (const sm of skinners) {
       const bones = sm.skeleton?.bones;
       if (!bones) continue;
       const b = findBoneOnSkeleton(bones, fb);
       if (b) {
-        console.warn(`[socketAttach] Socket "${want}" missing — using fallback "${b.name}".`);
+        if (norm(fb) !== norm(want)) {
+          console.warn(`[socketAttach] Socket "${want}" missing — using fallback bone "${b.name}".`);
+        }
         return b;
       }
     }
@@ -122,6 +130,19 @@ export function applyLocalTransform(target: THREE.Object3D, config: TransformCon
   }
 }
 
+/** Center wearable on bbox and reset world rotation/scale baseline before local config (matches Otterful hub pattern). */
+export function prepareWearableInstance(instance: THREE.Object3D) {
+  instance.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(instance);
+  if (!box.isEmpty()) {
+    const c = box.getCenter(new THREE.Vector3());
+    instance.position.sub(c);
+  }
+  instance.rotation.set(0, 0, 0);
+  instance.scale.set(1, 1, 1);
+  instance.updateMatrixWorld(true);
+}
+
 function disposeObject3D(root: THREE.Object3D) {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
@@ -139,7 +160,6 @@ export type WearableAttachment = {
 
 /**
  * Parents `wearableRoot` clone under the resolved socket/bone with **local** offsets.
- * Do not position wearables in world space — always use this helper.
  */
 export function attachWearableToSocket(
   avatarRoot: THREE.Object3D,
@@ -151,6 +171,7 @@ export function attachWearableToSocket(
   if (!host) return null;
 
   const instance = wearableScene.clone(true);
+  prepareWearableInstance(instance);
   applyLocalTransform(instance, config);
   host.add(instance);
 
