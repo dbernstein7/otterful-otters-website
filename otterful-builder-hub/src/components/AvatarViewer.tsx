@@ -1,4 +1,4 @@
-import { Html, OrbitControls, useGLTF, Center, ContactShadows } from '@react-three/drei';
+import { Html, OrbitControls, useGLTF, ContactShadows } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -216,10 +216,8 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
   });
 
   return (
-    <group>
-      <Center>
-        <primitive object={root} castShadow receiveShadow />
-      </Center>
+    <group position={[0, -0.72, 0]}>
+      <primitive object={root} castShadow receiveShadow />
       <ContactShadows position={[0, 0, 0]} opacity={0.45} scale={12} blur={2.5} far={6} />
       {debugSockets ? <SocketDebugger root={root} /> : null}
     </group>

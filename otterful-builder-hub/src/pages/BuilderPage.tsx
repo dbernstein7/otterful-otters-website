@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AvatarViewer } from '@/components/AvatarViewer';
 import { WearablePanel } from '@/components/WearablePanel';
 import { AnimationControls } from '@/components/AnimationControls';
@@ -28,6 +28,7 @@ export function BuilderPage() {
   const clearLoadout = useBuilderStore((s) => s.clearLoadout);
   const [input, setInput] = useState(String(tokenId));
   const [exportMsg, setExportMsg] = useState('');
+  const mmlFetchGen = useRef(0);
 
   const hatQ = useBuilderStore((s) => s.equipped.hats);
   const topQ = useBuilderStore((s) => s.equipped.tops);
@@ -37,6 +38,7 @@ export function BuilderPage() {
   useEffect(() => {
     const equipped = useBuilderStore.getState().equipped;
     const url = buildMmlApiUrl(tokenId, equipped);
+    const gen = ++mmlFetchGen.current;
     const ac = new AbortController();
     setMmlPreviewLoading(true);
     setMmlPreviewError(null);
@@ -47,12 +49,14 @@ export function BuilderPage() {
         return text;
       })
       .then((html) => {
+        if (ac.signal.aborted || gen !== mmlFetchGen.current) return;
         const parsed = parseMmlHtml(html);
         setMmlPreview(parsed);
         setLoadError(null);
       })
       .catch((e: unknown) => {
         if (ac.signal.aborted) return;
+        if (gen !== mmlFetchGen.current) return;
         const err = e instanceof Error ? e : new Error(String(e));
         if (err.name === 'AbortError') return;
         const msg = err.message || String(e);
@@ -61,7 +65,7 @@ export function BuilderPage() {
         setLoadError(msg);
       })
       .finally(() => {
-        if (!ac.signal.aborted) setMmlPreviewLoading(false);
+        if (!ac.signal.aborted && gen === mmlFetchGen.current) setMmlPreviewLoading(false);
       });
     return () => ac.abort();
   }, [tokenId, hatQ, topQ, glassQ, accQ, setMmlPreview, setMmlPreviewLoading, setMmlPreviewError, setLoadError]);

@@ -13,7 +13,6 @@ export type MmlAnchorModel = {
 export type MmlDocumentPreview = {
   characterSrc: string | null;
   characterAnim?: string | null;
-  /** Slot order matches `/api/mml` emission: hat, shirt, eyes. */
   models: MmlAnchorModel[];
 };
 
@@ -52,32 +51,51 @@ function toEulerRadians(rx: number | undefined, ry: number | undefined, rz: numb
   return [conv(x), conv(y), conv(z)];
 }
 
-const SLOT_ORDER: MmlWearSlot[] = ['hats', 'tops', 'glasses'];
+/** Guess UI bucket; `anim-enabled="false"` is emitted on eyes in `/api/mml` and disambiguates head sockets. */
+function inferSlotFromSocket(socket: string, fallbackIndex: number, animEnabled?: boolean): MmlWearSlot {
+  if (animEnabled === false) return 'glasses';
+  const n = socket.replace(/:/g, '').toLowerCase();
+  if (/(spine|chest|torso|shirt|top)/i.test(n)) return 'tops';
+  if (/(eye|face|glass)/i.test(n)) return 'glasses';
+  if (/(head|neck|hat)/i.test(n)) return 'hats';
+  const order: MmlWearSlot[] = ['hats', 'tops', 'glasses'];
+  return order[Math.min(fallbackIndex, 2)]!;
+}
 
 /**
- * Parse Otterful `/api/mml` HTML for `m-character` + child `m-model` tags (same structure `api/mml.js` emits).
+ * Parse Otterful `/api/mml` HTML for `m-character` + child `m-model` tags.
+ * Only scans inside `<m-character>…</m-character>` so viewer-banner URLs in `<head>` / `<body>` cannot
+ * inject spurious `m-model` matches.
  */
 export function parseMmlHtml(html: string): MmlDocumentPreview {
-  const charM = html.match(/<m-character\s+([^>]*)>/is);
+  const openRe = /<m-character\b[^>]*>/i;
+  const closeRe = /<\/m-character\s*>/i;
+  const openM = openRe.exec(html);
+  const closeM = closeRe.exec(html);
+  const segment =
+    openM && closeM && closeM.index > openM.index ? html.slice(openM.index, closeM.index) : html;
+
+  const charTag = segment.match(/<m-character\b([^>]*)>/is);
   let characterSrc: string | null = null;
   let characterAnim: string | null = null;
-  if (charM) {
-    const a = parseAttrBlob(charM[1]);
+  if (charTag) {
+    const a = parseAttrBlob(charTag[1]);
     characterSrc = (a.src || '').trim() || null;
     characterAnim = (a.anim || '').trim() || null;
   }
 
   const models: MmlAnchorModel[] = [];
-  const re = /<m-model\s+([^>]+)>/gi;
+  const re = /<m-model\b([^>]*)>/gi;
   let slot = 0;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(html))) {
+  while ((m = re.exec(segment))) {
     const attrs = parseAttrBlob(m[1]);
     const src = (attrs.src || '').trim();
     const socket = (attrs.socket || '').trim();
     if (!src || !socket) continue;
-    if (slot >= SLOT_ORDER.length) continue;
-    const category = SLOT_ORDER[slot];
+    const animRaw = (attrs['anim-enabled'] ?? attrs.animEnabled ?? '').toLowerCase();
+    const animEnabled = animRaw === '' ? undefined : animRaw !== 'false' && animRaw !== '0';
+    const category = inferSlotFromSocket(socket, slot, animEnabled);
     slot += 1;
     const x = num(attrs, 'x');
     const y = num(attrs, 'y');
@@ -93,8 +111,6 @@ export function parseMmlHtml(html: string): MmlDocumentPreview {
     const sz = num(attrs, 'sz');
     const scale =
       sx != null || sy != null || sz != null ? ([sx ?? 1, sy ?? 1, sz ?? 1] as [number, number, number]) : undefined;
-    const animRaw = (attrs['anim-enabled'] ?? attrs.animEnabled ?? '').toLowerCase();
-    const animEnabled = animRaw === '' ? undefined : animRaw !== 'false' && animRaw !== '0';
     models.push({ category, socket, src, position, rotation, scale, animEnabled });
   }
 
