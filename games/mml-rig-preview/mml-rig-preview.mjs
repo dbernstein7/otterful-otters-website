@@ -8,6 +8,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.m
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
 const loader = new GLTFLoader();
+loader.setCrossOrigin('anonymous');
 
 const HEAD_ATTACH_POS = new THREE.Vector3(-0.607745, 0, 0.005627);
 const HEAD_ATTACH_QUAT = new THREE.Quaternion(0, 0, -0.707107, 0.707107);
@@ -195,96 +196,20 @@ function tryRebindToBodySkeleton(mesh, bodyRoot) {
   return true;
 }
 
-const TEXTURE_KEYS = ['map', 'emissiveMap', 'normalMap', 'metalnessMap', 'roughnessMap'];
-
-function whenTexturesReady(root) {
-  const textures = new Set();
+/** glTF PBR reads near-black without strong lights (Avatar Builder uses bright key + ambient). */
+function prepareMeshMaterials(root) {
   root.traverse((o) => {
     if (!o.isMesh || !o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const mat of mats) {
       if (!mat) continue;
-      for (const key of TEXTURE_KEYS) {
-        if (mat[key]) textures.add(mat[key]);
-      }
-    }
-  });
-  return Promise.all(
-    [...textures].map(
-      (tex) =>
-        new Promise((resolve) => {
-          const img = tex.image;
-          if (!img || img.complete) {
-            resolve();
-            return;
-          }
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-        })
-    )
-  );
-}
-
-/**
- * Otter GLBs often use PBR with no env map — they render as a flat black silhouette.
- * Diffuse maps are shown with MeshBasicMaterial (same visible result as Avatar Builder).
- */
-function prepareMeshMaterials(root) {
-  root.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
-    const upgrade = (mat) => {
-      if (!mat) return mat;
       mat.side = THREE.DoubleSide;
-      mat.fog = false;
-      if (mat.vertexColors) mat.vertexColors = false;
-
-      const diffuse = mat.map || mat.emissiveMap;
-
-      if (diffuse) {
-        diffuse.colorSpace = THREE.SRGBColorSpace;
-        const basic = new THREE.MeshBasicMaterial({
-          map: diffuse,
-          transparent: Boolean(mat.transparent || (mat.opacity != null && mat.opacity < 1)),
-          opacity: mat.opacity ?? 1,
-          alphaTest: mat.alphaTest ?? 0,
-          side: THREE.DoubleSide,
-        });
-        if (mat.alphaMap) {
-          basic.alphaMap = mat.alphaMap;
-          basic.alphaMap.colorSpace = THREE.SRGBColorSpace;
-          basic.transparent = true;
-        }
-        return basic;
-      }
-
-      if (mat.isMeshBasicMaterial) {
-        if (mat.color) {
-          mat.color.r = Math.max(mat.color.r, 0.4);
-          mat.color.g = Math.max(mat.color.g, 0.4);
-          mat.color.b = Math.max(mat.color.b, 0.4);
-        }
-        return mat;
-      }
-
+      if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+      if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
       if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-        if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
-        mat.color.setRGB(
-          Math.max(0.45, mat.color.r),
-          Math.max(0.45, mat.color.g),
-          Math.max(0.45, mat.color.b)
-        );
-        mat.metalness = 0;
-        mat.roughness = 0.82;
-        mat.envMapIntensity = 1;
-        mat.needsUpdate = true;
+        mat.metalness = Math.min(mat.metalness ?? 0, 0.25);
+        mat.roughness = Math.max(0.35, Math.min(mat.roughness ?? 0.65, 0.92));
       }
-      return mat;
-    };
-
-    if (Array.isArray(o.material)) {
-      o.material = o.material.map(upgrade);
-    } else {
-      o.material = upgrade(o.material);
     }
   });
 }
@@ -331,14 +256,15 @@ export function mountMmlRigPreview(opts) {
   function disposeAvatar() {
     if (mixer) mixer.stopAllAction();
     mixer = null;
-    if (!avatarRoot) return;
-    avatarRoot.traverse((o) => {
-      if (o.geometry) o.geometry.dispose?.();
-      const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach((m) => m?.dispose?.());
-    });
-    scene.remove(avatarRoot);
-    avatarRoot = null;
+    if (avatarRoot) {
+      avatarRoot.traverse((o) => {
+        if (o.geometry) o.geometry.dispose?.();
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach((m) => m?.dispose?.());
+      });
+      scene.remove(avatarRoot);
+      avatarRoot = null;
+    }
   }
 
   function resize() {
@@ -351,7 +277,7 @@ export function mountMmlRigPreview(opts) {
   }
 
   function updateCamera() {
-    if (!camera) return;
+    if (!camera || !avatarRoot) return;
     const d = getOrbitDistance?.() ?? orbitDist;
     const target = new THREE.Vector3(0, 1.0, 0);
     const x = d * Math.sin(orbitPhi) * Math.sin(orbitTheta);
@@ -386,7 +312,6 @@ export function mountMmlRigPreview(opts) {
       }
     });
     prepareMeshMaterials(body);
-    await whenTexturesReady(body);
     fitAndGround(body, 2.05);
     if (Number.isFinite(parsed.charY) && parsed.charY !== 0) {
       body.position.y += parsed.charY;
@@ -410,7 +335,6 @@ export function mountMmlRigPreview(opts) {
         }
         const group = bakeMeshesIntoGroup(meshes, g.scene);
         prepareMeshMaterials(group);
-        await whenTexturesReady(group);
 
         if (kind === 'shirt') {
           group.traverse((o) => {
@@ -464,30 +388,33 @@ export function mountMmlRigPreview(opts) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     renderer.shadowMap.enabled = true;
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a1a);
+    scene.background = new THREE.Color(0x5a7a9a);
+    scene.fog = new THREE.Fog(0x7a9aba, 30, 72);
     camera = new THREE.PerspectiveCamera(52, 1, 0.05, 120);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-    const sun = new THREE.DirectionalLight(0xffffff, 3);
-    sun.position.set(5, 10, 5);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    scene.add(new THREE.HemisphereLight(0xdce8ff, 0x4a4030, 0.5));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+    sun.position.set(6, 14, 9);
     sun.castShadow = true;
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xffffff, 1.8);
-    fill.position.set(-5, 2, -5);
+    const fill = new THREE.DirectionalLight(0xffffff, 1.4);
+    fill.position.set(-7, 5, -5);
     scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffffff, 1.2);
-    rim.position.set(0, 5, -10);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.85);
+    rim.position.set(0, 5, -12);
     scene.add(rim);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40),
-      new THREE.MeshStandardMaterial({ color: 0x243028, roughness: 0.92, metalness: 0 })
+      new THREE.MeshStandardMaterial({ color: 0x152018, roughness: 0.92 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
     resize();
-    updateCamera();
     tick();
   }
 
@@ -535,6 +462,14 @@ export function mountMmlRigPreview(opts) {
       cancelAnimationFrame(raf);
       ro.disconnect();
       disposeAvatar();
+      if (scene) {
+        scene.traverse((o) => {
+          if (o.geometry) o.geometry.dispose?.();
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => m?.dispose?.());
+        });
+        scene.clear();
+      }
       renderer?.dispose();
       renderer = null;
     },
