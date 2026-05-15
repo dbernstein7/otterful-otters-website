@@ -19,6 +19,8 @@
  *   Legacy: `MML_EYES_ANIM_ENABLED` is still read — if explicitly false/0, same as MML_EYES_ANIM_DISABLED.
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
  *   MML_BONE_SCHEME — default `unreal` (Epic / UE Mannequin-style glTF: head, spine_03, … — see mml/reference-unreal-mannequin-rig.glb).
+ *   Wearable GLBs may include their own copy of the skeleton; viewer.mml.io still parents each m-model to a bone name on the **body** m-character.
+ *   Hats/eyes: socket must match a head bone on the fur GLB. Skinned shirts: emit shirt m-model with torso socket (spine_03 Epic, mixamorigSpine2 Mixamo).
  *   Set `mixamo` for legacy Otterful bodies (mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head / mixamorig:Spine2),
  *   or `short` (Head / Spine2 / Head). Aliases: `ue`, `epic`, `mannequin` → same sockets as `unreal`.
  *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/… on the site only). Ignored for path segments when Firebase is active and default folders Furs/Hats/Shirts/Eyes apply.

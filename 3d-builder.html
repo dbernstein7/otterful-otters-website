@@ -181,7 +181,7 @@
 
                 <details class="mml-playground-advanced">
                     <summary>More options</summary>
-                    <p class="mml-playground-advanced-tip">Optional <code>?anim=</code> / <code>?hat=</code> / <code>?shirt=</code> for Preview, or <strong>Load</strong> any hosted MML <code>https://…</code> page.</p>
+                    <p class="mml-playground-advanced-tip">Optional <code>?anim=</code> / <code>?hat=</code> / <code>?shirt=</code> for Preview (adds shirt to <strong>/api/mml</strong> HTML — you still need a shirt trait or override). For custom HTML, add each wearable as its own <code>&lt;m-model socket="…" src="…"&gt;</code>: hats/eyes → body head bone; skinned shirts → torso bone (often <code>spine_03</code> Epic or <code>mixamorigSpine2</code> Mixamo).</p>
                     <div class="mml-playground-anim-row">
                         <label class="mml-playground-label" for="builder-mml-anim-override">Movement (.glb)</label>
                         <input type="text" id="builder-mml-anim-override" class="mml-playground-input" placeholder="https://…/Walk.glb" autocomplete="off" spellcheck="false">
@@ -202,6 +202,7 @@
                     <div class="mml-playground-checks">
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
+                        <label title="Loads m-character body GLB, reads skeleton bone names, and rewrites m-model socket so viewer.mml.io finds the bone (Epic vs Mixamo naming)."><input type="checkbox" id="builder-mml-align-sockets" checked> Align wearables to body skeleton</label>
                     </div>
                     <p class="mml-playground-checks-hint">Closer orbit uses a shorter camera distance. Copy links after Preview.</p>
                     <div class="mml-playground-advanced-btns">
@@ -747,6 +748,166 @@
           return { html: next, fixedWearableY, strippedEyesXYZ, fixedBodyLiftY };
         }
 
+        /** Prefer these bones in order when attaching hats / eyes to Epic vs Mixamo bodies (matches RIG reference). */
+        const SOCKET_HEAD_PREF = ['head', 'mixamorigHead', 'mixamorig:Head', 'neck_02', 'Head'];
+        /** Skinned shirts — torso bind usually tracks spine_03 (Epic) or Spine2 / Mixamo. */
+        const SOCKET_TORSO_PREF = [
+          'spine_03',
+          'spine_04',
+          'mixamorigSpine2',
+          'mixamorig:Spine2',
+          'Spine2',
+          'spine_05',
+          'spine_02',
+          'mixamorigSpine1',
+          'mixamorig:Spine1',
+          'Spine1',
+          'spine_01',
+        ];
+
+        function decodeHtmlAttrEntities(s) {
+          return String(s || '')
+            .replace(/&quot;/gi, '"')
+            .replace(/&amp;/gi, '&')
+            .trim();
+        }
+
+        function findBoneCi(bones, name) {
+          if (!name) return null;
+          const exact = bones.find(function (b) {
+            return b === name;
+          });
+          if (exact) return exact;
+          const nl = name.toLowerCase();
+          return (
+            bones.find(function (b) {
+              return b.toLowerCase() === nl;
+            }) || null
+          );
+        }
+
+        function boneStem(s) {
+          return String(s || '')
+            .replace(/^mixamorig:?/i, '')
+            .replace(/:/g, '')
+            .replace(/_/g, '')
+            .toLowerCase();
+        }
+
+        function classifySocketZone(socket) {
+          const raw = decodeHtmlAttrEntities(socket);
+          const s = raw.toLowerCase().replace(/:/g, '');
+          if (/\beyes\b|glasses|goggles?|eyewear|spectacle/i.test(raw)) return 'head';
+          if (/^head$|^head[._]|^[._]head$|mixamorighead|neck_02|neck02/.test(s)) return 'head';
+          if (/spine|mixamorigspine|chest|torso|shirt|cloak|jacket/.test(s)) return 'torso';
+          return 'unknown';
+        }
+
+        function resolveSocketToBodyBone(requested, bones) {
+          const req = decodeHtmlAttrEntities(requested);
+          const hit0 = findBoneCi(bones, req);
+          if (hit0) return hit0;
+          const zone = classifySocketZone(req);
+          const pref = zone === 'head' ? SOCKET_HEAD_PREF : zone === 'torso' ? SOCKET_TORSO_PREF : [];
+          for (let i = 0; i < pref.length; i++) {
+            const h = findBoneCi(bones, pref[i]);
+            if (h) return h;
+          }
+          const stem = boneStem(req);
+          if (stem.length >= 2) {
+            for (let j = 0; j < bones.length; j++) {
+              if (boneStem(bones[j]) === stem) return bones[j];
+            }
+          }
+          return req;
+        }
+
+        function extractMCharacterSrcFromMml(html) {
+          const m = html.match(/<\s*m-character\b[\s\S]*?>/i);
+          if (!m) return null;
+          const tag = m[0];
+          const dq = tag.match(/\bsrc\s*=\s*"([^"]+)"/i);
+          if (dq) return decodeHtmlAttrEntities(dq[1]);
+          const sq = tag.match(/\bsrc\s*=\s*'([^']+)'/i);
+          if (sq) return decodeHtmlAttrEntities(sq[1]);
+          return null;
+        }
+
+        let gltfLoaderImportPromise = null;
+        function getGLTFLoaderCtor() {
+          if (!gltfLoaderImportPromise) {
+            gltfLoaderImportPromise = import(
+              'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js'
+            );
+          }
+          return gltfLoaderImportPromise.then(function (mod) {
+            return mod.GLTFLoader;
+          });
+        }
+
+        async function loadBodySkeletonBoneNames(bodyUrl) {
+          const GLTFLoader = await getGLTFLoaderCtor();
+          const loader = new GLTFLoader();
+          const gltf = await loader.loadAsync(bodyUrl);
+          const names = new Set();
+          gltf.scene.updateMatrixWorld(true);
+          gltf.scene.traverse(function (o) {
+            if (o.isSkinnedMesh && o.skeleton && o.skeleton.bones) {
+              for (let i = 0; i < o.skeleton.bones.length; i++) {
+                const bn = o.skeleton.bones[i].name;
+                if (bn) names.add(bn);
+              }
+            }
+          });
+          return Array.from(names);
+        }
+
+        async function alignMmlSocketsToBodyRig(html, documentUrlForBase) {
+          const rawSrc = extractMCharacterSrcFromMml(html);
+          if (!rawSrc) {
+            return { html: html, changed: false, detailLines: ['No &lt;m-character&gt; src — socket alignment skipped.'] };
+          }
+          let bodyAbs = '';
+          try {
+            bodyAbs = new URL(rawSrc, documentUrlForBase || window.location.href).href;
+          } catch (_) {
+            return { html: html, changed: false, detailLines: ['Could not resolve m-character src URL for skeleton load.'] };
+          }
+          let bones = [];
+          try {
+            bones = await loadBodySkeletonBoneNames(bodyAbs);
+          } catch (err) {
+            const msg = err && err.message ? err.message : String(err);
+            return {
+              html: html,
+              changed: false,
+              detailLines: ['Could not load body GLB for sockets (' + msg + ').'],
+            };
+          }
+          if (!bones.length) {
+            return { html: html, changed: false, detailLines: ['Body GLB has no skinned skeleton — alignment skipped.'] };
+          }
+          let changed = false;
+          const detailLines = [];
+          const next = html.replace(/<\s*m-model\b([\s\S]*?)(\/>|>)/gi, function (full, inner, closer) {
+            const sockM = inner.match(/\bsocket\s*=\s*"([^"]+)"/i);
+            if (!sockM) return full;
+            const requested = decodeHtmlAttrEntities(sockM[1]);
+            const resolved = resolveSocketToBodyBone(requested, bones);
+            if (resolved === requested) return full;
+            changed = true;
+            detailLines.push(requested + ' → ' + resolved);
+            const newInner = inner.replace(/\bsocket\s*=\s*"[^"]+"/i, 'socket="' + resolved.replace(/"/g, '') + '"');
+            return '<m-model' + newInner + closer;
+          });
+          return { html: next, changed: changed, detailLines: detailLines };
+        }
+
+        function shouldAlignSockets() {
+          const el = document.getElementById('builder-mml-align-sockets');
+          return !el || el.checked;
+        }
+
         function syncGutter() {
           if (!gutter || !editor) return;
           const n = editor.value.split('\n').length;
@@ -864,6 +1025,20 @@
           const sanitized = sanitizeMmlSocketedModels(bodyText);
           bodyText = sanitized.html;
 
+          let socketAlign = { html: bodyText, changed: false, detailLines: [] };
+          if (shouldAlignSockets()) {
+            try {
+              socketAlign = await alignMmlSocketsToBodyRig(bodyText, docUrl);
+              bodyText = socketAlign.html;
+            } catch (alErr) {
+              socketAlign = {
+                html: bodyText,
+                changed: false,
+                detailLines: ['Socket alignment error: ' + ((alErr && alErr.message) || String(alErr))],
+              };
+            }
+          }
+
           lastFetchedSource = bodyText;
           try {
             const du = new URL(docUrl);
@@ -883,7 +1058,7 @@
           /* viewer.mml.io cannot load blob: from our origin; use inline data URL so fixes apply to the iframe. */
           let viewerDocUrl = docUrl;
           let dataUrlTooLarge = false;
-          if (sanitized.fixedWearableY || strippedAnim.didStrip) {
+          if (sanitized.fixedWearableY || strippedAnim.didStrip || socketAlign.changed) {
             if (bodyText.length <= DATA_URL_MAX) {
               try {
                 viewerDocUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(bodyText);
@@ -908,7 +1083,16 @@
           if (sanitized.fixedBodyLiftY) {
             wornYFix += 'Removed mistaken character-scale y on other wearables. ';
           }
-          if ((sanitized.fixedWearableY || strippedAnim.didStrip) && dataUrlTooLarge) {
+          if (socketAlign.changed && socketAlign.detailLines.length) {
+            wornYFix +=
+              'Wearable sockets matched body GLB bones (' +
+              socketAlign.detailLines.slice(0, 14).join('; ') +
+              (socketAlign.detailLines.length > 14 ? ' …' : '') +
+              '). ';
+          } else if (shouldAlignSockets() && socketAlign.detailLines && socketAlign.detailLines.length) {
+            wornYFix += socketAlign.detailLines[0] + ' ';
+          }
+          if (dataUrlTooLarge && (sanitized.fixedWearableY || strippedAnim.didStrip || socketAlign.changed)) {
             wornYFix +=
               'Document is too large for inline-fixed preview; the iframe still loads the remote URL. Shorten the markup or fix at the source. ';
           }
@@ -985,7 +1169,7 @@
           });
         }
 
-        function runFromEditor() {
+        async function runFromEditor() {
           let html = editor.value;
           if (animOverrideInput && animOverrideInput.value.trim()) {
             const merged = mergeAnimIntoMmlHtml(html, animOverrideInput.value.trim());
@@ -1007,7 +1191,20 @@
           html = sanAnim.html;
           const sanRun = sanitizeMmlSocketedModels(html);
           html = sanRun.html;
-          if (sanAnim.didStrip || sanRun.fixedWearableY) {
+          let socketAlignRun = { html: html, changed: false, detailLines: [] };
+          if (shouldAlignSockets()) {
+            try {
+              socketAlignRun = await alignMmlSocketsToBodyRig(html, window.location.href);
+              html = socketAlignRun.html;
+            } catch (saErr) {
+              socketAlignRun = {
+                html: html,
+                changed: false,
+                detailLines: ['Socket alignment error: ' + ((saErr && saErr.message) || String(saErr))],
+              };
+            }
+          }
+          if (sanAnim.didStrip || sanRun.fixedWearableY || socketAlignRun.changed) {
             editor.value = html;
             syncGutter();
           }
@@ -1037,7 +1234,17 @@
             : '';
           const wornYFix2 = sanRun.strippedEyesXYZ ? 'Removed x/y/z on eyes m-model (saved in editor). ' : '';
           const wornYFix3 = sanRun.fixedBodyLiftY ? 'Removed mistaken character-scale y on wearables (saved in editor). ' : '';
-          const mismatch = (wornYFix + wornYFix2 + wornYFix3 + combineMmlWarnings(html)).trim();
+          let wornYFix4 = '';
+          if (socketAlignRun.changed && socketAlignRun.detailLines.length) {
+            wornYFix4 =
+              'Sockets matched to body GLB (' +
+              socketAlignRun.detailLines.slice(0, 14).join('; ') +
+              (socketAlignRun.detailLines.length > 14 ? ' …' : '') +
+              '). ';
+          } else if (shouldAlignSockets() && socketAlignRun.detailLines && socketAlignRun.detailLines.length) {
+            wornYFix4 = socketAlignRun.detailLines[0] + ' ';
+          }
+          const mismatch = (wornYFix + wornYFix2 + wornYFix3 + wornYFix4 + combineMmlWarnings(html)).trim();
           if (mismatch) {
             setStatus(
               mismatch + ' (Preview still opened — fix src=/anim= URLs.)',
@@ -1119,7 +1326,7 @@
           void apply();
         });
 
-        if (runBtn) runBtn.addEventListener('click', runFromEditor);
+        if (runBtn) runBtn.addEventListener('click', function () { void runFromEditor(); });
         if (resetEditorBtn) resetEditorBtn.addEventListener('click', resetEditorToFetched);
         if (refreshBtn) refreshBtn.addEventListener('click', function () { void apply({ skipHistory: true }); });
 
@@ -1130,7 +1337,7 @@
         editor.addEventListener('keydown', function (e) {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault();
-            runFromEditor();
+            void runFromEditor();
           }
         });
 
