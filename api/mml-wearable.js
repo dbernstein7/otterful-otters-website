@@ -7,7 +7,7 @@
 const { bakeWearableGlbForMml } = require('../lib/mml-wearable-bake.cjs');
 
 const BAKE_MS = 22000;
-const BAKE_VERSION = '5';
+const BAKE_VERSION = '6';
 const memCache = new Map();
 
 function cacheKey(src, kind, raw) {

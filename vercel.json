@@ -18,8 +18,7 @@
     "MML_EYES_STORAGE_PATH": "Eyes",
     "MML_EYES_Y": "0.03",
     "MML_EYES_Z": "0.07",
-    "MML_SHIRT_Y": "0.12",
-    "MML_SHIRT_BAKE_Y": "0.28"
+    "MML_SHIRT_Y": "0"
   },
   "headers": [
     {

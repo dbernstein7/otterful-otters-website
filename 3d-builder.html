@@ -476,7 +476,7 @@
 
         function loadRigPreviewModule() {
           if (!rigPreviewModulePromise) {
-            const href = new URL('./games/mml-rig-preview/mml-rig-preview.mjs?v=4', window.location.href).href;
+            const href = new URL('./games/mml-rig-preview/mml-rig-preview.mjs?v=5', window.location.href).href;
             rigPreviewModulePromise = import(href);
           }
           return rigPreviewModulePromise;
