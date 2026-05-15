@@ -31,6 +31,18 @@ function decodeHtmlAttr(s) {
     .trim();
 }
 
+/** Rig preview attaches wearables client-side; use raw Firebase GLB, not /api/mml-wearable. */
+function unwrapWearableProxyUrl(url) {
+  try {
+    const u = new URL(url);
+    if (!/\/api\/mml-wearable$/i.test(u.pathname)) return url;
+    const raw = u.searchParams.get('src');
+    return raw ? decodeURIComponent(raw) : url;
+  } catch (_) {
+    return url;
+  }
+}
+
 export function parseMmlHtml(html, documentBaseUrl) {
   const charOpen = html.match(/<\s*m-character\b([\s\S]*?)>/i);
   if (!charOpen) throw new Error('No <m-character> in MML document.');
@@ -44,8 +56,8 @@ export function parseMmlHtml(html, documentBaseUrl) {
   if (!bodyRaw) throw new Error('m-character has no src.');
   const resolve = (ref) => {
     const s = ref.trim();
-    if (/^https?:\/\//i.test(s)) return s;
-    return new URL(s, documentBaseUrl).href;
+    if (/^https?:\/\//i.test(s)) return unwrapWearableProxyUrl(s);
+    return unwrapWearableProxyUrl(new URL(s, documentBaseUrl).href);
   };
   const bodySrc = resolve(bodyRaw);
   const animRaw = readAttr('anim');
@@ -452,6 +464,7 @@ export function mountMmlRigPreview(opts) {
     setStatus('Loading body…');
     const bodyGltf = await loadGltf(parsed.bodySrc);
     if (disposed) return;
+    setStatus('Attaching wearables…');
 
     const body = bodyGltf.scene;
     /* No per-mesh shadows — cast+receive on skinned fur causes shadow acne (grid/moire), not low poly. */
@@ -473,8 +486,10 @@ export function mountMmlRigPreview(opts) {
     scene.add(avatarRoot);
 
     const logs = [];
-    for (const w of parsed.wearables) {
+    for (let wi = 0; wi < parsed.wearables.length; wi++) {
+      const w = parsed.wearables[wi];
       const kind = wearablesKind(w.src);
+      setStatus(`Loading ${kind} (${wi + 1}/${parsed.wearables.length})…`);
       try {
         const g = await loadGltf(w.src);
         if (disposed) return;

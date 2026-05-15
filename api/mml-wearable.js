@@ -6,6 +6,22 @@
  */
 const { bakeWearableGlbForMml } = require('../lib/mml-wearable-bake.cjs');
 
+const BAKE_MS = 22000;
+const memCache = new Map();
+
+function cacheKey(src, kind) {
+  return `${kind}::${src}`;
+}
+
+async function bakeWithTimeout(buf, kind) {
+  return Promise.race([
+    bakeWearableGlbForMml(buf, kind),
+    new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Wearable bake timed out')), BAKE_MS);
+    }),
+  ]);
+}
+
 function getQueryParam(req, key) {
   const q = req.query && req.query[key];
   if (q != null && String(q).trim() !== '') return String(q).trim();
@@ -44,6 +60,15 @@ module.exports = async (req, res) => {
 
   const kind = normalizeKind(getQueryParam(req, 'kind'));
 
+  const key = cacheKey(src, kind);
+  const hit = memCache.get(key);
+  if (hit) {
+    res.setHeader('Content-Type', 'model/gltf-binary');
+    res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    res.setHeader('X-Otterful-Wearable-Bake', 'memory-cache');
+    return res.status(200).send(hit);
+  }
+
   try {
     const upstream = await fetch(src);
     if (!upstream.ok) {
@@ -51,9 +76,11 @@ module.exports = async (req, res) => {
       return res.status(502).send(`Failed to fetch source GLB: HTTP ${upstream.status}`);
     }
     const buf = Buffer.from(await upstream.arrayBuffer());
-    const baked = await bakeWearableGlbForMml(buf, kind);
+    const baked = await bakeWithTimeout(buf, kind);
+    if (memCache.size < 200) memCache.set(key, baked);
     res.setHeader('Content-Type', 'model/gltf-binary');
     res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
+    res.setHeader('X-Otterful-Wearable-Bake', 'baked');
     return res.status(200).send(baked);
   } catch (e) {
     /* Fallback: serve source GLB so MML still loads (may float in viewer until bake is fixed). */
