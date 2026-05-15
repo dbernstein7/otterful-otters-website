@@ -43,16 +43,24 @@ export function AnimationControls() {
       </div>
 
       <div className="bottom-cluster">
-        <label className="toggle">
+        <label className="toggle" htmlFor="toggle-otherside">
           <input
+            id="toggle-otherside"
+            name="toggle-otherside"
             type="checkbox"
             checked={othersideMotionTest}
             onChange={(e) => setOthersideMotionTest(e.target.checked)}
           />
           Otherside motion test (idle → walk → run loop)
         </label>
-        <label className="toggle">
-          <input type="checkbox" checked={debugSockets} onChange={(e) => setDebugSockets(e.target.checked)} />
+        <label className="toggle" htmlFor="toggle-sockets">
+          <input
+            id="toggle-sockets"
+            name="toggle-sockets"
+            type="checkbox"
+            checked={debugSockets}
+            onChange={(e) => setDebugSockets(e.target.checked)}
+          />
           Socket debug (spheres on bones)
         </label>
         <button type="button" className="pill pill--ghost" onClick={() => requestCameraReset()}>

@@ -63,12 +63,21 @@ export function getAvatarByToken(tokenId: number): AvatarConfig {
   };
 }
 
+/** Site origin for root-relative assets (`/builder/...`, `/mixamo/...`). Defaults to `window.location.origin`. */
+function assetSiteOrigin(): string {
+  const o = (import.meta.env.VITE_PUBLIC_ASSET_ORIGIN || '').trim().replace(/\/$/, '');
+  if (o) return o;
+  if (typeof window === 'undefined') return '';
+  return window.location.origin.replace(/\/$/, '');
+}
+
 /** Resolve relative paths against the site origin (iframe parent / same tab). */
 export function resolveAssetUrl(path: string): string {
   const p = path.trim();
   if (!p) return p;
   if (/^https?:\/\//i.test(p)) return p;
   if (typeof window === 'undefined') return p;
-  if (p.startsWith('/')) return `${window.location.origin}${p}`;
-  return new URL(p, window.location.origin + (import.meta.env.BASE_URL || '/builder/')).href;
+  const origin = assetSiteOrigin();
+  if (p.startsWith('/')) return `${origin}${p}`;
+  return new URL(p, origin + (import.meta.env.BASE_URL || '/builder/')).href;
 }

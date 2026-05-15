@@ -94,6 +94,10 @@ export function WearablePanel() {
       <p className="panel-hint mono" style={{ fontSize: 12, opacity: 0.85 }}>
         {mmlPreviewLoading ? 'Fetching MML…' : mmlPreviewError ? `MML: ${mmlPreviewError}` : shortUrl(mmlUrl, 64)}
       </p>
+      <p className="panel-hint" style={{ fontSize: 11 }}>
+        Hub on a preview domain but GLBs live on production? Set <code className="mono">VITE_PUBLIC_ASSET_ORIGIN</code> (see{' '}
+        <code className="mono">.env.example</code>) so <code className="mono">/builder/models/*</code> resolves.
+      </p>
 
       <label className="field-label" htmlFor="mml-socket-override">
         Manual socket override (testing)

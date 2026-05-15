@@ -98,6 +98,10 @@ export function loadLoadoutFromStorage(tokenId: number): EquippedMap {
   }
 }
 
+export function equippedEqual(a: EquippedMap, b: EquippedMap): boolean {
+  return a.hats === b.hats && a.tops === b.tops && a.glasses === b.glasses && a.accessories === b.accessories;
+}
+
 export function saveLoadoutToStorage(tokenId: number, equipped: EquippedMap) {
   try {
     localStorage.setItem(`${LS_PREFIX}${tokenId}`, JSON.stringify(equipped));

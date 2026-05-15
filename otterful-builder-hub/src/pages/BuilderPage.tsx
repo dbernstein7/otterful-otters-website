@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AvatarViewer } from '@/components/AvatarViewer';
 import { WearablePanel } from '@/components/WearablePanel';
 import { AnimationControls } from '@/components/AnimationControls';
-import { useBuilderStore, loadLoadoutFromStorage, saveLoadoutToStorage } from '@/store/builderStore';
+import { useBuilderStore, loadLoadoutFromStorage, saveLoadoutToStorage, equippedEqual } from '@/store/builderStore';
 import { buildMmlApiUrl, buildMmlViewerOpenUrl } from '@/lib/mmlExport';
 import { listRegisteredAvatars } from '@/data/avatars';
 import { parseMmlHtml } from '@/lib/parseMmlHtml';
@@ -29,7 +29,13 @@ export function BuilderPage() {
   const [input, setInput] = useState(String(tokenId));
   const [exportMsg, setExportMsg] = useState('');
 
+  const hatQ = useBuilderStore((s) => s.equipped.hats);
+  const topQ = useBuilderStore((s) => s.equipped.tops);
+  const glassQ = useBuilderStore((s) => s.equipped.glasses);
+  const accQ = useBuilderStore((s) => s.equipped.accessories);
+
   useEffect(() => {
+    const equipped = useBuilderStore.getState().equipped;
     const url = buildMmlApiUrl(tokenId, equipped);
     const ac = new AbortController();
     setMmlPreviewLoading(true);
@@ -58,7 +64,7 @@ export function BuilderPage() {
         if (!ac.signal.aborted) setMmlPreviewLoading(false);
       });
     return () => ac.abort();
-  }, [tokenId, equipped, setMmlPreview, setMmlPreviewLoading, setMmlPreviewError, setLoadError]);
+  }, [tokenId, hatQ, topQ, glassQ, accQ, setMmlPreview, setMmlPreviewLoading, setMmlPreviewError, setLoadError]);
 
   useEffect(() => {
     try {
@@ -79,11 +85,13 @@ export function BuilderPage() {
   useEffect(() => {
     setInput(String(tokenId));
     const loaded = loadLoadoutFromStorage(tokenId);
+    const cur = useBuilderStore.getState().equipped;
+    if (equippedEqual(loaded, cur)) return;
     useBuilderStore.setState({ equipped: loaded });
   }, [tokenId]);
 
-  const mmlUrl = useMemo(() => buildMmlApiUrl(tokenId, equipped), [tokenId, equipped]);
-  const viewerUrl = useMemo(() => buildMmlViewerOpenUrl(tokenId, equipped), [tokenId, equipped]);
+  const mmlUrl = useMemo(() => buildMmlApiUrl(tokenId, useBuilderStore.getState().equipped), [tokenId, hatQ, topQ, glassQ, accQ]);
+  const viewerUrl = useMemo(() => buildMmlViewerOpenUrl(tokenId, useBuilderStore.getState().equipped), [tokenId, hatQ, topQ, glassQ, accQ]);
   const mmlWorkbench = useMemo(() => {
     const o = window.location.origin.replace(/\/$/, '');
     return `${o}/3d-builder.html?url=${encodeURIComponent(mmlUrl)}#mml`;

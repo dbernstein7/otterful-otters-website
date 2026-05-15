@@ -65,6 +65,11 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
   const { scene, animations } = useGLTF(bodyUrl);
   const root = useMemo(() => scene.clone(true), [scene, bodyUrl]);
   const mmlModels = useBuilderStore((s) => s.mmlPreview?.models);
+  const characterAnim = useBuilderStore((s) => s.mmlPreview?.characterAnim);
+  const attachKey = useMemo(
+    () => (mmlModels ?? []).map((m) => `${m.src}\x1e${m.socket}`).join('\x1f'),
+    [mmlModels],
+  );
   const manualSocketOverride = useBuilderStore((s) => s.manualSocketOverride);
   const debugSockets = useBuilderStore((s) => s.debugSockets);
   const activeAnimKey = useBuilderStore((s) => s.activeAnimKey);
@@ -101,30 +106,46 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
     Object.values(actionsRef.current).forEach((a) => a?.stop());
     actionsRef.current = {};
 
-    const urls = config.animationUrls || {};
-    const keys = Object.keys(urls) as AnimationKey[];
+    const base = config.animationUrls || {};
+    const mmlIdle = characterAnim?.trim();
+
+    const urlsForKey = (key: AnimationKey): string[] => {
+      const u = base[key];
+      if (key === 'idle') {
+        const list: string[] = [];
+        if (mmlIdle) list.push(mmlIdle);
+        if (u && u !== mmlIdle) list.push(u);
+        return list;
+      }
+      return u ? [u] : [];
+    };
+
+    const keySet = new Set<AnimationKey>(Object.keys(base) as AnimationKey[]);
+    if (mmlIdle) keySet.add('idle');
+    const keys = [...keySet].filter((k) => urlsForKey(k).length > 0);
     let cancelled = false;
 
     (async () => {
       for (const key of keys) {
-        const raw = urls[key];
-        if (!raw) continue;
-        const abs = resolveAssetUrl(raw);
-        try {
-          const gltf = await loader.loadAsync(abs);
-          if (cancelled) return;
-          const clipRaw = pickClip(gltf, key);
-          if (!clipRaw) continue;
-          const remapped = remapClipTracksToRig(clipRaw, root);
-          const clip = remapped ?? clipRaw;
-          if (!clip.tracks.length) continue;
-          const act = m.clipAction(clip);
-          act.reset();
-          act.setEffectiveWeight(0);
-          act.play();
-          actionsRef.current[key] = act;
-        } catch (e) {
-          console.warn(`[AvatarViewer] Failed to load animation "${key}" from ${abs}`, e);
+        for (const raw of urlsForKey(key)) {
+          const abs = resolveAssetUrl(raw);
+          try {
+            const gltf = await loader.loadAsync(abs);
+            if (cancelled) return;
+            const clipRaw = pickClip(gltf, key);
+            if (!clipRaw) continue;
+            const remapped = remapClipTracksToRig(clipRaw, root);
+            const clip = remapped ?? clipRaw;
+            if (!clip.tracks.length) continue;
+            const act = m.clipAction(clip);
+            act.reset();
+            act.setEffectiveWeight(0);
+            act.play();
+            actionsRef.current[key] = act;
+            break;
+          } catch (e) {
+            console.warn(`[AvatarViewer] Failed to load animation "${key}" from ${abs}`, e);
+          }
         }
       }
     })();
@@ -134,12 +155,12 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
       Object.values(actionsRef.current).forEach((a) => a?.stop());
       actionsRef.current = {};
     };
-  }, [config.animationUrls, root]);
+  }, [config.animationUrls, characterAnim, root]);
 
   useEffect(() => {
     const detachers: (() => void)[] = [];
     let cancelled = false;
-    const list = mmlModels ?? [];
+    const list = useBuilderStore.getState().mmlPreview?.models ?? [];
 
     (async () => {
       for (const model of list) {
@@ -160,7 +181,7 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
       cancelled = true;
       detachers.forEach((d) => d());
     };
-  }, [mmlModels, manualSocketOverride, root]);
+  }, [attachKey, manualSocketOverride, root]);
 
   useFrame((_, dt) => {
     const m = mixerRef.current;
