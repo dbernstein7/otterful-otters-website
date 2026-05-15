@@ -144,62 +144,211 @@ function extractMeshes(scene, kind) {
       return;
     }
     const isBodyPart =
-      (n.includes('body') && !n.includes('shirt')) ||
-      (n.includes('teeth') || n.includes('tongue') || n.includes('nose') || n.includes('whisker')) ||
-      (n.includes('eye') && kind !== 'eyes') ||
-      n.includes('cone') ||
-      n.includes('sphere') ||
-      /^mesh_0001/i.test(n);
+      n.includes('body') ||
+      n.includes('teeth') ||
+      n.includes('tongue') ||
+      n.includes('nose') ||
+      n.includes('whisker') ||
+      (n.includes('eye') && kind !== 'eyes');
     if (!isBodyPart) meshes.push(child);
   });
   return meshes;
 }
 
-function bakeMeshesIntoGroup(meshes, scene) {
+function isCurveOrLine(obj) {
+  return (
+    obj.isLine ||
+    obj.isLineSegments ||
+    obj.type === 'Line' ||
+    obj.type === 'LineSegments'
+  );
+}
+
+function collectBodyMeshInfo(bodyRoot) {
+  const names = new Set();
+  const geos = new Map();
+  bodyRoot.traverse((child) => {
+    if (!child.isMesh) return;
+    names.add(child.name);
+    if (child.geometry?.attributes?.position) {
+      const box = new THREE.Box3().setFromObject(child);
+      geos.set(child.name, {
+        vertexCount: child.geometry.attributes.position.count,
+        size: box.getSize(new THREE.Vector3()),
+      });
+    }
+  });
+  return { names, geos };
+}
+
+/** Drop duplicate otter body / placeholders from shirt GLBs; keep fabric + attached objects/lines. */
+function shouldDropShirtObject(child, bodyInfo) {
+  const name = child.name.toLowerCase();
+  const originalName = child.name;
+
+  if (isCurveOrLine(child)) return false;
+
+  const isPlaceholder =
+    name.includes('cone') ||
+    name.includes('geo') ||
+    name.includes('sphere') ||
+    name.includes('placeholder') ||
+    name.includes('temp') ||
+    originalName.includes('Cone') ||
+    originalName.includes('Sphere') ||
+    originalName.includes('Geo');
+
+  const isHeadPart =
+    name.includes('teeth') ||
+    name.includes('tongue') ||
+    name.includes('head') ||
+    name.includes('mouth') ||
+    name.includes('jaw') ||
+    (name.includes('eye') && !name.includes('ear')) ||
+    name.includes('nose') ||
+    name.includes('whisker') ||
+    name.includes('snout') ||
+    name.includes('muzzle');
+
+  let isConeOrSphere = false;
+  if (child.geometry) {
+    const gt = child.geometry.type;
+    if (
+      gt === 'ConeGeometry' ||
+      gt === 'SphereGeometry' ||
+      gt === 'ConeBufferGeometry' ||
+      gt === 'SphereBufferGeometry'
+    ) {
+      isConeOrSphere = true;
+    }
+    try {
+      const box = new THREE.Box3().setFromObject(child);
+      const size = box.getSize(new THREE.Vector3());
+      const maxSize = Math.max(size.x, size.y, size.z);
+      if (maxSize < 0.1) {
+        const round = Math.abs(size.x - size.z) < 0.05 && size.y < 0.1;
+        if (round) isConeOrSphere = true;
+      }
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  let isOtterBody = false;
+  if (bodyInfo.names.has(child.name)) {
+    const bodyGeo = bodyInfo.geos.get(child.name);
+    if (bodyGeo && child.geometry?.attributes?.position) {
+      const box = new THREE.Box3().setFromObject(child);
+      const size = box.getSize(new THREE.Vector3());
+      const vc = child.geometry.attributes.position.count;
+      const vertexMatch = Math.abs(vc - bodyGeo.vertexCount) < 10;
+      const sizeMatch =
+        Math.abs(size.x - bodyGeo.size.x) < 0.01 &&
+        Math.abs(size.y - bodyGeo.size.y) < 0.01 &&
+        Math.abs(size.z - bodyGeo.size.z) < 0.01;
+      isOtterBody = vertexMatch && sizeMatch;
+    } else {
+      isOtterBody = true;
+    }
+  }
+
+  let isLargeBodyMesh = false;
+  if (child.geometry?.attributes?.position) {
+    try {
+      const box = new THREE.Box3().setFromObject(child);
+      const size = box.getSize(new THREE.Vector3());
+      const isLarge = size.y > 0.6 || (size.x > 0.5 && size.z > 0.5 && size.y > 0.4);
+      const isVeryLarge = size.y > 1.0 || (size.x > 0.8 && size.z > 0.8);
+      const center = box.getCenter(new THREE.Vector3());
+      const atCenter =
+        Math.abs(center.y) < 0.5 && Math.abs(center.x) < 0.3 && Math.abs(center.z) < 0.3;
+      if (isVeryLarge || (isLarge && atCenter)) isLargeBodyMesh = true;
+    } catch (_) {
+      /* ignore */
+    }
+  }
+
+  return isPlaceholder || isConeOrSphere || isHeadPart || isOtterBody || isLargeBodyMesh;
+}
+
+/** Bake skinned shirt vertices to a static mesh (rebind / reparent without bones breaks fabric). */
+function bakeSkinnedToStaticMesh(skinned) {
+  skinned.skeleton?.update();
+  skinned.updateMatrixWorld(true);
+  const geometry = skinned.geometry.clone();
+  const pos = geometry.attributes.position;
+  const vertex = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    vertex.fromBufferAttribute(pos, i);
+    skinned.applyBoneTransform(i, vertex);
+    pos.setXYZ(i, vertex.x, vertex.y, vertex.z);
+  }
+  if (geometry.attributes.skinIndex) delete geometry.attributes.skinIndex;
+  if (geometry.attributes.skinWeight) delete geometry.attributes.skinWeight;
+  const mesh = new THREE.Mesh(geometry, skinned.material);
+  mesh.name = skinned.name;
+  return mesh;
+}
+
+function cloneShirtObject(src) {
+  if (src.isSkinnedMesh) return bakeSkinnedToStaticMesh(src);
+  if (isCurveOrLine(src)) return src.clone();
+  if (!src.isMesh) return null;
+  const geometry = src.geometry.clone();
+  if (geometry.attributes.skinIndex) delete geometry.attributes.skinIndex;
+  if (geometry.attributes.skinWeight) delete geometry.attributes.skinWeight;
+  const mesh = new THREE.Mesh(geometry, src.material);
+  mesh.name = src.name;
+  return mesh;
+}
+
+function extractShirtParts(shirtScene, bodyRoot) {
+  const bodyInfo = collectBodyMeshInfo(bodyRoot);
+  const parts = [];
+  shirtScene.traverse((child) => {
+    if (!child.isMesh && !isCurveOrLine(child)) return;
+    if (shouldDropShirtObject(child, bodyInfo)) return;
+    parts.push(child);
+  });
+  return parts;
+}
+
+function bakePartsIntoGroup(parts, scene) {
   const group = new THREE.Group();
   scene.updateMatrixWorld(true);
-  for (const mesh of meshes) {
+  for (const src of parts) {
+    const node = cloneShirtObject(src);
+    if (!node) continue;
     const worldPos = new THREE.Vector3();
     const worldQuat = new THREE.Quaternion();
     const worldScale = new THREE.Vector3();
-    mesh.getWorldPosition(worldPos);
-    mesh.getWorldQuaternion(worldQuat);
-    mesh.getWorldScale(worldScale);
-    mesh.position.set(0, 0, 0);
-    mesh.rotation.set(0, 0, 0);
-    mesh.scale.set(1, 1, 1);
-    mesh.quaternion.identity();
-    group.add(mesh);
+    src.getWorldPosition(worldPos);
+    src.getWorldQuaternion(worldQuat);
+    src.getWorldScale(worldScale);
+    group.add(node);
     group.updateMatrixWorld(true);
     const lp = worldPos.clone();
     group.worldToLocal(lp);
-    mesh.position.copy(lp);
-    mesh.quaternion.copy(worldQuat);
-    mesh.scale.copy(worldScale);
+    node.position.copy(lp);
+    node.quaternion.copy(worldQuat);
+    node.scale.copy(worldScale);
   }
   return group;
 }
 
-function tryRebindToBodySkeleton(mesh, bodyRoot) {
-  if (!mesh.isSkinnedMesh || !mesh.skeleton) return false;
-  const bodySm = findDominantSkinnedMesh(bodyRoot);
-  if (!bodySm?.skeleton) return false;
-  const bodyNames = new Set(bodySm.skeleton.bones.map((b) => b.name));
-  const shirtBones = mesh.skeleton.bones;
-  let hits = 0;
-  for (const b of shirtBones) {
-    if (bodyNames.has(b.name)) hits++;
-  }
-  if (hits < Math.max(3, shirtBones.length * 0.4)) return false;
-  mesh.skeleton = bodySm.skeleton;
-  mesh.bind(bodySm.skeleton, mesh.bindMatrix);
-  return true;
+function bakeMeshesIntoGroup(meshes, scene) {
+  return bakePartsIntoGroup(meshes, scene);
+}
+
+function buildShirtGroup(shirtScene, bodyRoot) {
+  const parts = extractShirtParts(shirtScene, bodyRoot);
+  return bakePartsIntoGroup(parts, shirtScene);
 }
 
 /** glTF PBR reads near-black without strong lights (Avatar Builder uses bright key + ambient). */
 function prepareMeshMaterials(root) {
   root.traverse((o) => {
-    if (!o.isMesh || !o.material) return;
+    if ((!o.isMesh && !isCurveOrLine(o)) || !o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const mat of mats) {
       if (!mat) continue;
@@ -329,31 +478,36 @@ export function mountMmlRigPreview(opts) {
       try {
         const g = await loadGltf(w.src);
         if (disposed) return;
+        let group;
+        if (kind === 'shirt') {
+          group = buildShirtGroup(g.scene, body);
+          if (!group.children.length) {
+            logs.push('shirt: no fabric/objects after filter');
+            continue;
+          }
+          prepareMeshMaterials(group);
+          body.add(group);
+          logs.push(`shirt → body root (${group.children.length} part(s), static bake)`);
+          continue;
+        }
+
         const meshes = extractMeshes(g.scene, kind);
         if (!meshes.length) {
           logs.push(`${kind}: no meshes in GLB`);
           continue;
         }
-        const group = bakeMeshesIntoGroup(meshes, g.scene);
+        group = bakeMeshesIntoGroup(meshes, g.scene);
         prepareMeshMaterials(group);
 
-        if (kind === 'shirt') {
-          group.traverse((o) => {
-            if (o.isSkinnedMesh) tryRebindToBodySkeleton(o, body);
-          });
-          body.add(group);
-          logs.push('shirt → body root (skinned rebind when bone names match)');
+        const bone = resolveSocketBone(body, w.socket, w.src);
+        if (bone) {
+          group.position.copy(HEAD_ATTACH_POS);
+          group.quaternion.copy(HEAD_ATTACH_QUAT);
+          bone.add(group);
+          logs.push(`${kind} → bone ${bone.name}`);
         } else {
-          const bone = resolveSocketBone(body, w.socket, w.src);
-          if (bone) {
-            group.position.copy(HEAD_ATTACH_POS);
-            group.quaternion.copy(HEAD_ATTACH_QUAT);
-            bone.add(group);
-            logs.push(`${kind} → bone ${bone.name}`);
-          } else {
-            body.add(group);
-            logs.push(`${kind} → body root (bone "${w.socket}" not found)`);
-          }
+          body.add(group);
+          logs.push(`${kind} → body root (bone "${w.socket}" not found)`);
         }
       } catch (e) {
         logs.push(`${kind} failed: ${e?.message || e}`);
