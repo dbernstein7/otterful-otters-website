@@ -573,7 +573,7 @@
           const reChar = /(<m-character[^>]*>)/i;
           if (!reChar.test(html)) return { html: html, error: null };
           return {
-            html: html.replace(reChar, '$1\n  <m-model socket="mixamorigHead" src="' + esc + '"></m-model>'),
+            html: html.replace(reChar, '$1\n  <m-model socket="head" src="' + esc + '"></m-model>'),
             error: null,
           };
         }
@@ -932,7 +932,8 @@
           if (sanitized.fixedWearableY || strippedAnim.didStrip) {
             if (bodyText.length <= DATA_URL_MAX) {
               try {
-                viewerDocUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(bodyText);
+                /* Single encoding layer: URLSearchParams.set() already percent-encodes the value. */
+                viewerDocUrl = 'data:text/html;charset=utf-8,' + bodyText;
               } catch (_) {
                 viewerDocUrl = docUrl;
               }
@@ -1070,7 +1071,7 @@
           }
           let dataUrl;
           try {
-            dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+            dataUrl = 'data:text/html;charset=utf-8,' + html;
           } catch (err) {
             setStatus('Could not encode document: ' + ((err && err.message) || String(err)), true);
             return;

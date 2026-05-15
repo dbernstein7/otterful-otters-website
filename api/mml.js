@@ -37,6 +37,8 @@
  *   MML_EMIT_CHARACTER_IDS — if `1` or `true`, add `id` / `name` on m-character (default: omitted for minimal markup).
  *   MML_DEFAULT_CHARACTER_ANIM — idle clip URL when no ?anim=, metadata anim, or MML_CHARACTER_ANIM (default
  *   `https://public.mml.io/character-idle-animation.glb`). Prefer an otter-specific clip via metadata or MML_CHARACTER_ANIM when ready.
+ *   MML_OTTER_IDLE_ANIM — full https URL to the idle clip used when the default humanoid idle is stripped for Otterful furs
+ *   (default: `/builder/models/animations/idle-00.glb` on this site’s origin).
  *   MML_SKIP_DEFAULT_ANIM — if `1` or `true`, omit `anim` when nothing else supplies a URL (no default idle).
  *   MML_FORCE_DEMO_HUMANOID_ANIM — if `1` / `true`, keep pairing public.mml.io human idle with Otterful furs (not recommended; breaks sockets).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
@@ -556,6 +558,18 @@ module.exports = async (req, res) => {
     && furLooksLikeOtterfulBody(urls.fur)
   ) {
     animResolved = '';
+  }
+  if (
+    !animResolved
+    && furLooksLikeOtterfulBody(urls.fur)
+    && !truthyEnv(process.env.MML_SKIP_DEFAULT_ANIM)
+  ) {
+    const envIdle = (process.env.MML_OTTER_IDLE_ANIM || '').trim();
+    if (envIdle && /^https?:\/\//i.test(envIdle)) {
+      animResolved = envIdle;
+    } else {
+      animResolved = `${origin.replace(/\/$/, '')}/builder/models/animations/idle-00.glb`;
+    }
   }
   if (animResolved) urls.anim = animResolved;
 
