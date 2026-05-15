@@ -341,6 +341,16 @@ function furLooksLikeOtterfulBody(furUrl) {
   }
 }
 
+/** MML.io / Otherside: GLB origin must attach at socket — bake wearables via /api/mml-wearable. */
+function mmlSocketWearableUrl(origin, rawGlbUrl, kind) {
+  if (!rawGlbUrl) return rawGlbUrl;
+  if (process.env.MML_RAW_WEARABLE_GLBS != null && truthyEnv(process.env.MML_RAW_WEARABLE_GLBS)) {
+    return rawGlbUrl;
+  }
+  const base = origin.replace(/\/$/, '');
+  return `${base}/api/mml-wearable?kind=${encodeURIComponent(kind)}&src=${encodeURIComponent(rawGlbUrl)}`;
+}
+
 function getQueryParam(req, key) {
   const q = req.query && req.query[key];
   if (q != null && String(q).trim() !== '') return String(q).trim();
@@ -557,6 +567,10 @@ module.exports = async (req, res) => {
     animResolved = '';
   }
   if (animResolved) urls.anim = animResolved;
+
+  if (urls.hat) urls.hat = mmlSocketWearableUrl(origin, urls.hat, 'hat');
+  if (urls.shirt) urls.shirt = mmlSocketWearableUrl(origin, urls.shirt, 'shirt');
+  if (urls.eyes) urls.eyes = mmlSocketWearableUrl(origin, urls.eyes, 'eyes');
 
   const sockets = defaultSockets();
 

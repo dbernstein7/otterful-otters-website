@@ -205,7 +205,7 @@
                         <label><input type="checkbox" id="builder-mml-opt-fit"> Closer orbit (tighter on otter)</label>
                         <label><input type="checkbox" id="builder-mml-opt-no-ui" checked> Hide viewer controls</label>
                         <label title="Loads m-character body GLB, reads skeleton bone names, and rewrites m-model socket so viewer.mml.io finds the bone (Epic vs Mixamo naming)."><input type="checkbox" id="builder-mml-align-sockets" checked> Align wearables to body skeleton</label>
-                        <label title="Use viewer.mml.io iframe instead of Otterful rig preview (wearables often float in the generic viewer)."><input type="checkbox" id="builder-mml-use-mml-viewer"> Use MML.io viewer (spec)</label>
+                        <label title="MML.io viewer matches Otherside socket attachment (recommended). Uncheck for legacy Otterful rig preview only."><input type="checkbox" id="builder-mml-use-mml-viewer" checked> Use MML.io viewer (game-ready)</label>
                     </div>
                     <p class="mml-playground-checks-hint">Closer orbit uses a shorter camera distance. Copy links after Preview.</p>
                     <div class="mml-playground-advanced-btns">
@@ -247,7 +247,14 @@
                         <div class="asset-inspector-preview-box">
                             <img class="asset-inspector-2d" data-asset-2d alt="" width="512" height="512" hidden>
                             <div class="asset-inspector-3d-wrap" data-asset-3d-wrap>
-                                <canvas class="asset-inspector-3d-canvas" data-asset-3d-canvas aria-label="3D MML preview"></canvas>
+                                <iframe
+                                    class="asset-inspector-mml-iframe"
+                                    data-asset-mml-iframe
+                                    title="MML.io game-ready preview"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                ></iframe>
                             </div>
                         </div>
                     </div>
@@ -257,9 +264,9 @@
                         <p class="asset-inspector-status" data-asset-status role="status" aria-live="polite"></p>
                         <div class="asset-inspector-downloads">
                             <h3 class="asset-inspector-traits-heading">Downloads</h3>
-                            <p class="asset-inspector-downloads-hint">The 3D viewer file matches this preview (wearables attached). Spec MML is for mml.io / Otherside and may show floating wearables.</p>
-                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block" data-asset-dl-mml title="HTML with Otterful 3D viewer">Download 3D viewer</button>
-                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-spec title="Raw MML for mml.io">Download spec MML</button>
+                            <p class="asset-inspector-downloads-hint">MML uses socket-baked wearables for mml.io and Otherside. Open the downloaded HTML in the MML viewer link inside the file, or paste the MML URL into viewer.mml.io.</p>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block" data-asset-dl-mml title="MML document with baked wearable GLBs">Download MML</button>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-spec hidden aria-hidden="true" data-asset-dl-spec-legacy>Download spec MML</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-glb title="Body (fur) GLB only">Download body GLB</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Hosted MML document URL">Copy MML URL</button>
                             <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Body (fur) GLB URL">Copy body GLB URL</button>
@@ -503,7 +510,7 @@
           await mount.show(html, documentBaseUrl || window.location.href);
         }
 
-        setPreviewSurface(false);
+        setPreviewSurface(shouldUseMmlViewer());
 
         function clampOrbitDistance(n) {
           if (typeof n !== 'number' || isNaN(n)) return fit.checked ? ORBIT_DIST_FIT : ORBIT_DIST_DEFAULT;
@@ -1516,7 +1523,7 @@
             } else if (editor.value.trim()) {
               void refreshRigPreview(editor.value, lastHttpsDocUrl || absoluteDocUrl(input.value));
             } else {
-              setPreviewSurface(false);
+              setPreviewSurface(shouldUseMmlViewer());
             }
           });
         }

@@ -1,6 +1,12 @@
 {
   "version": 2,
   "outputDirectory": ".",
+  "functions": {
+    "api/mml-wearable.js": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "env": {
     "MML_BONE_SCHEME": "unreal",
     "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",
