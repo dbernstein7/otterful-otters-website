@@ -75,6 +75,7 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
+            <button type="button" class="builder-page-tab" data-builder-page="asset" role="tab" aria-selected="false" aria-controls="builder-panel-asset" id="builder-tab-asset">Asset view</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -216,6 +217,53 @@
             <pre id="builder-mml-doc-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
             <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
+
+        <div id="builder-panel-asset" class="builder-page-panel asset-inspector-launch-panel" role="tabpanel" aria-labelledby="builder-tab-asset" hidden>
+            <div class="mml-hero-search" aria-label="Open asset inspector">
+                <p class="mml-hero-search-title">Inspect otter traits &amp; downloads</p>
+                <p class="asset-inspector-launch-lede">Opens a full inspector with 2D artwork, 3D MML preview, core NFT traits, and links to download or copy your MML document and body GLB.</p>
+                <div class="mml-hero-search-row">
+                    <span class="mml-hero-search-prefix" aria-hidden="true">#</span>
+                    <input type="number" id="builder-asset-nft-input" class="mml-hero-search-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number 1 to 2222">
+                    <button type="button" id="builder-asset-open-btn" class="mml-hero-search-btn">Open inspector</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="asset-inspector-modal" class="asset-inspector-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="asset-inspector-title">
+            <div class="asset-inspector-frame" role="document">
+                <header class="asset-inspector-header">
+                    <h2 id="asset-inspector-title" class="asset-inspector-title" data-asset-title>Otterful</h2>
+                    <div class="asset-inspector-header-actions">
+                        <div class="asset-inspector-mode-toggle" role="group" aria-label="Preview mode">
+                            <button type="button" class="asset-inspector-mode-btn" data-asset-mode="2d" aria-pressed="false">2D</button>
+                            <button type="button" class="asset-inspector-mode-btn is-active" data-asset-mode="3d" aria-pressed="true">3D</button>
+                        </div>
+                        <button type="button" class="asset-inspector-dl-btn" data-asset-dl-glb title="Download body (fur) GLB from MML">Download GLB</button>
+                        <button type="button" class="asset-inspector-dl-btn" data-asset-dl-mml title="Download MML HTML document">Download MML</button>
+                        <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Copy body GLB URL">Copy GLB URL</button>
+                        <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Copy MML document URL">Copy MML URL</button>
+                        <button type="button" class="asset-inspector-close" data-asset-close aria-label="Close inspector">×</button>
+                    </div>
+                </header>
+                <p class="asset-inspector-status" data-asset-status role="status" aria-live="polite"></p>
+                <div class="asset-inspector-body">
+                    <div class="asset-inspector-preview-col">
+                        <div class="asset-inspector-preview-box">
+                            <img class="asset-inspector-2d" data-asset-2d alt="" width="512" height="512" hidden>
+                            <div class="asset-inspector-3d-wrap" data-asset-3d-wrap>
+                                <canvas class="asset-inspector-3d-canvas" data-asset-3d-canvas aria-label="3D MML preview"></canvas>
+                            </div>
+                        </div>
+                        <div class="asset-inspector-glb-links" data-asset-glb-links hidden></div>
+                    </div>
+                    <aside class="asset-inspector-traits-col">
+                        <h3 class="asset-inspector-traits-heading">Core traits</h3>
+                        <div class="asset-inspector-traits-grid" data-asset-traits></div>
+                    </aside>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -294,12 +342,22 @@
         const pageTabs = Array.from(document.querySelectorAll('.builder-page-tab'));
         const panelOtter = document.getElementById('builder-panel-otter');
         const panelMml = document.getElementById('builder-panel-mml');
+        const panelAsset = document.getElementById('builder-panel-asset');
         if (pageTabs.length === 0 || !panelOtter || !panelMml) return;
 
+        function syncNftTo(targetInput) {
+          if (!targetInput || String(targetInput.value || '').trim()) return;
+          const o = document.getElementById('builder-nft-input');
+          const m = document.getElementById('builder-mml-nft-input');
+          const src = (o && String(o.value || '').trim()) || (m && String(m.value || '').trim()) || '';
+          if (src) targetInput.value = src;
+        }
+
         function setBuilderPage(which) {
-          const mode = which === 'mml' ? 'mml' : 'otter';
+          const mode = which === 'mml' || which === 'asset' ? which : 'otter';
           const isOtter = mode === 'otter';
           const isMml = mode === 'mml';
+          const isAsset = mode === 'asset';
           pageTabs.forEach((btn) => {
             const on = btn.dataset.builderPage === mode;
             btn.classList.toggle('is-active', on);
@@ -309,20 +367,20 @@
           panelOtter.toggleAttribute('hidden', !isOtter);
           panelMml.classList.toggle('is-active', isMml);
           panelMml.toggleAttribute('hidden', !isMml);
-          if (isMml) {
-            const o = document.getElementById('builder-nft-input');
-            const m = document.getElementById('builder-mml-nft-input');
-            if (o && m && !String(m.value || '').trim() && String(o.value || '').trim()) {
-              m.value = o.value.trim();
-            }
+          if (panelAsset) {
+            panelAsset.classList.toggle('is-active', isAsset);
+            panelAsset.toggleAttribute('hidden', !isAsset);
           }
+          if (isMml) syncNftTo(document.getElementById('builder-mml-nft-input'));
+          if (isAsset) syncNftTo(document.getElementById('builder-asset-nft-input'));
           try {
             let nextHash = '';
             if (isMml) nextHash = '#mml';
+            else if (isAsset) nextHash = '#asset';
             const cur = window.location.hash || '';
             if (nextHash && cur !== nextHash) {
               window.history.replaceState(null, '', '3d-builder.html' + nextHash);
-            } else if (!nextHash && cur === '#mml') {
+            } else if (!nextHash && (cur === '#mml' || cur === '#asset')) {
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
@@ -339,6 +397,7 @@
         function syncFromHash() {
           const h = window.location.hash;
           if (h === '#mml') setBuilderPage('mml');
+          else if (h === '#asset') setBuilderPage('asset');
           else setBuilderPage('otter');
         }
         window.addEventListener('hashchange', syncFromHash);
@@ -414,10 +473,7 @@
         function loadRigPreviewModule() {
           if (!rigPreviewModulePromise) {
             const href = new URL('./games/mml-rig-preview/mml-rig-preview.mjs', window.location.href).href;
-            rigPreviewModulePromise = import(href).catch(function (err) {
-              rigPreviewModulePromise = null;
-              throw err;
-            });
+            rigPreviewModulePromise = import(href);
           }
           return rigPreviewModulePromise;
         }
@@ -1513,6 +1569,65 @@
           if (e.key === 'Enter') btn.click();
         });
       })();
+    </script>
+
+    <script type="module">
+      import { initAssetInspector } from './games/otter-asset-inspector/asset-inspector.mjs';
+
+      const modal = document.getElementById('asset-inspector-modal');
+      const openBtn = document.getElementById('builder-asset-open-btn');
+      const assetInput = document.getElementById('builder-asset-nft-input');
+      if (!modal || !openBtn || !assetInput) {
+        /* panel not on this page */
+      } else {
+        const inspector = initAssetInspector({ modal });
+
+        function parseOtterNum() {
+          const num = parseInt(String(assetInput.value || '').trim(), 10);
+          if (!num || num < 1 || num > 2222) return null;
+          return num;
+        }
+
+        async function openFromInput() {
+          const num = parseOtterNum();
+          if (!num) {
+            assetInput.focus();
+            assetInput.setCustomValidity('Enter an otter number from 1 to 2222');
+            assetInput.reportValidity();
+            return;
+          }
+          assetInput.setCustomValidity('');
+          modal.removeAttribute('aria-hidden');
+          inspector.open(num);
+        }
+
+        openBtn.addEventListener('click', () => void openFromInput());
+        assetInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            void openFromInput();
+          }
+        });
+
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const idParam = params.get('id') || params.get('token');
+          const fromHash = window.location.hash.match(/^#asset\/(\d+)$/);
+          const num = fromHash
+            ? parseInt(fromHash[1], 10)
+            : idParam
+              ? parseInt(idParam, 10)
+              : NaN;
+          if (num >= 1 && num <= 2222) {
+            assetInput.value = String(num);
+            if (window.location.hash === '#asset' || fromHash) {
+              void openFromInput();
+            }
+          }
+        } catch (_) {
+          /* ignore */
+        }
+      }
     </script>
 </body>
 </html>
