@@ -31,15 +31,11 @@ function decodeHtmlAttr(s) {
     .trim();
 }
 
-/** Rig preview attaches wearables client-side; use raw Firebase GLB, not /api/mml-wearable. */
-function unwrapWearableProxyUrl(url) {
+function isMmlWearableBakedUrl(url) {
   try {
-    const u = new URL(url);
-    if (!/\/api\/mml-wearable$/i.test(u.pathname)) return url;
-    const raw = u.searchParams.get('src');
-    return raw ? decodeURIComponent(raw) : url;
+    return /\/api\/mml-wearable$/i.test(new URL(url, window.location.href).pathname);
   } catch (_) {
-    return url;
+    return false;
   }
 }
 
@@ -56,8 +52,8 @@ export function parseMmlHtml(html, documentBaseUrl) {
   if (!bodyRaw) throw new Error('m-character has no src.');
   const resolve = (ref) => {
     const s = ref.trim();
-    if (/^https?:\/\//i.test(s)) return unwrapWearableProxyUrl(s);
-    return unwrapWearableProxyUrl(new URL(s, documentBaseUrl).href);
+    if (/^https?:\/\//i.test(s)) return s;
+    return new URL(s, documentBaseUrl).href;
   };
   const bodySrc = resolve(bodyRaw);
   const animRaw = readAttr('anim');
@@ -493,6 +489,24 @@ export function mountMmlRigPreview(opts) {
       try {
         const g = await loadGltf(w.src);
         if (disposed) return;
+
+        if (isMmlWearableBakedUrl(w.src)) {
+          const group =
+            g.scene.children.length === 1 && g.scene.children[0].name === 'MMLAccessory'
+              ? g.scene.children[0]
+              : g.scene;
+          prepareMeshMaterials(group);
+          const bone = resolveSocketBone(body, w.socket, w.src);
+          if (bone) {
+            bone.add(group);
+            logs.push(`${kind} → bone ${bone.name} (socket-baked)`);
+          } else {
+            body.add(group);
+            logs.push(`${kind} → body root (socket-baked, bone "${w.socket}" not found)`);
+          }
+          continue;
+        }
+
         let group;
         if (kind === 'shirt') {
           group = buildShirtGroup(g.scene, body);
