@@ -4,7 +4,7 @@
   "functions": {
     "api/mml-wearable.js": {
       "maxDuration": 30,
-      "memory": 3008,
+      "memory": 2048,
       "includeFiles": "lib/**"
     }
   },
