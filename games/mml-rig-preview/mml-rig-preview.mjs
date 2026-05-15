@@ -305,10 +305,11 @@ export function mountMmlRigPreview(opts) {
     if (disposed) return;
 
     const body = bodyGltf.scene;
+    /* No per-mesh shadows — cast+receive on skinned fur causes shadow acne (grid/moire), not low poly. */
     body.traverse((o) => {
       if (o.isMesh) {
-        o.castShadow = true;
-        o.receiveShadow = true;
+        o.castShadow = false;
+        o.receiveShadow = false;
       }
     });
     prepareMeshMaterials(body);
@@ -390,7 +391,7 @@ export function mountMmlRigPreview(opts) {
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = false;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x5a7a9a);
     scene.fog = new THREE.Fog(0x7a9aba, 30, 72);
@@ -399,7 +400,7 @@ export function mountMmlRigPreview(opts) {
     scene.add(new THREE.HemisphereLight(0xdce8ff, 0x4a4030, 0.5));
     const sun = new THREE.DirectionalLight(0xffffff, 2.5);
     sun.position.set(6, 14, 9);
-    sun.castShadow = true;
+    sun.castShadow = false;
     scene.add(sun);
     const fill = new THREE.DirectionalLight(0xffffff, 1.4);
     fill.position.set(-7, 5, -5);
@@ -412,7 +413,7 @@ export function mountMmlRigPreview(opts) {
       new THREE.MeshStandardMaterial({ color: 0x152018, roughness: 0.92 })
     );
     ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
+    ground.receiveShadow = false;
     scene.add(ground);
     resize();
     tick();
