@@ -4,10 +4,12 @@
   "functions": {
     "api/mml-wearable.js": {
       "maxDuration": 30,
-      "memory": 1024
+      "memory": 3008,
+      "includeFiles": "lib/**"
     }
   },
   "env": {
+    "MML_RAW_WEARABLE_GLBS": "0",
     "MML_BONE_SCHEME": "unreal",
     "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",
     "MML_FUR_STORAGE_PATH": "Furs",
