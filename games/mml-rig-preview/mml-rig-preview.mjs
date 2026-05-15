@@ -207,9 +207,12 @@ function prepareMeshMaterials(root) {
       if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
       if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
       if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-        mat.metalness = Math.min(mat.metalness ?? 0, 0.25);
-        mat.roughness = Math.max(0.35, Math.min(mat.roughness ?? 0.65, 0.92));
-        mat.envMapIntensity = 0.35;
+        // Many exports are "too metallic" for a preview with no HDRI env map.
+        // Force more diffuse PBR so the character isn't a black silhouette.
+        mat.metalness = Math.min(mat.metalness ?? 0, 0.05);
+        mat.roughness = Math.max(0.6, Math.min(mat.roughness ?? 0.65, 0.95));
+        mat.envMapIntensity = 0;
+        mat.needsUpdate = true;
       }
     }
   });
@@ -390,23 +393,23 @@ export function mountMmlRigPreview(opts) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = 2.0;
     renderer.shadowMap.enabled = true;
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x4a6a8a);
-    scene.fog = new THREE.Fog(0x6a8aaa, 28, 70);
+    scene.background = new THREE.Color(0x070d1a);
+    scene.fog = new THREE.Fog(0x070d1a, 18, 75);
     camera = new THREE.PerspectiveCamera(52, 1, 0.05, 120);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.72));
-    scene.add(new THREE.HemisphereLight(0xd8e4ff, 0x3a3020, 0.55));
-    const sun = new THREE.DirectionalLight(0xffffff, 2.4);
-    sun.position.set(6, 14, 9);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
+    scene.add(new THREE.HemisphereLight(0xb8c4ff, 0x1a1208, 0.9));
+    const sun = new THREE.DirectionalLight(0xffffff, 5.0);
+    sun.position.set(6, 18, 9);
     sun.castShadow = true;
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xffffff, 1.35);
-    fill.position.set(-7, 5, -5);
+    const fill = new THREE.DirectionalLight(0xffffff, 2.8);
+    fill.position.set(-7, 7, -5);
     scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffffff, 0.9);
-    rim.position.set(0, 6, -12);
+    const rim = new THREE.DirectionalLight(0xffffff, 1.8);
+    rim.position.set(0, 8, -14);
     scene.add(rim);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40),
