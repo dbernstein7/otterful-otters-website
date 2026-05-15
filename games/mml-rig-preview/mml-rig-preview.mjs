@@ -196,6 +196,25 @@ function tryRebindToBodySkeleton(mesh, bodyRoot) {
   return true;
 }
 
+/** glTF PBR looks black without strong lights + tone mapping (Avatar Builder uses ~3× key light). */
+function prepareMeshMaterials(root) {
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const mat of mats) {
+      if (!mat) continue;
+      mat.side = THREE.DoubleSide;
+      if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+      if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+      if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
+        mat.metalness = Math.min(mat.metalness ?? 0, 0.25);
+        mat.roughness = Math.max(0.35, Math.min(mat.roughness ?? 0.65, 0.92));
+        mat.envMapIntensity = 0.35;
+      }
+    }
+  });
+}
+
 function fitAndGround(root, targetHeight) {
   const box = new THREE.Box3().setFromObject(root);
   const size = box.getSize(new THREE.Vector3());
@@ -291,14 +310,9 @@ export function mountMmlRigPreview(opts) {
       if (o.isMesh) {
         o.castShadow = true;
         o.receiveShadow = true;
-        if (o.material) {
-          const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => {
-            if (m) m.side = THREE.DoubleSide;
-          });
-        }
       }
     });
+    prepareMeshMaterials(body);
     fitAndGround(body, 2.05);
     if (Number.isFinite(parsed.charY) && parsed.charY !== 0) {
       body.position.y += parsed.charY;
@@ -321,6 +335,7 @@ export function mountMmlRigPreview(opts) {
           continue;
         }
         const group = bakeMeshesIntoGroup(meshes, g.scene);
+        prepareMeshMaterials(group);
 
         if (kind === 'shirt') {
           group.traverse((o) => {
@@ -374,16 +389,25 @@ export function mountMmlRigPreview(opts) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     renderer.shadowMap.enabled = true;
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f141c);
-    scene.fog = new THREE.Fog(0x0f141c, 12, 45);
+    scene.background = new THREE.Color(0x4a6a8a);
+    scene.fog = new THREE.Fog(0x6a8aaa, 28, 70);
     camera = new THREE.PerspectiveCamera(52, 1, 0.05, 120);
-    scene.add(new THREE.HemisphereLight(0xb8c4ff, 0x1a1208, 0.55));
-    const sun = new THREE.DirectionalLight(0xffffff, 0.95);
-    sun.position.set(8, 18, 10);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.72));
+    scene.add(new THREE.HemisphereLight(0xd8e4ff, 0x3a3020, 0.55));
+    const sun = new THREE.DirectionalLight(0xffffff, 2.4);
+    sun.position.set(6, 14, 9);
     sun.castShadow = true;
     scene.add(sun);
+    const fill = new THREE.DirectionalLight(0xffffff, 1.35);
+    fill.position.set(-7, 5, -5);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xffffff, 0.9);
+    rim.position.set(0, 6, -12);
+    scene.add(rim);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40),
       new THREE.MeshStandardMaterial({ color: 0x152018, roughness: 0.92 })
