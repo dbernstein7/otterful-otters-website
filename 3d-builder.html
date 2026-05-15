@@ -239,14 +239,9 @@
                             <button type="button" class="asset-inspector-mode-btn" data-asset-mode="2d" aria-pressed="false">2D</button>
                             <button type="button" class="asset-inspector-mode-btn is-active" data-asset-mode="3d" aria-pressed="true">3D</button>
                         </div>
-                        <button type="button" class="asset-inspector-dl-btn" data-asset-dl-glb title="Download body (fur) GLB from MML">Download GLB</button>
-                        <button type="button" class="asset-inspector-dl-btn" data-asset-dl-mml title="Download MML HTML document">Download MML</button>
-                        <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Copy body GLB URL">Copy GLB URL</button>
-                        <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Copy MML document URL">Copy MML URL</button>
                         <button type="button" class="asset-inspector-close" data-asset-close aria-label="Close inspector">×</button>
                     </div>
                 </header>
-                <p class="asset-inspector-status" data-asset-status role="status" aria-live="polite"></p>
                 <div class="asset-inspector-body">
                     <div class="asset-inspector-preview-col">
                         <div class="asset-inspector-preview-box">
@@ -255,11 +250,20 @@
                                 <canvas class="asset-inspector-3d-canvas" data-asset-3d-canvas aria-label="3D MML preview"></canvas>
                             </div>
                         </div>
-                        <div class="asset-inspector-glb-links" data-asset-glb-links hidden></div>
                     </div>
                     <aside class="asset-inspector-traits-col">
                         <h3 class="asset-inspector-traits-heading">Core traits</h3>
                         <div class="asset-inspector-traits-grid" data-asset-traits></div>
+                        <p class="asset-inspector-status" data-asset-status role="status" aria-live="polite"></p>
+                        <div class="asset-inspector-downloads">
+                            <h3 class="asset-inspector-traits-heading">Downloads</h3>
+                            <p class="asset-inspector-downloads-hint">The 3D viewer file matches this preview (wearables attached). Spec MML is for mml.io / Otherside and may show floating wearables.</p>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block" data-asset-dl-mml title="HTML with Otterful 3D viewer">Download 3D viewer</button>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-spec title="Raw MML for mml.io">Download spec MML</button>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-glb title="Body (fur) GLB only">Download body GLB</button>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Hosted MML document URL">Copy MML URL</button>
+                            <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Body (fur) GLB URL">Copy body GLB URL</button>
+                        </div>
                     </aside>
                 </div>
             </div>

@@ -1,29 +1,13 @@
 /**
- * Otterful asset inspector — 2D image, 3D MML rig preview, core traits, GLB/MML downloads.
+ * Otterful asset inspector — 2D image, 3D MML rig preview, core traits, downloads.
  */
 const CORE_TRAIT_SKIP = new Set(['trait count', 'compiler']);
 
-function parseMmlUrls(html) {
-  const urls = { body: null, wearables: [] };
+function parseBodyGlbUrl(html) {
   const char = html.match(/<\s*m-character\b([^>]*)>/i);
-  if (char) {
-    const sm = char[1].match(/(?:^|[\s])src\s*=\s*(["'])([\s\S]*?)\1/i);
-    if (sm) urls.body = sm[2].replace(/&amp;/gi, '&').trim();
-  }
-  const modelRe = /<\s*m-model\b([^>]*?)(?:\/>|>)/gi;
-  let mm;
-  while ((mm = modelRe.exec(html))) {
-    const block = mm[1];
-    const srcM = block.match(/(?:^|[\s])src\s*=\s*(["'])([\s\S]*?)\1/i);
-    const sockM = block.match(/(?:^|[\s])socket\s*=\s*(["'])([\s\S]*?)\1/i);
-    if (srcM) {
-      urls.wearables.push({
-        socket: sockM ? sockM[2].trim() : '',
-        src: srcM[2].replace(/&amp;/gi, '&').trim(),
-      });
-    }
-  }
-  return urls;
+  if (!char) return null;
+  const sm = char[1].match(/(?:^|[\s])src\s*=\s*(["'])([\s\S]*?)\1/i);
+  return sm ? sm[2].replace(/&amp;/gi, '&').trim() : null;
 }
 
 function traitRows(metadata) {
@@ -64,15 +48,49 @@ async function downloadUrlAsFile(url, filename) {
   downloadBlob(filename, blob);
 }
 
+/** Self-contained HTML that uses Otterful rig preview (wearables attach correctly). */
+function buildOtterfulViewerHtml(mmlHtml, documentBaseUrl, id, siteOrigin) {
+  const origin = siteOrigin.replace(/\/$/, '');
+  const rigModule = `${origin}/games/mml-rig-preview/mml-rig-preview.mjs`;
+  const title = `Otterful #${id}`;
+  const mmlJson = JSON.stringify(mmlHtml);
+  const baseJson = JSON.stringify(documentBaseUrl);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${title} — Otterful 3D viewer</title>
+<style>
+html,body{margin:0;height:100%;background:#0a1018;overflow:hidden;font-family:system-ui,sans-serif}
+#asset-viewer-root{position:fixed;inset:0}
+#asset-viewer-root canvas{display:block;width:100%;height:100%}
+#asset-viewer-hint{position:fixed;left:0;right:0;bottom:0;padding:10px 14px;font-size:12px;color:#9ab;text-align:center;background:rgba(8,12,18,0.75);pointer-events:none}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+</head>
+<body>
+<div id="asset-viewer-root"><canvas id="asset-viewer-canvas" aria-label="Otterful 3D preview"></canvas></div>
+<p id="asset-viewer-hint">Otterful 3D viewer — wearables use Otterful rig attachment (not mml.io). Requires internet.</p>
+<script type="module">
+const MML_HTML = ${mmlJson};
+const DOC_BASE = ${baseJson};
+const root = document.getElementById('asset-viewer-root');
+const canvas = document.getElementById('asset-viewer-canvas');
+const { mountMmlRigPreview } = await import(${JSON.stringify(rigModule)});
+const mount = mountMmlRigPreview({ container: root, canvas, getOrbitDistance: () => 2.34 });
+await mount.show(MML_HTML, DOC_BASE);
+</script>
+</body>
+</html>`;
+}
+
 /**
- * @param {{
- *   modal: HTMLElement;
- *   onClose?: () => void;
- * }} opts
+ * @param {{ modal: HTMLElement; onClose?: () => void }} opts
  */
 export function initAssetInspector(opts) {
   const { modal, onClose } = opts;
-  const frame = modal.querySelector('.asset-inspector-frame');
   const titleEl = modal.querySelector('[data-asset-title]');
   const traitsEl = modal.querySelector('[data-asset-traits]');
   const statusEl = modal.querySelector('[data-asset-status]');
@@ -84,9 +102,9 @@ export function initAssetInspector(opts) {
   const btnClose = modal.querySelector('[data-asset-close]');
   const btnGlb = modal.querySelector('[data-asset-dl-glb]');
   const btnMml = modal.querySelector('[data-asset-dl-mml]');
+  const btnSpec = modal.querySelector('[data-asset-dl-spec]');
   const btnCopyGlb = modal.querySelector('[data-asset-copy-glb]');
   const btnCopyMml = modal.querySelector('[data-asset-copy-mml]');
-  const glbLinksEl = modal.querySelector('[data-asset-glb-links]');
 
   let mode = '3d';
   let currentId = null;
@@ -94,6 +112,7 @@ export function initAssetInspector(opts) {
   let mmlDocUrl = null;
   let mmlHtml = null;
   let rigMount = null;
+  const siteOrigin = window.location.origin;
 
   function setStatus(msg, isError) {
     if (!statusEl) return;
@@ -102,7 +121,7 @@ export function initAssetInspector(opts) {
     if (!isError && msg) {
       setTimeout(() => {
         if (statusEl.textContent === msg) statusEl.textContent = '';
-      }, 3200);
+      }, 4000);
     }
   }
 
@@ -155,39 +174,12 @@ export function initAssetInspector(opts) {
       .replace(/"/g, '&quot;');
   }
 
-  function renderGlbLinks(urls) {
-    if (!glbLinksEl) return;
-    const items = [];
-    if (urls.body) {
-      items.push({ label: 'Body (fur)', url: urls.body });
-    }
-    urls.wearables.forEach((w) => {
-      const label = w.socket ? `Wearable (${w.socket})` : 'Wearable';
-      items.push({ label, url: w.src });
-    });
-    if (!items.length) {
-      glbLinksEl.innerHTML = '';
-      glbLinksEl.hidden = true;
-      return;
-    }
-    glbLinksEl.hidden = false;
-    glbLinksEl.innerHTML =
-      '<p class="asset-inspector-glb-links-title">GLB files in this MML</p>' +
-      items
-        .map(
-          (it) =>
-            `<a class="asset-inspector-glb-link" href="${escapeHtml(it.url)}" target="_blank" rel="noopener noreferrer" download>${escapeHtml(it.label)}</a>`
-        )
-        .join('');
-  }
-
   async function load(id) {
     currentId = id;
     bodyGlbUrl = null;
     mmlHtml = null;
-    const origin = window.location.origin;
-    mmlDocUrl = `${origin}/api/mml?id=${id}`;
-    const metaUrl = `${origin}/metadata/${id}.json`;
+    mmlDocUrl = `${siteOrigin}/api/mml?id=${id}`;
+    const metaUrl = `${siteOrigin}/metadata/${id}.json`;
     const imgUrl = `images_compressed/${id}.png`;
 
     if (titleEl) titleEl.textContent = `Otterful #${id}`;
@@ -201,9 +193,7 @@ export function initAssetInspector(opts) {
       const [metadata, html] = await Promise.all([fetchJson(metaUrl), fetchText(mmlDocUrl)]);
       mmlHtml = html;
       renderTraits(metadata);
-      const urls = parseMmlUrls(html);
-      bodyGlbUrl = urls.body;
-      renderGlbLinks(urls);
+      bodyGlbUrl = parseBodyGlbUrl(html);
       if (btnGlb) btnGlb.disabled = !bodyGlbUrl;
       if (btnCopyGlb) btnCopyGlb.disabled = !bodyGlbUrl;
 
@@ -214,10 +204,6 @@ export function initAssetInspector(opts) {
       setStatus('', false);
     } catch (e) {
       renderTraits(null);
-      if (glbLinksEl) {
-        glbLinksEl.innerHTML = '';
-        glbLinksEl.hidden = true;
-      }
       if (btnGlb) btnGlb.disabled = true;
       if (btnCopyGlb) btnCopyGlb.disabled = true;
       setStatus(e?.message || String(e), true);
@@ -242,9 +228,7 @@ export function initAssetInspector(opts) {
     onClose?.();
   }
 
-  toggle2d?.addEventListener('click', () => {
-    setMode('2d');
-  });
+  toggle2d?.addEventListener('click', () => setMode('2d'));
   toggle3d?.addEventListener('click', async () => {
     setMode('3d');
     if (currentId && mmlHtml) {
@@ -268,10 +252,26 @@ export function initAssetInspector(opts) {
   btnMml?.addEventListener('click', async () => {
     if (!currentId) return;
     try {
-      setStatus('Preparing MML…', false);
+      setStatus('Building 3D viewer…', false);
       const html = mmlHtml || (await fetchText(mmlDocUrl));
-      downloadBlob(`otterful-${currentId}.html`, new Blob([html], { type: 'text/html;charset=utf-8' }));
-      setStatus('MML downloaded.', false);
+      const viewerHtml = buildOtterfulViewerHtml(html, mmlDocUrl, currentId, siteOrigin);
+      downloadBlob(
+        `otterful-${currentId}-viewer.html`,
+        new Blob([viewerHtml], { type: 'text/html;charset=utf-8' })
+      );
+      setStatus('3D viewer downloaded — open that file in your browser.', false);
+    } catch (e) {
+      setStatus(e?.message || String(e), true);
+    }
+  });
+
+  btnSpec?.addEventListener('click', async () => {
+    if (!currentId) return;
+    try {
+      setStatus('Preparing spec MML…', false);
+      const html = mmlHtml || (await fetchText(mmlDocUrl));
+      downloadBlob(`otterful-${currentId}-spec.mml.html`, new Blob([html], { type: 'text/html;charset=utf-8' }));
+      setStatus('Spec MML downloaded (for mml.io / Otherside).', false);
     } catch (e) {
       setStatus(e?.message || String(e), true);
     }
@@ -294,7 +294,7 @@ export function initAssetInspector(opts) {
     try {
       await navigator.clipboard.writeText(mmlDocUrl);
       setStatus('MML URL copied.', false);
-    } catch (e) {
+    } catch (_) {
       setStatus('Could not copy MML URL.', true);
     }
   });
@@ -304,7 +304,7 @@ export function initAssetInspector(opts) {
     try {
       await navigator.clipboard.writeText(bodyGlbUrl);
       setStatus('Body GLB URL copied.', false);
-    } catch (e) {
+    } catch (_) {
       setStatus('Could not copy GLB URL.', true);
     }
   });
