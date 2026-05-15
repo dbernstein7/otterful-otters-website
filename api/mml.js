@@ -18,8 +18,9 @@
  *   has its own skeleton and the body’s clip causes binding glitches). Default: eyes behave like hats (socket + viewer animation).
  *   Legacy: `MML_EYES_ANIM_ENABLED` is still read — if explicitly false/0, same as MML_EYES_ANIM_DISABLED.
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
- *   MML_BONE_SCHEME — `mixamo` (default: mixamorigHead / mixamorigSpine2), `mixamo_colon`, `short` (Head / Spine2 / Head),
- *   or `ue` / `otter` / `mmlo` (head / spine_04 / head — matches MMLOtter-style rigs).
+ *   MML_BONE_SCHEME — default `unreal` (Epic / UE Mannequin-style glTF: head, spine_03, … — see mml/reference-unreal-mannequin-rig.glb).
+ *   Set `mixamo` for legacy Otterful bodies (mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head / mixamorig:Spine2),
+ *   or `short` (Head / Spine2 / Head). Aliases: `ue`, `epic`, `mannequin` → same sockets as `unreal`.
  *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/… on the site only). Ignored for path segments when Firebase is active and default folders Furs/Hats/Shirts/Eyes apply.
  *   MML_FUR_STORAGE_PATH — object folder for body GLBs (default `Furs` when using Firebase). Overrides auto folder when set.
  *   MML_HAT_STORAGE_PATH, MML_SHIRT_STORAGE_PATH, MML_EYES_STORAGE_PATH — same pattern (e.g. `Hats`, `Shirts`, `Eyes`) when those assets live at bucket root.
@@ -37,8 +38,6 @@
  *   MML_EMIT_CHARACTER_IDS — if `1` or `true`, add `id` / `name` on m-character (default: omitted for minimal markup).
  *   MML_DEFAULT_CHARACTER_ANIM — idle clip URL when no ?anim=, metadata anim, or MML_CHARACTER_ANIM (default
  *   `https://public.mml.io/character-idle-animation.glb`). Prefer an otter-specific clip via metadata or MML_CHARACTER_ANIM when ready.
- *   MML_OTTER_IDLE_ANIM — full https URL to the idle clip used when the default humanoid idle is stripped for Otterful furs
- *   (default: `/builder/models/animations/idle-00.glb` on this site’s origin).
  *   MML_SKIP_DEFAULT_ANIM — if `1` or `true`, omit `anim` when nothing else supplies a URL (no default idle).
  *   MML_FORCE_DEMO_HUMANOID_ANIM — if `1` / `true`, keep pairing public.mml.io human idle with Otterful furs (not recommended; breaks sockets).
  *   SITE_ORIGIN — fallback when Host header missing (default https://www.otterfulotters.xyz)
@@ -46,14 +45,11 @@
  * Optional separate animation file (body GLB + linked anim GLB):
  *   ?anim= on this endpoint — full https://…glb or a wearable path (e.g. WEARABLES/Animations/Walk.glb). Easiest way to try walk/run/idle without editing metadata.
  *   ?shirt= — full https://…glb or a **Shirts/** filename stem (same as ?hat=). Overrides MML_SHIRT_OVERRIDE env, then metadata Shirt/Shirts trait.
- *   ?no_hat=1 / ?no_shirt=1 / ?no_glasses=1 — omit that wearable slot even when metadata includes the trait (Otterful Hub uses this for “Hidden”).
  *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
  *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
  *   Priority: ?anim= > trait > MML_CHARACTER_ANIM > MML_DEFAULT_CHARACTER_ANIM (unless MML_SKIP_DEFAULT_ANIM).
  *
  * Optional hat override (testing / Firebase per-file tokens):
- *   ?glasses= or ?eyes= — optional override for the eyes socket GLB (same rules as ?hat=: full https URL or Eyes/ stem).
- *     `glasses` is an alias for `eyes` (Otherside-style naming). Wins over metadata Eyes trait when present.
  *   ?hat= — wins over metadata Hats/Hat trait. Value is either (a) a filename stem, e.g. antler → Hats/antler.glb via
  *   MML_HAT_STORAGE_PATH / WEARABLES/Hats, same as metadata; or (b) a full https://… URL to the hat .glb (use when each
  *   Firebase object has its own download token — FIREBASE_STORAGE_TOKEN is one token for all paths and may not match).
@@ -216,14 +212,7 @@ function eyesAnimAttr() {
 }
 
 function defaultSockets() {
-  const scheme = (process.env.MML_BONE_SCHEME || 'mixamo').toLowerCase();
-  if (scheme === 'ue' || scheme === 'otter' || scheme === 'mmlo') {
-    return {
-      hat: process.env.MML_SOCKET_HAT || 'head',
-      shirt: process.env.MML_SOCKET_SHIRT || 'spine_04',
-      eyes: process.env.MML_SOCKET_EYES || 'head',
-    };
-  }
+  const scheme = (process.env.MML_BONE_SCHEME || 'unreal').toLowerCase();
   if (scheme === 'short' || scheme === 'head') {
     return {
       hat: process.env.MML_SOCKET_HAT || 'Head',
@@ -238,11 +227,31 @@ function defaultSockets() {
       eyes: process.env.MML_SOCKET_EYES || 'mixamorig:Head',
     };
   }
-  /* Default mixamo: glTF-exported Otterful rigs use bone names without a colon (mixamorigHead, mixamorigSpine2). */
+  if (scheme === 'mixamo' || scheme === 'mixamo_plain') {
+    return {
+      hat: process.env.MML_SOCKET_HAT || 'mixamorigHead',
+      shirt: process.env.MML_SOCKET_SHIRT || 'mixamorigSpine2',
+      eyes: process.env.MML_SOCKET_EYES || 'mixamorigHead',
+    };
+  }
+  /* unreal / ue / epic / mannequin — matches Epic-style glTF (reference: mml/reference-unreal-mannequin-rig.glb):
+   * pelvis → spine_01…spine_05 → neck_01 → neck_02 → head; shirt uses mid-upper spine for torso wearables. */
+  if (
+    scheme === 'unreal'
+    || scheme === 'ue'
+    || scheme === 'epic'
+    || scheme === 'mannequin'
+  ) {
+    return {
+      hat: process.env.MML_SOCKET_HAT || 'head',
+      shirt: process.env.MML_SOCKET_SHIRT || 'spine_03',
+      eyes: process.env.MML_SOCKET_EYES || 'head',
+    };
+  }
   return {
-    hat: process.env.MML_SOCKET_HAT || 'mixamorigHead',
-    shirt: process.env.MML_SOCKET_SHIRT || 'mixamorigSpine2',
-    eyes: process.env.MML_SOCKET_EYES || 'mixamorigHead',
+    hat: process.env.MML_SOCKET_HAT || 'head',
+    shirt: process.env.MML_SOCKET_SHIRT || 'spine_03',
+    eyes: process.env.MML_SOCKET_EYES || 'head',
   };
 }
 
@@ -510,31 +519,17 @@ module.exports = async (req, res) => {
       }
     }
   }
-  function eyesUrlFromStem(eyeStem) {
-    const stem = normalizeWearableFilenameStem(eyeStem) || eyeStem;
+  if (traits.eyes) {
     const eyesFolder = storageFolderFromEnv('MML_EYES_STORAGE_PATH');
     if (eyesFolder) {
-      return buildWearableUrl(origin, `${eyesFolder}/${stem}.glb`);
-    }
-    if (firebaseBucket()) {
-      return buildWearableUrl(origin, `Eyes/${stem}.glb`);
-    }
-    if (wp !== 'WEARABLES') {
-      return buildEyesWearableUrl(origin, stem);
-    }
-    return buildWearableUrl(origin, `${wp}/Eyes/${stem}.glb`);
-  }
-
-  const eyesOverrideRaw = getQueryParam(req, 'glasses') || getQueryParam(req, 'eyes');
-  if (eyesOverrideRaw && String(eyesOverrideRaw).trim()) {
-    const eo = String(eyesOverrideRaw).trim();
-    if (/^https?:\/\//i.test(eo)) {
-      urls.eyes = eo;
+      urls.eyes = buildWearableUrl(origin, `${eyesFolder}/${traits.eyes}.glb`);
+    } else if (firebaseBucket()) {
+      urls.eyes = buildWearableUrl(origin, `Eyes/${traits.eyes}.glb`);
+    } else if (wp !== 'WEARABLES') {
+      urls.eyes = buildEyesWearableUrl(origin, traits.eyes);
     } else {
-      urls.eyes = eyesUrlFromStem(eo);
+      urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
     }
-  } else if (traits.eyes) {
-    urls.eyes = eyesUrlFromStem(traits.eyes);
   }
 
   const animQuery = getQueryParam(req, 'anim');
@@ -559,30 +554,7 @@ module.exports = async (req, res) => {
   ) {
     animResolved = '';
   }
-  if (
-    !animResolved
-    && furLooksLikeOtterfulBody(urls.fur)
-    && !truthyEnv(process.env.MML_SKIP_DEFAULT_ANIM)
-  ) {
-    const envIdle = (process.env.MML_OTTER_IDLE_ANIM || '').trim();
-    if (envIdle && /^https?:\/\//i.test(envIdle)) {
-      animResolved = envIdle;
-    } else {
-      animResolved = `${origin.replace(/\/$/, '')}/builder/models/animations/idle-00.glb`;
-    }
-  }
   if (animResolved) urls.anim = animResolved;
-
-  /* Builder / viewer: strip slots even when metadata would otherwise supply a trait. */
-  if (truthyEnv(getQueryParam(req, 'no_hat')) || getQueryParam(req, 'no_hat') === '1') {
-    delete urls.hat;
-  }
-  if (truthyEnv(getQueryParam(req, 'no_shirt')) || getQueryParam(req, 'no_shirt') === '1') {
-    delete urls.shirt;
-  }
-  if (truthyEnv(getQueryParam(req, 'no_glasses')) || getQueryParam(req, 'no_glasses') === '1') {
-    delete urls.eyes;
-  }
 
   const sockets = defaultSockets();
 

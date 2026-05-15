@@ -1,16 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "cd otterful-builder-hub && npm install && npm run build",
   "outputDirectory": ".",
   "env": {
+    "MML_BONE_SCHEME": "unreal",
     "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",
     "MML_FUR_STORAGE_PATH": "Furs",
     "MML_HAT_STORAGE_PATH": "Hats",
     "MML_SHIRT_STORAGE_PATH": "Shirts",
     "MML_EYES_STORAGE_PATH": "Eyes",
     "MML_EYES_Y": "0.03",
-    "MML_EYES_Z": "0.07",
-    "MML_BONE_SCHEME": "ue"
+    "MML_EYES_Z": "0.07"
   },
   "headers": [
     {
@@ -59,7 +58,7 @@
       "dest": "/games/shell-snag/$1"
     },
     {
-      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/)(?!builder/).*)",
+      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/).*)",
       "dest": "/index.html"
     }
   ]

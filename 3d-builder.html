@@ -75,7 +75,6 @@
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
-            <button type="button" class="builder-page-tab" data-builder-page="hub" role="tab" aria-selected="false" aria-controls="builder-panel-hub" id="builder-tab-hub">Otterful Hub</button>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -214,18 +213,6 @@
             <pre id="builder-mml-doc-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
             <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
-
-        <div id="builder-panel-hub" class="builder-page-panel builder-hub-wrap" role="tabpanel" aria-labelledby="builder-tab-hub" hidden>
-            <p class="builder-hub-lede">Avatar builder, wearables, animations, and MML export — runs in the embedded app at <code class="mml-experience-code">/builder/</code>.</p>
-            <iframe
-                id="builder-hub-frame"
-                class="builder-frame builder-frame--hub"
-                title="Otterful Hub — 3D avatar builder"
-                loading="lazy"
-                referrerpolicy="same-origin"
-                src="about:blank"
-            ></iframe>
-        </div>
     </div>
 
     <script>
@@ -304,37 +291,12 @@
         const pageTabs = Array.from(document.querySelectorAll('.builder-page-tab'));
         const panelOtter = document.getElementById('builder-panel-otter');
         const panelMml = document.getElementById('builder-panel-mml');
-        const panelHub = document.getElementById('builder-panel-hub');
-        const hubFrame = document.getElementById('builder-hub-frame');
-        if (pageTabs.length === 0 || !panelOtter || !panelMml || !panelHub) return;
-
-        function hubTokenForUrl() {
-          const o = document.getElementById('builder-nft-input');
-          const m = document.getElementById('builder-mml-nft-input');
-          const raw = (o && String(o.value || '').trim()) || (m && String(m.value || '').trim()) || '26';
-          const n = parseInt(raw, 10);
-          if (!n || n < 1 || n > 2222) return 26;
-          return n;
-        }
-
-        function ensureHubFrameUrl() {
-          if (!hubFrame) return;
-          var id = hubTokenForUrl();
-          var last = hubFrame.getAttribute('data-last-id');
-          if (last === String(id) && hubFrame.getAttribute('data-hub-loaded') === '1') return;
-          try {
-            var origin = window.location.origin.replace(/\/$/, '');
-            hubFrame.src = origin + '/builder/?id=' + encodeURIComponent(String(id));
-            hubFrame.setAttribute('data-hub-loaded', '1');
-            hubFrame.setAttribute('data-last-id', String(id));
-          } catch (_) { /* ignore */ }
-        }
+        if (pageTabs.length === 0 || !panelOtter || !panelMml) return;
 
         function setBuilderPage(which) {
-          const mode = which === 'mml' || which === 'hub' ? which : 'otter';
+          const mode = which === 'mml' ? 'mml' : 'otter';
           const isOtter = mode === 'otter';
           const isMml = mode === 'mml';
-          const isHub = mode === 'hub';
           pageTabs.forEach((btn) => {
             const on = btn.dataset.builderPage === mode;
             btn.classList.toggle('is-active', on);
@@ -344,8 +306,6 @@
           panelOtter.toggleAttribute('hidden', !isOtter);
           panelMml.classList.toggle('is-active', isMml);
           panelMml.toggleAttribute('hidden', !isMml);
-          panelHub.classList.toggle('is-active', isHub);
-          panelHub.toggleAttribute('hidden', !isHub);
           if (isMml) {
             const o = document.getElementById('builder-nft-input');
             const m = document.getElementById('builder-mml-nft-input');
@@ -353,17 +313,13 @@
               m.value = o.value.trim();
             }
           }
-          if (isHub) {
-            ensureHubFrameUrl();
-          }
           try {
             let nextHash = '';
             if (isMml) nextHash = '#mml';
-            else if (isHub) nextHash = '#hub';
             const cur = window.location.hash || '';
             if (nextHash && cur !== nextHash) {
               window.history.replaceState(null, '', '3d-builder.html' + nextHash);
-            } else if (!nextHash && (cur === '#mml' || cur === '#hub')) {
+            } else if (!nextHash && cur === '#mml') {
               window.history.replaceState(null, '', '3d-builder.html');
             }
           } catch (_) { /* ignore */ }
@@ -380,14 +336,12 @@
         function syncFromHash() {
           const h = window.location.hash;
           if (h === '#mml') setBuilderPage('mml');
-          else if (h === '#hub') setBuilderPage('hub');
           else setBuilderPage('otter');
         }
         window.addEventListener('hashchange', syncFromHash);
         syncFromHash();
         try {
           if (new URLSearchParams(window.location.search).get('url')) setBuilderPage('mml');
-          else if (new URLSearchParams(window.location.search).get('hub')) setBuilderPage('hub');
         } catch (_) { /* ignore */ }
       })();
     </script>
@@ -932,8 +886,7 @@
           if (sanitized.fixedWearableY || strippedAnim.didStrip) {
             if (bodyText.length <= DATA_URL_MAX) {
               try {
-                /* Single encoding layer: URLSearchParams.set() already percent-encodes the value. */
-                viewerDocUrl = 'data:text/html;charset=utf-8,' + bodyText;
+                viewerDocUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(bodyText);
               } catch (_) {
                 viewerDocUrl = docUrl;
               }
@@ -1071,7 +1024,7 @@
           }
           let dataUrl;
           try {
-            dataUrl = 'data:text/html;charset=utf-8,' + html;
+            dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
           } catch (err) {
             setStatus('Could not encode document: ' + ((err && err.message) || String(err)), true);
             return;
