@@ -9,7 +9,8 @@
     "MML_SHIRT_STORAGE_PATH": "Shirts",
     "MML_EYES_STORAGE_PATH": "Eyes",
     "MML_EYES_Y": "0.03",
-    "MML_EYES_Z": "0.07"
+    "MML_EYES_Z": "0.07",
+    "MML_BONE_SCHEME": "ue"
   },
   "headers": [
     {

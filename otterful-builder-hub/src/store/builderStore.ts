@@ -1,16 +1,20 @@
 import { create } from 'zustand';
-import type { WearableCategory } from '@/data/wearables';
-
-export type EquippedMap = Partial<Record<WearableCategory, string | null>>;
+import type { EquippedMap, WearableCategory } from '@/data/wearables';
+import type { MmlDocumentPreview } from '@/lib/parseMmlHtml';
 
 export type BuilderState = {
   tokenId: number;
   setTokenId: (id: number) => void;
-  /** Equipped wearable ids per category (null = none). */
+  /**
+   * Per-slot preview overrides sent to `/api/mml`:
+   * - `null` = use NFT metadata only (omit query param for that slot)
+   * - `MML_SLOT_OFF` (`__off__`) = force-hide (`no_hat` / `no_shirt` / `no_glasses`)
+   * - other string = `hat=` / `shirt=` / `glasses=` stem or full `https://…glb`
+   */
   equipped: EquippedMap;
   setEquipped: (cat: WearableCategory, wearableId: string | null) => void;
   clearLoadout: () => void;
-  /** When set, overrides socket for the *next* attachment resolution (testing). */
+  /** When set, overrides socket for every `m-model` attachment (testing). */
   manualSocketOverride: string | null;
   setManualSocketOverride: (socket: string | null) => void;
   debugSockets: boolean;
@@ -23,6 +27,12 @@ export type BuilderState = {
   setLoadError: (msg: string | null) => void;
   cameraResetNonce: number;
   requestCameraReset: () => void;
+  mmlPreview: MmlDocumentPreview | null;
+  mmlPreviewLoading: boolean;
+  mmlPreviewError: string | null;
+  setMmlPreview: (p: MmlDocumentPreview | null) => void;
+  setMmlPreviewLoading: (v: boolean) => void;
+  setMmlPreviewError: (s: string | null) => void;
 };
 
 const defaultEquipped: EquippedMap = {
@@ -53,9 +63,24 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   setLoadError: (loadError) => set({ loadError }),
   cameraResetNonce: 0,
   requestCameraReset: () => set((s) => ({ cameraResetNonce: s.cameraResetNonce + 1 })),
+  mmlPreview: null,
+  mmlPreviewLoading: false,
+  mmlPreviewError: null,
+  setMmlPreview: (mmlPreview) => set({ mmlPreview }),
+  setMmlPreviewLoading: (mmlPreviewLoading) => set({ mmlPreviewLoading }),
+  setMmlPreviewError: (mmlPreviewError) => set({ mmlPreviewError }),
 }));
 
 const LS_PREFIX = 'otterful-equipped-';
+
+/** Legacy hub demo ids — map to “inherit metadata” so MML preview is not stuck on local shell props. */
+const LEGACY_DEMO_IDS = new Set(['crown', 'backpack-shell', 'sneaker-prop', 'deal-with-it', 'top-visor']);
+
+function normalizeStoredSlot(v: string | null | undefined): string | null {
+  if (v == null || v === '') return null;
+  if (LEGACY_DEMO_IDS.has(v)) return null;
+  return v;
+}
 
 export function loadLoadoutFromStorage(tokenId: number): EquippedMap {
   try {
@@ -63,10 +88,10 @@ export function loadLoadoutFromStorage(tokenId: number): EquippedMap {
     if (!raw) return { ...defaultEquipped };
     const o = JSON.parse(raw) as Record<string, string | null>;
     return {
-      hats: o.hats ?? null,
-      glasses: o.glasses ?? null,
-      tops: o.tops ?? null,
-      accessories: o.accessories ?? null,
+      hats: normalizeStoredSlot(o.hats),
+      glasses: normalizeStoredSlot(o.glasses),
+      tops: normalizeStoredSlot(o.tops),
+      accessories: normalizeStoredSlot(o.accessories),
     };
   } catch {
     return { ...defaultEquipped };

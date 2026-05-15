@@ -4,10 +4,10 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { getAvatarByToken, resolveAssetUrl, type AnimationKey, type AvatarConfig } from '@/data/avatars';
-import { attachWearableToSocket } from '@/lib/socketAttach';
+import { attachWearableToSocket, type TransformConfig } from '@/lib/socketAttach';
 import { remapClipTracksToRig } from '@/lib/clipRemap';
 import { useBuilderStore } from '@/store/builderStore';
-import { getWearableById } from '@/data/wearables';
+import type { MmlAnchorModel } from '@/lib/parseMmlHtml';
 import { SocketDebugger } from '@/components/SocketDebugger';
 
 const loader = new GLTFLoader();
@@ -45,6 +45,17 @@ function pickClip(gltf: { animations?: THREE.AnimationClip[] }, hint: string): T
   return scored[0]?.c ?? clips[0] ?? null;
 }
 
+function modelToTransformConfig(model: MmlAnchorModel): TransformConfig {
+  const cfg: TransformConfig = {};
+  if (model.position) cfg.position = model.position;
+  if (model.rotation) cfg.rotation = model.rotation;
+  if (model.scale) {
+    const [sx, sy, sz] = model.scale;
+    cfg.scale = sx === sy && sy === sz ? sx : [sx, sy, sz];
+  }
+  return cfg;
+}
+
 type AvatarRigProps = {
   config: AvatarConfig;
   bodyUrl: string;
@@ -53,7 +64,7 @@ type AvatarRigProps = {
 function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
   const { scene, animations } = useGLTF(bodyUrl);
   const root = useMemo(() => scene.clone(true), [scene, bodyUrl]);
-  const equipped = useBuilderStore((s) => s.equipped);
+  const mmlModels = useBuilderStore((s) => s.mmlPreview?.models);
   const manualSocketOverride = useBuilderStore((s) => s.manualSocketOverride);
   const debugSockets = useBuilderStore((s) => s.debugSockets);
   const activeAnimKey = useBuilderStore((s) => s.activeAnimKey);
@@ -128,25 +139,19 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
   useEffect(() => {
     const detachers: (() => void)[] = [];
     let cancelled = false;
+    const list = mmlModels ?? [];
 
     (async () => {
-      const entries = Object.entries(equipped) as [string, string | null | undefined][];
-      for (const [, wid] of entries) {
-        if (!wid) continue;
-        const def = getWearableById(wid);
-        if (!def) continue;
-        const socket = manualSocketOverride || def.socketName;
+      for (const model of list) {
+        const socket = manualSocketOverride || model.socket;
+        const tcfg = modelToTransformConfig(model);
         try {
-          const gltf = await loader.loadAsync(resolveAssetUrl(def.modelUrl));
+          const gltf = await loader.loadAsync(resolveAssetUrl(model.src));
           if (cancelled) return;
-          const att = attachWearableToSocket(root, gltf.scene, socket, {
-            position: def.positionOffset,
-            rotation: def.rotationOffset,
-            scale: def.scale,
-          });
+          const att = attachWearableToSocket(root, gltf.scene, socket, tcfg);
           if (att) detachers.push(att.detach);
         } catch (e) {
-          console.warn(`[AvatarViewer] Wearable load failed: ${def.id}`, e);
+          console.warn(`[AvatarViewer] MML wearable load failed`, model.src, e);
         }
       }
     })();
@@ -155,7 +160,7 @@ function AvatarRig({ config, bodyUrl }: AvatarRigProps) {
       cancelled = true;
       detachers.forEach((d) => d());
     };
-  }, [equipped, manualSocketOverride, root]);
+  }, [mmlModels, manualSocketOverride, root]);
 
   useFrame((_, dt) => {
     const m = mixerRef.current;
@@ -210,8 +215,13 @@ function Loading() {
 
 function Scene() {
   const tokenId = useBuilderStore((s) => s.tokenId);
+  const mmlPreview = useBuilderStore((s) => s.mmlPreview);
   const cfg = useMemo(() => getAvatarByToken(tokenId), [tokenId]);
-  const bodyUrl = resolveAssetUrl(cfg.modelUrl);
+  const bodyUrl = useMemo(() => {
+    const src = mmlPreview?.characterSrc?.trim();
+    if (src) return resolveAssetUrl(src);
+    return resolveAssetUrl(cfg.modelUrl);
+  }, [mmlPreview?.characterSrc, cfg.modelUrl]);
 
   return (
     <>

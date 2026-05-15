@@ -18,8 +18,8 @@
  *   has its own skeleton and the body’s clip causes binding glitches). Default: eyes behave like hats (socket + viewer animation).
  *   Legacy: `MML_EYES_ANIM_ENABLED` is still read — if explicitly false/0, same as MML_EYES_ANIM_DISABLED.
  *   Set MML_SOCKET_HAT vs MML_SOCKET_EYES to different bone names when hats attach to the head and eyes to a face bone on your rig.
- *   MML_BONE_SCHEME — `mixamo` (default: Otterful glTF names mixamorigHead / mixamorigSpine2, no colon), `mixamo_colon` (mixamorig:Head /
- *   mixamorig:Spine2), or `short` (Head / Spine2 / Head).
+ *   MML_BONE_SCHEME — `mixamo` (default: mixamorigHead / mixamorigSpine2), `mixamo_colon`, `short` (Head / Spine2 / Head),
+ *   or `ue` / `otter` / `mmlo` (head / spine_04 / head — matches MMLOtter-style rigs).
  *   MML_WEARABLE_PREFIX — folder segment for legacy layout (default `WEARABLES` → …/WEARABLES/Furs/… on the site only). Ignored for path segments when Firebase is active and default folders Furs/Hats/Shirts/Eyes apply.
  *   MML_FUR_STORAGE_PATH — object folder for body GLBs (default `Furs` when using Firebase). Overrides auto folder when set.
  *   MML_HAT_STORAGE_PATH, MML_SHIRT_STORAGE_PATH, MML_EYES_STORAGE_PATH — same pattern (e.g. `Hats`, `Shirts`, `Eyes`) when those assets live at bucket root.
@@ -44,6 +44,7 @@
  * Optional separate animation file (body GLB + linked anim GLB):
  *   ?anim= on this endpoint — full https://…glb or a wearable path (e.g. WEARABLES/Animations/Walk.glb). Easiest way to try walk/run/idle without editing metadata.
  *   ?shirt= — full https://…glb or a **Shirts/** filename stem (same as ?hat=). Overrides MML_SHIRT_OVERRIDE env, then metadata Shirt/Shirts trait.
+ *   ?no_hat=1 / ?no_shirt=1 / ?no_glasses=1 — omit that wearable slot even when metadata includes the trait (Otterful Hub uses this for “Hidden”).
  *   MML_CHARACTER_ANIM — same as above when ?anim= is absent.
  *   Metadata trait "MML Anim" / "MML_Anim" — same; used when ?anim= is absent.
  *   Priority: ?anim= > trait > MML_CHARACTER_ANIM > MML_DEFAULT_CHARACTER_ANIM (unless MML_SKIP_DEFAULT_ANIM).
@@ -214,6 +215,13 @@ function eyesAnimAttr() {
 
 function defaultSockets() {
   const scheme = (process.env.MML_BONE_SCHEME || 'mixamo').toLowerCase();
+  if (scheme === 'ue' || scheme === 'otter' || scheme === 'mmlo') {
+    return {
+      hat: process.env.MML_SOCKET_HAT || 'head',
+      shirt: process.env.MML_SOCKET_SHIRT || 'spine_04',
+      eyes: process.env.MML_SOCKET_EYES || 'head',
+    };
+  }
   if (scheme === 'short' || scheme === 'head') {
     return {
       hat: process.env.MML_SOCKET_HAT || 'Head',
@@ -550,6 +558,17 @@ module.exports = async (req, res) => {
     animResolved = '';
   }
   if (animResolved) urls.anim = animResolved;
+
+  /* Builder / viewer: strip slots even when metadata would otherwise supply a trait. */
+  if (truthyEnv(getQueryParam(req, 'no_hat')) || getQueryParam(req, 'no_hat') === '1') {
+    delete urls.hat;
+  }
+  if (truthyEnv(getQueryParam(req, 'no_shirt')) || getQueryParam(req, 'no_shirt') === '1') {
+    delete urls.shirt;
+  }
+  if (truthyEnv(getQueryParam(req, 'no_glasses')) || getQueryParam(req, 'no_glasses') === '1') {
+    delete urls.eyes;
+  }
 
   const sockets = defaultSockets();
 
