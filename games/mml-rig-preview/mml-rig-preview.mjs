@@ -6,8 +6,6 @@
  */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
-import { PMREMGenerator } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/PMREMGenerator.js';
 
 const loader = new GLTFLoader();
 
@@ -244,15 +242,19 @@ function prepareMeshMaterials(root) {
 
       if (diffuse) {
         diffuse.colorSpace = THREE.SRGBColorSpace;
-        return new THREE.MeshBasicMaterial({
+        const basic = new THREE.MeshBasicMaterial({
           map: diffuse,
           transparent: Boolean(mat.transparent || (mat.opacity != null && mat.opacity < 1)),
           opacity: mat.opacity ?? 1,
           alphaTest: mat.alphaTest ?? 0,
-          alphaMap: mat.alphaMap || null,
           side: THREE.DoubleSide,
-          depthWrite: mat.depthWrite !== false,
         });
+        if (mat.alphaMap) {
+          basic.alphaMap = mat.alphaMap;
+          basic.alphaMap.colorSpace = THREE.SRGBColorSpace;
+          basic.transparent = true;
+        }
+        return basic;
       }
 
       if (mat.isMeshBasicMaterial) {
@@ -326,18 +328,17 @@ export function mountMmlRigPreview(opts) {
     onStatus?.(msg || '');
   }
 
-  function disposeScene() {
+  function disposeAvatar() {
     if (mixer) mixer.stopAllAction();
     mixer = null;
+    if (!avatarRoot) return;
+    avatarRoot.traverse((o) => {
+      if (o.geometry) o.geometry.dispose?.();
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach((m) => m?.dispose?.());
+    });
+    scene.remove(avatarRoot);
     avatarRoot = null;
-    if (scene) {
-      scene.traverse((o) => {
-        if (o.geometry) o.geometry.dispose?.();
-        const mats = Array.isArray(o.material) ? o.material : [o.material];
-        mats.forEach((m) => m?.dispose?.());
-      });
-      scene.clear();
-    }
   }
 
   function resize() {
@@ -350,7 +351,7 @@ export function mountMmlRigPreview(opts) {
   }
 
   function updateCamera() {
-    if (!camera || !avatarRoot) return;
+    if (!camera) return;
     const d = getOrbitDistance?.() ?? orbitDist;
     const target = new THREE.Vector3(0, 1.0, 0);
     const x = d * Math.sin(orbitPhi) * Math.sin(orbitTheta);
@@ -370,7 +371,7 @@ export function mountMmlRigPreview(opts) {
   }
 
   async function loadFromHtml(html, documentBaseUrl) {
-    disposeScene();
+    disposeAvatar();
     setStatus('Parsing MML…');
     const parsed = parseMmlHtml(html, documentBaseUrl || window.location.href);
     setStatus('Loading body…');
@@ -463,17 +464,11 @@ export function mountMmlRigPreview(opts) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    // Match Avatar Builder (no extra tone mapping / exposure).
-    renderer.toneMapping = THREE.NoToneMapping;
     renderer.shadowMap.enabled = true;
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a1a);
     camera = new THREE.PerspectiveCamera(52, 1, 0.05, 120);
-    const pmrem = new PMREMGenerator(renderer);
-    pmrem.compileEquirectangularShader();
-    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-    pmrem.dispose();
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     const sun = new THREE.DirectionalLight(0xffffff, 3);
     sun.position.set(5, 10, 5);
     sun.castShadow = true;
@@ -486,12 +481,13 @@ export function mountMmlRigPreview(opts) {
     scene.add(rim);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40),
-      new THREE.MeshStandardMaterial({ color: 0x152018, roughness: 0.92 })
+      new THREE.MeshStandardMaterial({ color: 0x243028, roughness: 0.92, metalness: 0 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
     resize();
+    updateCamera();
     tick();
   }
 
@@ -538,7 +534,7 @@ export function mountMmlRigPreview(opts) {
       disposed = true;
       cancelAnimationFrame(raf);
       ro.disconnect();
-      disposeScene();
+      disposeAvatar();
       renderer?.dispose();
       renderer = null;
     },

@@ -414,7 +414,10 @@
         function loadRigPreviewModule() {
           if (!rigPreviewModulePromise) {
             const href = new URL('./games/mml-rig-preview/mml-rig-preview.mjs', window.location.href).href;
-            rigPreviewModulePromise = import(href);
+            rigPreviewModulePromise = import(href).catch(function (err) {
+              rigPreviewModulePromise = null;
+              throw err;
+            });
           }
           return rigPreviewModulePromise;
         }
