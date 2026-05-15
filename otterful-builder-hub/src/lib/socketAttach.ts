@@ -27,12 +27,62 @@ function stem(name: string) {
  * CHANGE: extend this map for your custom socket names.
  */
 const SOCKET_FALLBACK_CHAINS: Record<string, string[]> = {
-  headsocket: ['mixamorigHead', 'Head', 'head', 'mixamorigNeck', 'Neck'],
-  facesocket: ['mixamorigHead', 'Head', 'mixamorigNeck'],
-  chestsocket: ['mixamorigSpine2', 'Spine2', 'mixamorigSpine1', 'Spine1', 'mixamorigSpine', 'Spine'],
-  backsocket: ['mixamorigSpine2', 'mixamorigSpine1', 'mixamorigSpine', 'Spine2', 'Spine1', 'Spine'],
-  righthandsocket: ['mixamorigRightHand', 'mixamorigRightHandIndex1', 'RightHand', 'Hand_R', 'mixamorigRightArm'],
-  lefthandsocket: ['mixamorigLeftHand', 'mixamorigLeftHandIndex1', 'LeftHand', 'Hand_L', 'mixamorigLeftArm'],
+  /** MMLOtter uses UE-style bones (`head`, `spine_04`, `hand_r`, …), not `mixamorigSpine2`. */
+  headsocket: [
+    'mixamorigHead',
+    'mixamorig:Head',
+    'Head',
+    'head',
+    'neck_02',
+    'neck_01',
+    'mixamorigNeck',
+    'Neck',
+  ],
+  facesocket: ['mixamorigHead', 'mixamorig:Head', 'Head', 'head', 'neck_02', 'mixamorigNeck'],
+  chestsocket: [
+    'mixamorigSpine2',
+    'mixamorig:Spine2',
+    'spine_04',
+    'spine_05',
+    'spine_03',
+    'Spine2',
+    'mixamorigSpine1',
+    'mixamorig:Spine1',
+    'spine_02',
+    'mixamorigSpine',
+    'mixamorig:Spine',
+    'spine_01',
+  ],
+  backsocket: [
+    'mixamorigSpine2',
+    'mixamorig:Spine2',
+    'spine_04',
+    'spine_03',
+    'spine_02',
+    'mixamorigSpine1',
+    'mixamorigSpine',
+    'Spine2',
+    'Spine1',
+    'Spine',
+  ],
+  righthandsocket: [
+    'mixamorigRightHand',
+    'mixamorig:RightHand',
+    'hand_r',
+    'mixamorigRightHandIndex1',
+    'RightHand',
+    'Hand_R',
+    'mixamorigRightArm',
+  ],
+  lefthandsocket: [
+    'mixamorigLeftHand',
+    'mixamorig:LeftHand',
+    'hand_l',
+    'mixamorigLeftHandIndex1',
+    'LeftHand',
+    'Hand_L',
+    'mixamorigLeftArm',
+  ],
 };
 
 function fallbackChainForSocket(want: string): string[] {
@@ -46,7 +96,7 @@ function fallbackChainForSocket(want: string): string[] {
   if (s.includes('back') || s.includes('spine')) return [...SOCKET_FALLBACK_CHAINS.backsocket!];
   if (s.includes('right') && s.includes('hand')) return [...SOCKET_FALLBACK_CHAINS.righthandsocket!];
   if (s.includes('left') && s.includes('hand')) return [...SOCKET_FALLBACK_CHAINS.lefthandsocket!];
-  return ['mixamorigHead', 'mixamorigSpine2', 'mixamorigHips'];
+  return ['mixamorigHead', 'head', 'mixamorigSpine2', 'spine_04', 'pelvis', 'mixamorigHips'];
 }
 
 function collectSkinnedMeshes(root: THREE.Object3D): THREE.SkinnedMesh[] {

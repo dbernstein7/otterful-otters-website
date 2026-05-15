@@ -2,8 +2,7 @@
  * Avatar registry — add one entry per token that should resolve to a distinct body GLB.
  * For any token ID not listed, `getAvatarByToken` falls back to `DEFAULT_AVATAR_MODEL` (same rig for prototyping).
  *
- * CHANGE: Replace `DEFAULT_AVATAR_MODEL` with your canonical rigged GLB under `/public/models/avatars/`
- * (served as `/builder/models/avatars/...` in dev/prod), or keep absolute `/games/...` paths on this site.
+ * Default assets live under `public/models/` (served as `/builder/models/...`) so the hub does not depend on `/games/shell-snag/`.
  */
 export type AnimationKey = 'idle' | 'walk' | 'run' | 'jump' | 'dance';
 
@@ -16,16 +15,16 @@ export type AvatarConfig = {
   animationUrls?: Partial<Record<AnimationKey, string>>;
 };
 
-/** Default rig used when token has no bespoke row — Otterful Mixamo-friendly body on this repo. */
-export const DEFAULT_AVATAR_MODEL = '/games/shell-snag/MMLOtter.glb';
+/** Default Otterful MML body (UE-style bone names: `pelvis`, `spine_04`, `head`, `hand_l`, …). */
+export const DEFAULT_AVATAR_MODEL = '/builder/models/avatars/MMLOtter.glb';
 
-/** Default locomotion clips (same-origin Shell Snag / Mixamo routes on Vercel). */
+/** Locomotion clips (Mixamo skeleton; remapped at runtime in `clipRemap.ts`). */
 export const DEFAULT_ANIMATION_BUNDLE: Partial<Record<AnimationKey, string>> = {
-  idle: '/mixamo/idle-00.glb',
-  walk: '/mixamo/walk.glb',
-  run: '/mixamo/run-medium.glb',
-  jump: '/mixamo/jump.glb',
-  dance: '/mixamo/dance-wave.glb',
+  idle: '/builder/models/animations/idle-00.glb',
+  walk: '/builder/models/animations/walk.glb',
+  run: '/builder/models/animations/run-medium.glb',
+  jump: '/builder/models/animations/jump.glb',
+  dance: '/builder/models/animations/dance-wave.glb',
 };
 
 const REGISTRY: AvatarConfig[] = [
@@ -44,7 +43,7 @@ const REGISTRY: AvatarConfig[] = [
   {
     tokenId: 100,
     displayName: 'Otter #100 (registry)',
-    modelUrl: '/games/shell-snag/otter-rig.glb',
+    modelUrl: DEFAULT_AVATAR_MODEL,
     animationUrls: DEFAULT_ANIMATION_BUNDLE,
   },
 ];
