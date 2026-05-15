@@ -40,6 +40,19 @@ function isMmlWearableBakedUrl(url) {
 }
 
 /** Always load wearables via our API (bakes + CORS). Handles cached MML that still lists raw Firebase src. */
+function withRawWearableParam(url) {
+  try {
+    const u = new URL(url, window.location.href);
+    if (isMmlWearableBakedUrl(u.href)) {
+      u.searchParams.set('raw', '1');
+      return u.href;
+    }
+  } catch (_) {
+    /* ignore */
+  }
+  return url;
+}
+
 function wearableLoadUrl(src, kind, documentBaseUrl) {
   try {
     const u = new URL(src, documentBaseUrl || window.location.href);
@@ -154,7 +167,6 @@ function findBone(root, names) {
 
 function resolveSocketBone(bodyRoot, socket, src) {
   const kind = wearablesKind(src);
-  if (kind === 'shirt') return null;
   const req = socket.trim();
   const hit = findBone(bodyRoot, [req]);
   if (hit) return hit;
@@ -505,11 +517,26 @@ export function mountMmlRigPreview(opts) {
     for (let wi = 0; wi < parsed.wearables.length; wi++) {
       const w = parsed.wearables[wi];
       const kind = wearablesKind(w.src);
-      const loadUrl = wearableLoadUrl(w.src, kind, documentBaseUrl);
+      const loadUrl =
+        kind === 'shirt'
+          ? withRawWearableParam(wearableLoadUrl(w.src, kind, documentBaseUrl))
+          : wearableLoadUrl(w.src, kind, documentBaseUrl);
       setStatus(`Loading ${kind} (${wi + 1}/${parsed.wearables.length})…`);
       try {
         const g = await loadGltf(loadUrl);
         if (disposed) return;
+
+        if (kind === 'shirt') {
+          const group = buildShirtGroup(g.scene, body);
+          if (!group.children.length) {
+            logs.push('shirt: no fabric/objects after filter');
+            continue;
+          }
+          prepareMeshMaterials(group);
+          body.add(group);
+          logs.push(`shirt → body root (${group.children.length} part(s), AvatarBuilder attach)`);
+          continue;
+        }
 
         if (isMmlWearableBakedUrl(loadUrl)) {
           const group =
@@ -529,18 +556,6 @@ export function mountMmlRigPreview(opts) {
         }
 
         let group;
-        if (kind === 'shirt') {
-          group = buildShirtGroup(g.scene, body);
-          if (!group.children.length) {
-            logs.push('shirt: no fabric/objects after filter');
-            continue;
-          }
-          prepareMeshMaterials(group);
-          body.add(group);
-          logs.push(`shirt → body root (${group.children.length} part(s), static bake)`);
-          continue;
-        }
-
         const meshes = extractMeshes(g.scene, kind);
         if (!meshes.length) {
           logs.push(`${kind}: no meshes in GLB`);
