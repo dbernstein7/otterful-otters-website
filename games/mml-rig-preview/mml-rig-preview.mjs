@@ -6,9 +6,10 @@
  */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/environments/RoomEnvironment.js';
+import { PMREMGenerator } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/PMREMGenerator.js';
 
 const loader = new GLTFLoader();
-loader.setCrossOrigin('anonymous');
 
 const HEAD_ATTACH_POS = new THREE.Vector3(-0.607745, 0, 0.005627);
 const HEAD_ATTACH_QUAT = new THREE.Quaternion(0, 0, -0.707107, 0.707107);
@@ -196,24 +197,92 @@ function tryRebindToBodySkeleton(mesh, bodyRoot) {
   return true;
 }
 
-/** glTF PBR looks black without strong lights + tone mapping (Avatar Builder uses ~3× key light). */
-function prepareMeshMaterials(root) {
+const TEXTURE_KEYS = ['map', 'emissiveMap', 'normalMap', 'metalnessMap', 'roughnessMap'];
+
+function whenTexturesReady(root) {
+  const textures = new Set();
   root.traverse((o) => {
     if (!o.isMesh || !o.material) return;
     const mats = Array.isArray(o.material) ? o.material : [o.material];
     for (const mat of mats) {
       if (!mat) continue;
+      for (const key of TEXTURE_KEYS) {
+        if (mat[key]) textures.add(mat[key]);
+      }
+    }
+  });
+  return Promise.all(
+    [...textures].map(
+      (tex) =>
+        new Promise((resolve) => {
+          const img = tex.image;
+          if (!img || img.complete) {
+            resolve();
+            return;
+          }
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        })
+    )
+  );
+}
+
+/**
+ * Otter GLBs often use PBR with no env map — they render as a flat black silhouette.
+ * Diffuse maps are shown with MeshBasicMaterial (same visible result as Avatar Builder).
+ */
+function prepareMeshMaterials(root) {
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    const upgrade = (mat) => {
+      if (!mat) return mat;
       mat.side = THREE.DoubleSide;
-      if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
-      if (mat.emissiveMap) mat.emissiveMap.colorSpace = THREE.SRGBColorSpace;
+      mat.fog = false;
+      if (mat.vertexColors) mat.vertexColors = false;
+
+      const diffuse = mat.map || mat.emissiveMap;
+
+      if (diffuse) {
+        diffuse.colorSpace = THREE.SRGBColorSpace;
+        return new THREE.MeshBasicMaterial({
+          map: diffuse,
+          transparent: Boolean(mat.transparent || (mat.opacity != null && mat.opacity < 1)),
+          opacity: mat.opacity ?? 1,
+          alphaTest: mat.alphaTest ?? 0,
+          alphaMap: mat.alphaMap || null,
+          side: THREE.DoubleSide,
+          depthWrite: mat.depthWrite !== false,
+        });
+      }
+
+      if (mat.isMeshBasicMaterial) {
+        if (mat.color) {
+          mat.color.r = Math.max(mat.color.r, 0.4);
+          mat.color.g = Math.max(mat.color.g, 0.4);
+          mat.color.b = Math.max(mat.color.b, 0.4);
+        }
+        return mat;
+      }
+
       if (mat.isMeshStandardMaterial || mat.isMeshPhysicalMaterial) {
-        // Many exports are "too metallic" for a preview with no HDRI env map.
-        // Force more diffuse PBR so the character isn't a black silhouette.
-        mat.metalness = Math.min(mat.metalness ?? 0, 0.05);
-        mat.roughness = Math.max(0.6, Math.min(mat.roughness ?? 0.65, 0.95));
-        mat.envMapIntensity = 0;
+        if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace;
+        mat.color.setRGB(
+          Math.max(0.45, mat.color.r),
+          Math.max(0.45, mat.color.g),
+          Math.max(0.45, mat.color.b)
+        );
+        mat.metalness = 0;
+        mat.roughness = 0.82;
+        mat.envMapIntensity = 1;
         mat.needsUpdate = true;
       }
+      return mat;
+    };
+
+    if (Array.isArray(o.material)) {
+      o.material = o.material.map(upgrade);
+    } else {
+      o.material = upgrade(o.material);
     }
   });
 }
@@ -316,6 +385,7 @@ export function mountMmlRigPreview(opts) {
       }
     });
     prepareMeshMaterials(body);
+    await whenTexturesReady(body);
     fitAndGround(body, 2.05);
     if (Number.isFinite(parsed.charY) && parsed.charY !== 0) {
       body.position.y += parsed.charY;
@@ -339,6 +409,7 @@ export function mountMmlRigPreview(opts) {
         }
         const group = bakeMeshesIntoGroup(meshes, g.scene);
         prepareMeshMaterials(group);
+        await whenTexturesReady(group);
 
         if (kind === 'shirt') {
           group.traverse((o) => {
@@ -392,24 +463,26 @@ export function mountMmlRigPreview(opts) {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 2.0;
+    // Match Avatar Builder (no extra tone mapping / exposure).
+    renderer.toneMapping = THREE.NoToneMapping;
     renderer.shadowMap.enabled = true;
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x070d1a);
-    scene.fog = new THREE.Fog(0x070d1a, 18, 75);
+    scene.background = new THREE.Color(0x1a1a1a);
     camera = new THREE.PerspectiveCamera(52, 1, 0.05, 120);
-    scene.add(new THREE.AmbientLight(0xffffff, 1.25));
-    scene.add(new THREE.HemisphereLight(0xb8c4ff, 0x1a1208, 0.9));
-    const sun = new THREE.DirectionalLight(0xffffff, 5.0);
-    sun.position.set(6, 18, 9);
+    const pmrem = new PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+    pmrem.dispose();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 3);
+    sun.position.set(5, 10, 5);
     sun.castShadow = true;
     scene.add(sun);
-    const fill = new THREE.DirectionalLight(0xffffff, 2.8);
-    fill.position.set(-7, 7, -5);
+    const fill = new THREE.DirectionalLight(0xffffff, 1.8);
+    fill.position.set(-5, 2, -5);
     scene.add(fill);
-    const rim = new THREE.DirectionalLight(0xffffff, 1.8);
-    rim.position.set(0, 8, -14);
+    const rim = new THREE.DirectionalLight(0xffffff, 1.2);
+    rim.position.set(0, 5, -10);
     scene.add(rim);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(40, 40),

@@ -2377,12 +2377,7 @@ body::before {
 }
 
 .mml-playground-iframe--hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    pointer-events: none;
-    min-height: 0;
+    display: none;
 }
 
 .mml-playground-advanced,
