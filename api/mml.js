@@ -49,6 +49,8 @@
  *   Priority: ?anim= > trait > MML_CHARACTER_ANIM > MML_DEFAULT_CHARACTER_ANIM (unless MML_SKIP_DEFAULT_ANIM).
  *
  * Optional hat override (testing / Firebase per-file tokens):
+ *   ?glasses= or ?eyes= — optional override for the eyes socket GLB (same rules as ?hat=: full https URL or Eyes/ stem).
+ *     `glasses` is an alias for `eyes` (Otherside-style naming). Wins over metadata Eyes trait when present.
  *   ?hat= — wins over metadata Hats/Hat trait. Value is either (a) a filename stem, e.g. antler → Hats/antler.glb via
  *   MML_HAT_STORAGE_PATH / WEARABLES/Hats, same as metadata; or (b) a full https://… URL to the hat .glb (use when each
  *   Firebase object has its own download token — FIREBASE_STORAGE_TOKEN is one token for all paths and may not match).
@@ -498,17 +500,31 @@ module.exports = async (req, res) => {
       }
     }
   }
-  if (traits.eyes) {
+  function eyesUrlFromStem(eyeStem) {
+    const stem = normalizeWearableFilenameStem(eyeStem) || eyeStem;
     const eyesFolder = storageFolderFromEnv('MML_EYES_STORAGE_PATH');
     if (eyesFolder) {
-      urls.eyes = buildWearableUrl(origin, `${eyesFolder}/${traits.eyes}.glb`);
-    } else if (firebaseBucket()) {
-      urls.eyes = buildWearableUrl(origin, `Eyes/${traits.eyes}.glb`);
-    } else if (wp !== 'WEARABLES') {
-      urls.eyes = buildEyesWearableUrl(origin, traits.eyes);
-    } else {
-      urls.eyes = buildWearableUrl(origin, `${wp}/Eyes/${traits.eyes}.glb`);
+      return buildWearableUrl(origin, `${eyesFolder}/${stem}.glb`);
     }
+    if (firebaseBucket()) {
+      return buildWearableUrl(origin, `Eyes/${stem}.glb`);
+    }
+    if (wp !== 'WEARABLES') {
+      return buildEyesWearableUrl(origin, stem);
+    }
+    return buildWearableUrl(origin, `${wp}/Eyes/${stem}.glb`);
+  }
+
+  const eyesOverrideRaw = getQueryParam(req, 'glasses') || getQueryParam(req, 'eyes');
+  if (eyesOverrideRaw && String(eyesOverrideRaw).trim()) {
+    const eo = String(eyesOverrideRaw).trim();
+    if (/^https?:\/\//i.test(eo)) {
+      urls.eyes = eo;
+    } else {
+      urls.eyes = eyesUrlFromStem(eo);
+    }
+  } else if (traits.eyes) {
+    urls.eyes = eyesUrlFromStem(traits.eyes);
   }
 
   const animQuery = getQueryParam(req, 'anim');

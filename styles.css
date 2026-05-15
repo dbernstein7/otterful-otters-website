@@ -2663,6 +2663,31 @@ body::before {
     height: min(1200px, calc(100vh - 310px));
 }
 
+.builder-hub-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+
+.builder-hub-lede {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+.builder-frame--hub {
+    width: 100%;
+    flex: 1;
+    min-height: min(900px, calc(100vh - 240px));
+    height: 78vh;
+    border: 1px solid rgba(90, 212, 255, 0.35);
+    border-radius: 22px;
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 40px rgba(79, 214, 165, 0.12);
+}
+
 /* MML Viewer (embeds viewer.mml.io) */
 .mml-viewer-lede {
     margin-top: 10px;
