@@ -8,7 +8,7 @@ import {
   disconnectWallet,
   getActiveSession,
 } from './connect.mjs';
-import { publicClientFromProvider, fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
+import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,
   aggregateWalletTraits,
@@ -185,16 +185,24 @@ export function initBuilderWalletUI() {
     );
   }
 
-  async function afterConnect(address, provider) {
+  async function afterConnect(address) {
     if (walletAddrEl) walletAddrEl.textContent = shortAddr(address);
     if (disconnectBtn) disconnectBtn.hidden = false;
     showStage('picker');
-    setPickerStatus('Reading your Otterful Otters on ApeChain…');
+    setPickerStatus('Loading your Otterful Otters…');
 
     try {
-      const client = publicClientFromProvider(provider);
-      const ids = await fetchOwnedTokenIds(client, address);
+      const ids = await fetchOwnedTokenIds(address);
       if (pickerCount) pickerCount.textContent = ids.length ? `${ids.length} otter${ids.length === 1 ? '' : 's'}` : '0 otters';
+      if (!ids.length) {
+        walletOtters = [];
+        setPickerStatus(
+          'No Otterful Otters found for this wallet on ApeChain. If you just bought one, wait a few minutes and reconnect.',
+          false
+        );
+        renderPickerGrid();
+        return;
+      }
       walletOtters = await loadWalletOtters(ids, (done, total) => {
         setPickerStatus(`Loading metadata… ${done}/${total}`);
       });
@@ -213,8 +221,8 @@ export function initBuilderWalletUI() {
     const errEl = document.getElementById('builder-wallet-connect-error');
     if (errEl) errEl.hidden = true;
     try {
-      const { address, provider } = await connectWallet();
-      await afterConnect(address, provider);
+      const { address } = await connectWallet();
+      await afterConnect(address);
     } catch (err) {
       if (connectPanel) {
         const errEl = document.getElementById('builder-wallet-connect-error');
@@ -231,8 +239,8 @@ export function initBuilderWalletUI() {
   wcBtn?.addEventListener('click', async () => {
     wcBtn.disabled = true;
     try {
-      const { address, provider } = await openWalletConnectModal();
-      await afterConnect(address, provider);
+      const { address } = await openWalletConnectModal();
+      await afterConnect(address);
     } catch (err) {
       const errEl = document.getElementById('builder-wallet-connect-error');
       if (errEl) {

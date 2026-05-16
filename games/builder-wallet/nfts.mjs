@@ -1,62 +1,31 @@
-import { createPublicClient, http, custom } from 'https://esm.sh/viem@2.21.54';
-import { apeChain, OTTER_CONTRACT, OTTER_MAX_ID } from './config.mjs';
+import { OTTER_MAX_ID } from './config.mjs';
 import { fetchOtterMetadata } from './traits.mjs';
 
-const ERC721_ENUMERABLE_ABI = [
-  {
-    type: 'function',
-    name: 'balanceOf',
-    stateMutability: 'view',
-    inputs: [{ name: 'owner', type: 'address' }],
-    outputs: [{ type: 'uint256' }],
-  },
-  {
-    type: 'function',
-    name: 'tokenOfOwnerByIndex',
-    stateMutability: 'view',
-    inputs: [
-      { name: 'owner', type: 'address' },
-      { name: 'index', type: 'uint256' },
-    ],
-    outputs: [{ type: 'uint256' }],
-  },
-];
-
 /**
- * @param {import('viem').EIP1193Provider} provider
+ * Load owned token IDs via site API (OpenSea / Reservoir).
+ * On-chain tokenOfOwnerByIndex is not available on this contract.
+ * @param {string} wallet 0x… address
  */
-export function publicClientFromProvider(provider) {
-  return createPublicClient({
-    chain: apeChain,
-    transport: custom(provider),
-  });
-}
-
-/**
- * @param {import('viem').PublicClient} client
- * @param {`0x${string}`} owner
- */
-export async function fetchOwnedTokenIds(client, owner) {
-  const balance = await client.readContract({
-    address: OTTER_CONTRACT,
-    abi: ERC721_ENUMERABLE_ABI,
-    functionName: 'balanceOf',
-    args: [owner],
-  });
-  const n = Number(balance);
-  if (!n) return [];
-
-  const ids = [];
-  for (let i = 0; i < n; i += 1) {
-    const tokenId = await client.readContract({
-      address: OTTER_CONTRACT,
-      abi: ERC721_ENUMERABLE_ABI,
-      functionName: 'tokenOfOwnerByIndex',
-      args: [owner, BigInt(i)],
-    });
-    const num = Number(tokenId);
-    if (num >= 1 && num <= OTTER_MAX_ID) ids.push(num);
+export async function fetchOwnedTokenIds(wallet) {
+  const addr = String(wallet || '').trim().toLowerCase();
+  if (!/^0x[a-f0-9]{40}$/.test(addr)) {
+    throw new Error('Invalid wallet address.');
   }
+
+  const r = await fetch(`/api/wallet-otters?wallet=${encodeURIComponent(addr)}`, {
+    cache: 'no-store',
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    throw new Error(data.error || `Could not load wallet otters (${r.status})`);
+  }
+
+  const ids = Array.isArray(data.tokenIds)
+    ? data.tokenIds
+        .map((id) => parseInt(String(id), 10))
+        .filter((id) => id >= 1 && id <= OTTER_MAX_ID)
+    : [];
+
   return [...new Set(ids)].sort((a, b) => a - b);
 }
 
@@ -87,11 +56,4 @@ export async function loadWalletOtters(tokenIds, onProgress) {
     onProgress?.(done, total);
   }
   return out;
-}
-
-export function httpPublicClient() {
-  return createPublicClient({
-    chain: apeChain,
-    transport: http(apeChain.rpcUrls.default.http[0]),
-  });
 }
