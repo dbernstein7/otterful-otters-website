@@ -6,6 +6,7 @@
  */
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFExporter } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/exporters/GLTFExporter.js';
 
 const loader = new GLTFLoader();
 loader.setCrossOrigin('anonymous');
@@ -465,6 +466,21 @@ export function mountMmlRigPreview(opts) {
     camera.updateProjectionMatrix();
   }
 
+  function frameAvatar(padding = 1.32) {
+    if (!avatarRoot || !camera) return;
+    avatarRoot.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(avatarRoot);
+    if (box.isEmpty()) return;
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z, 0.01);
+    const vFov = (camera.fov * Math.PI) / 180;
+    const aspect = Math.max(camera.aspect || 1, 0.25);
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+    const distV = maxDim / 2 / Math.tan(vFov / 2);
+    const distH = maxDim / 2 / Math.tan(hFov / 2);
+    orbitDist = Math.max(distV, distH) * padding;
+  }
+
   function updateCamera() {
     if (!camera || !avatarRoot) return;
     const d = getOrbitDistance?.() ?? orbitDist;
@@ -597,11 +613,36 @@ export function mountMmlRigPreview(opts) {
       act.reset().play();
     }
 
+    frameAvatar();
     setStatus(
       logs.length
         ? `Otterful rig preview — ${logs.join('; ')}`
         : 'Otterful rig preview ready.'
     );
+  }
+
+  async function exportAvatarGlb() {
+    if (!avatarRoot) throw new Error('Load the 3D preview before exporting.');
+    avatarRoot.updateMatrixWorld(true);
+    const exporter = new GLTFExporter();
+    return new Promise((resolve, reject) => {
+      exporter.parse(
+        avatarRoot,
+        (result) => {
+          if (result instanceof ArrayBuffer) {
+            resolve(new Blob([result], { type: 'model/gltf-binary' }));
+            return;
+          }
+          if (result?.buffers?.[0]) {
+            resolve(new Blob([result.buffers[0]], { type: 'model/gltf-binary' }));
+            return;
+          }
+          reject(new Error('GLTF export returned unexpected format'));
+        },
+        (err) => reject(err || new Error('GLTF export failed')),
+        { binary: true, embedImages: true, onlyVisible: true }
+      );
+    });
   }
 
   function initRenderer() {
@@ -677,6 +718,8 @@ export function mountMmlRigPreview(opts) {
         throw e;
       }
     },
+    frameAvatar,
+    exportAvatarGlb,
     dispose() {
       disposed = true;
       cancelAnimationFrame(raf);

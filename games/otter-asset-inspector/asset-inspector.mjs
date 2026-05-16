@@ -2,7 +2,6 @@
  * Otterful asset inspector — 2D image, 3D MML rig preview, core traits, downloads.
  */
 const CORE_TRAIT_SKIP = new Set(['trait count', 'compiler']);
-const RIG_PREVIEW_ORBIT = 2.34;
 
 function parseBodyGlbUrl(html) {
   const char = html.match(/<\s*m-character\b([^>]*)>/i);
@@ -114,7 +113,6 @@ export function initAssetInspector(opts) {
     rigMount = mod.mountMmlRigPreview({
       container: previewBox,
       canvas: canvas3d,
-      getOrbitDistance: () => RIG_PREVIEW_ORBIT,
       onStatus: (msg) => {
         if (mode === '3d' && msg) setStatus(msg, false);
       },
@@ -184,14 +182,14 @@ export function initAssetInspector(opts) {
       mmlHtml = html;
       renderTraits(metadata);
       bodyGlbUrl = parseBodyGlbUrl(html);
-      if (btnGlb) btnGlb.disabled = !bodyGlbUrl;
+      if (btnGlb) btnGlb.disabled = false;
       if (btnCopyGlb) btnCopyGlb.disabled = !bodyGlbUrl;
 
       if (mode === '3d') await showRigPreview();
       else setStatus('', false);
     } catch (e) {
       renderTraits(null);
-      if (btnGlb) btnGlb.disabled = true;
+      if (btnGlb) btnGlb.disabled = false;
       if (btnCopyGlb) btnCopyGlb.disabled = true;
       setStatus(e?.message || String(e), true);
     }
@@ -241,12 +239,16 @@ export function initAssetInspector(opts) {
   });
 
   btnGlb?.addEventListener('click', async () => {
-    if (!bodyGlbUrl || !currentId) return;
+    if (!currentId) return;
     try {
-      setStatus('Downloading body GLB…', false);
-      const stem = bodyGlbUrl.split('/').pop()?.split('?')[0] || `otter-${currentId}.glb`;
-      await downloadUrlAsFile(bodyGlbUrl, stem.endsWith('.glb') ? stem : `otter-${currentId}-body.glb`);
-      setStatus('Body GLB downloaded.', false);
+      setStatus('Building GLB with wearables…', false);
+      if (mode !== '3d') setMode('3d');
+      const mount = await ensureRigPreview();
+      if (!mmlHtml) await load(currentId);
+      else await mount.show(mmlHtml, mmlDocUrl || window.location.href);
+      const blob = await mount.exportAvatarGlb();
+      downloadBlob(`otterful-${currentId}.glb`, blob);
+      setStatus('GLB downloaded — body, shirt, hat, and eyes merged for Blender.', false);
     } catch (e) {
       setStatus(e?.message || String(e), true);
     }
