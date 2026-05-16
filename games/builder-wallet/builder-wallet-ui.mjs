@@ -3,7 +3,7 @@ import {
   EMBED_SELECTION_KEY,
 } from './config.mjs';
 import { disconnectWallet } from './connect.mjs';
-import { initWalletModal } from './wallet-modal.mjs?v=6';
+import { initWalletModal } from './wallet-modal.mjs?v=7';
 import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,
@@ -196,11 +196,6 @@ export function initBuilderWalletUI() {
     window.dispatchEvent(
       new CustomEvent('otterful-builder-selected', {
         detail: { tokenId, metadata: otter.metadata, traits: { ...liveTraits } },
-      })
-    );
-    window.dispatchEvent(
-      new CustomEvent('otterful-builder-sync-asset', {
-        detail: { tokenId, mmlUrl: buildMmlApiUrl(window.location.origin, tokenId, liveTraits), open: false },
       })
     );
   }

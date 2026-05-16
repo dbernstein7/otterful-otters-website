@@ -420,10 +420,10 @@ function loadGltf(url) {
 }
 
 /**
- * @param {{ container: HTMLElement; canvas: HTMLCanvasElement; getOrbitDistance?: () => number; onStatus?: (s: string) => void }} opts
+ * @param {{ container: HTMLElement; canvas: HTMLCanvasElement; getOrbitDistance?: () => number; framePadding?: number; onStatus?: (s: string) => void }} opts
  */
 export function mountMmlRigPreview(opts) {
-  const { container, canvas, getOrbitDistance, onStatus } = opts;
+  const { container, canvas, getOrbitDistance, framePadding = 1.32, onStatus } = opts;
   let disposed = false;
   let raf = 0;
   let renderer = null;
@@ -466,7 +466,7 @@ export function mountMmlRigPreview(opts) {
     camera.updateProjectionMatrix();
   }
 
-  function frameAvatar(padding = 1.32) {
+  function frameAvatar(padding = framePadding) {
     if (!avatarRoot || !camera) return;
     avatarRoot.updateMatrixWorld(true);
     const box = new THREE.Box3().setFromObject(avatarRoot);
@@ -481,10 +481,17 @@ export function mountMmlRigPreview(opts) {
     orbitDist = Math.max(distV, distH) * padding;
   }
 
+  function getOrbitTarget() {
+    if (!avatarRoot) return new THREE.Vector3(0, 1.0, 0);
+    avatarRoot.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(avatarRoot);
+    return box.isEmpty() ? new THREE.Vector3(0, 1.0, 0) : box.getCenter(new THREE.Vector3());
+  }
+
   function updateCamera() {
     if (!camera || !avatarRoot) return;
     const d = getOrbitDistance?.() ?? orbitDist;
-    const target = new THREE.Vector3(0, 1.0, 0);
+    const target = getOrbitTarget();
     const x = d * Math.sin(orbitPhi) * Math.sin(orbitTheta);
     const y = d * Math.cos(orbitPhi);
     const z = d * Math.sin(orbitPhi) * Math.cos(orbitTheta);

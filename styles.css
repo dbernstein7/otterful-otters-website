@@ -1788,7 +1788,7 @@ body.wallet-modal-open {
     position: relative;
     z-index: 1;
     width: min(780px, calc(100vw - 32px));
-    max-height: min(88vh, 600px);
+    max-height: min(92vh, 720px);
     background: #141414;
     border: 1px solid rgba(255, 255, 255, 0.06);
     border-radius: 28px;
@@ -1821,14 +1821,25 @@ body.wallet-modal-open {
 .wallet-modal-columns {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(248px, 300px);
-    min-height: 400px;
-    max-height: min(88vh, 600px);
+    min-height: 520px;
+    max-height: min(92vh, 720px);
 }
 
 .wallet-modal-wallets {
     padding: 24px 20px 20px;
     overflow-y: auto;
     border-right: 1px solid rgba(255, 255, 255, 0.06);
+    min-height: 480px;
+    max-height: min(92vh, 720px);
+}
+
+.wallet-modal-section--glyph {
+    min-height: 72px;
+    padding-bottom: 8px;
+}
+
+.wallet-modal-section--glyph .wallet-modal-list {
+    min-height: 56px;
 }
 
 .wallet-modal-about {
@@ -4556,7 +4567,46 @@ body.wallet-modal-open {
     }
 }
 
-/* 3D Builder — Asset inspector (modal) */
+/* 3D Builder — Asset inspector (embed + modal) */
+.builder-asset-panel {
+    padding: 0;
+    min-height: min(78vh, 820px);
+}
+
+.asset-inspector-embed {
+    height: 100%;
+    min-height: min(76vh, 800px);
+}
+
+.asset-inspector-frame--embed {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    min-height: min(76vh, 800px);
+    border-radius: 14px;
+}
+
+.asset-inspector-frame--embed .asset-inspector-body {
+    flex: 1;
+    min-height: 0;
+}
+
+.asset-inspector-expand-btn {
+    appearance: none;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(79, 214, 165, 0.45);
+    background: rgba(10, 26, 15, 0.85);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.asset-inspector-expand-btn:hover {
+    background: rgba(79, 214, 165, 0.15);
+}
+
 .asset-inspector-launch-panel .asset-inspector-launch-lede {
     margin: 0 0 12px;
     font-size: 0.95rem;

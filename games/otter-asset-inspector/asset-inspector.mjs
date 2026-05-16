@@ -41,33 +41,27 @@ function downloadBlob(filename, blob) {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
-async function downloadUrlAsFile(url, filename) {
-  const r = await fetch(url, { mode: 'cors' });
-  if (!r.ok) throw new Error(`Download failed (${r.status})`);
-  const blob = await r.blob();
-  downloadBlob(filename, blob);
-}
-
 /**
- * @param {{ modal: HTMLElement; onClose?: () => void }} opts
+ * @param {HTMLElement} root
+ * @param {{ isModal?: boolean, onClose?: () => void }} [opts]
  */
-export function initAssetInspector(opts) {
-  const { modal, onClose } = opts;
-  const titleEl = modal.querySelector('[data-asset-title]');
-  const traitsEl = modal.querySelector('[data-asset-traits]');
-  const statusEl = modal.querySelector('[data-asset-status]');
-  const img2d = modal.querySelector('[data-asset-2d]');
-  const previewBox = modal.querySelector('.asset-inspector-preview-box');
-  const previewWrap = modal.querySelector('[data-asset-3d-wrap]');
-  const canvas3d = modal.querySelector('[data-asset-3d-canvas]');
-  const backdrop = modal.querySelector('[data-asset-backdrop]');
-  const toggle2d = modal.querySelector('[data-asset-mode="2d"]');
-  const toggle3d = modal.querySelector('[data-asset-mode="3d"]');
-  const btnClose = modal.querySelector('[data-asset-close]');
-  const btnGlb = modal.querySelector('[data-asset-dl-glb]');
-  const btnMml = modal.querySelector('[data-asset-dl-mml]');
-  const btnCopyGlb = modal.querySelector('[data-asset-copy-glb]');
-  const btnCopyMml = modal.querySelector('[data-asset-copy-mml]');
+export function createAssetInspector(root, opts = {}) {
+  const isModal = !!opts.isModal;
+  const titleEl = root.querySelector('[data-asset-title]');
+  const traitsEl = root.querySelector('[data-asset-traits]');
+  const statusEl = root.querySelector('[data-asset-status]');
+  const img2d = root.querySelector('[data-asset-2d]');
+  const previewBox = root.querySelector('.asset-inspector-preview-box');
+  const previewWrap = root.querySelector('[data-asset-3d-wrap]');
+  const canvas3d = root.querySelector('[data-asset-3d-canvas]');
+  const backdrop = root.querySelector('[data-asset-backdrop]');
+  const toggle2d = root.querySelector('[data-asset-mode="2d"]');
+  const toggle3d = root.querySelector('[data-asset-mode="3d"]');
+  const btnClose = root.querySelector('[data-asset-close]');
+  const btnGlb = root.querySelector('[data-asset-dl-glb]');
+  const btnMml = root.querySelector('[data-asset-dl-mml]');
+  const btnCopyGlb = root.querySelector('[data-asset-copy-glb]');
+  const btnCopyMml = root.querySelector('[data-asset-copy-mml]');
 
   let mode = '3d';
   let currentId = null;
@@ -101,7 +95,7 @@ export function initAssetInspector(opts) {
 
   function loadRigPreviewModule() {
     if (!rigModulePromise) {
-      const href = new URL('../mml-rig-preview/mml-rig-preview.mjs', import.meta.url).href;
+      const href = new URL('../mml-rig-preview/mml-rig-preview.mjs?v=7', import.meta.url).href;
       rigModulePromise = import(href);
     }
     return rigModulePromise;
@@ -164,6 +158,7 @@ export function initAssetInspector(opts) {
   }
 
   async function load(id, options = {}) {
+    if (!id) return;
     currentId = id;
     bodyGlbUrl = null;
     mmlHtml = null;
@@ -185,6 +180,8 @@ export function initAssetInspector(opts) {
       bodyGlbUrl = parseBodyGlbUrl(html);
       if (btnGlb) btnGlb.disabled = !mmlHtml;
       if (btnCopyGlb) btnCopyGlb.disabled = !bodyGlbUrl;
+      if (btnCopyMml) btnCopyMml.disabled = !mmlDocUrl;
+      if (btnMml) btnMml.disabled = !mmlHtml;
 
       if (mode === '3d') await showRigPreview();
       else setStatus('', false);
@@ -192,27 +189,40 @@ export function initAssetInspector(opts) {
       renderTraits(null);
       if (btnGlb) btnGlb.disabled = true;
       if (btnCopyGlb) btnCopyGlb.disabled = true;
+      if (btnCopyMml) btnCopyMml.disabled = true;
+      if (btnMml) btnMml.disabled = true;
       setStatus(e?.message || String(e), true);
     }
   }
 
-  function open(id) {
-    modal.hidden = false;
-    modal.removeAttribute('aria-hidden');
-    modal.classList.add('is-open');
-    document.body.classList.add('asset-inspector-open');
+  async function sync(options = {}) {
+    if (options.tokenId != null) {
+      await load(options.tokenId, options);
+      return;
+    }
+    if (currentId) await reload(options);
+  }
+
+  function open(id, openOpts = {}) {
+    if (isModal && root) {
+      root.hidden = false;
+      root.removeAttribute('aria-hidden');
+      root.classList.add('is-open');
+      document.body.classList.add('asset-inspector-open');
+    }
     setMode('3d');
-    void load(id);
+    void load(id, openOpts);
   }
 
   function close() {
-    modal.hidden = true;
-    modal.setAttribute('aria-hidden', 'true');
-    modal.classList.remove('is-open');
+    if (!isModal) return;
+    root.hidden = true;
+    root.setAttribute('aria-hidden', 'true');
+    root.classList.remove('is-open');
     document.body.classList.remove('asset-inspector-open');
     disposeRigPreview();
     currentId = null;
-    onClose?.();
+    opts.onClose?.();
   }
 
   toggle2d?.addEventListener('click', () => setMode('2d'));
@@ -221,11 +231,15 @@ export function initAssetInspector(opts) {
     void showRigPreview();
   });
 
-  btnClose?.addEventListener('click', close);
-  backdrop?.addEventListener('click', close);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
-  });
+  if (isModal) {
+    btnClose?.addEventListener('click', close);
+    backdrop?.addEventListener('click', close);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && root.classList.contains('is-open')) close();
+    });
+  } else if (btnClose) {
+    btnClose.hidden = true;
+  }
 
   btnMml?.addEventListener('click', async () => {
     if (!currentId) return;
@@ -245,7 +259,7 @@ export function initAssetInspector(opts) {
       setStatus('Building GLB with wearables…', false);
       if (mode !== '3d') setMode('3d');
       const mount = await ensureRigPreview();
-      if (!mmlHtml) await load(currentId);
+      if (!mmlHtml) await load(currentId, { mmlUrl: mmlDocUrl });
       else await mount.show(mmlHtml, mmlDocUrl || window.location.href);
       const blob = await mount.exportAvatarGlb();
       downloadBlob(`otterful-${currentId}.glb`, blob);
@@ -281,5 +295,10 @@ export function initAssetInspector(opts) {
     await load(currentId, options);
   }
 
-  return { open, close, setMode, reload };
+  return { open, close, setMode, load, reload, sync, getCurrentId: () => currentId };
+}
+
+/** @param {{ modal: HTMLElement; onClose?: () => void }} opts */
+export function initAssetInspector(opts) {
+  return createAssetInspector(opts.modal, { isModal: true, onClose: opts.onClose });
 }

@@ -246,16 +246,47 @@
             <pre id="builder-mml-viewer-out" class="mml-playground-hidden-pre" aria-hidden="true">—</pre>
         </div>
 
-        <div id="builder-panel-asset" class="builder-page-panel asset-inspector-launch-panel" role="tabpanel" aria-labelledby="builder-tab-asset" hidden>
-            <div class="mml-hero-search" aria-label="Open asset inspector">
-                <p class="mml-hero-search-title">Inspect otter traits &amp; downloads</p>
-                <p class="asset-inspector-launch-lede">Opens a full inspector with 2D artwork, 3D MML preview, core NFT traits, and links to download or copy your MML document and a combined Blender-ready GLB.</p>
-                <div class="mml-hero-search-row">
-                    <span class="mml-hero-search-prefix" aria-hidden="true">#</span>
-                    <input type="number" id="builder-asset-nft-input" class="mml-hero-search-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number 1 to 2222">
-                    <button type="button" id="builder-asset-open-btn" class="mml-hero-search-btn">Open inspector</button>
+        <div id="builder-panel-asset" class="builder-page-panel builder-asset-panel" role="tabpanel" aria-labelledby="builder-tab-asset" hidden>
+            <input type="hidden" id="builder-asset-nft-input" value="" aria-hidden="true">
+            <div id="asset-inspector-embed" class="asset-inspector-embed" aria-label="Asset inspector">
+                <div class="asset-inspector-frame asset-inspector-frame--embed">
+                    <header class="asset-inspector-header">
+                        <h2 class="asset-inspector-title" data-asset-title>Otterful</h2>
+                        <div class="asset-inspector-header-actions">
+                            <div class="asset-inspector-mode-toggle" role="group" aria-label="Preview mode">
+                                <button type="button" class="asset-inspector-mode-btn" data-asset-mode="2d" aria-pressed="false">2D</button>
+                                <button type="button" class="asset-inspector-mode-btn is-active" data-asset-mode="3d" aria-pressed="true">3D</button>
+                            </div>
+                            <button type="button" class="asset-inspector-expand-btn" id="builder-asset-expand-btn">Fullscreen</button>
+                        </div>
+                    </header>
+                    <div class="asset-inspector-body">
+                        <div class="asset-inspector-preview-col">
+                            <div class="asset-inspector-preview-box">
+                                <img class="asset-inspector-2d" data-asset-2d alt="" width="512" height="512" hidden>
+                                <div class="asset-inspector-3d-wrap" data-asset-3d-wrap>
+                                    <canvas class="asset-inspector-3d-canvas" data-asset-3d-canvas aria-label="3D MML preview"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <aside class="asset-inspector-traits-col">
+                            <h3 class="asset-inspector-traits-heading">Core traits</h3>
+                            <div class="asset-inspector-traits-grid" data-asset-traits></div>
+                            <p class="asset-inspector-status" data-asset-status role="status" aria-live="polite"></p>
+                            <div class="asset-inspector-downloads">
+                                <h3 class="asset-inspector-traits-heading">Downloads</h3>
+                                <p class="asset-inspector-downloads-hint">MML uses socket-baked wearables for mml.io and Otherside. Open the downloaded HTML in the MML viewer link inside the file, or paste the MML URL into viewer.mml.io.</p>
+                                <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block" data-asset-dl-mml title="MML document with baked wearable GLBs">Download MML</button>
+                                <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-dl-glb title="Single GLB with fur, shirt, hat, and eyes for Blender">Download GLB (Blender)</button>
+                                <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-mml title="Hosted MML document URL">Copy MML URL</button>
+                                <button type="button" class="asset-inspector-dl-btn asset-inspector-dl-btn--block asset-inspector-dl-btn--ghost" data-asset-copy-glb title="Fur/body GLB URL only (no wearables)">Copy body GLB URL</button>
+                            </div>
+                        </aside>
+                    </div>
                 </div>
             </div>
+        </div>
+
         </div>
 
         </div>
@@ -467,6 +498,7 @@
             }
           } catch (_) { /* ignore */ }
           if (isMml) window.dispatchEvent(new CustomEvent('otterful-mml-panel-open'));
+          if (isAsset) window.dispatchEvent(new CustomEvent('otterful-builder-asset-panel-open'));
         }
 
         pageTabs.forEach((btn) => {
@@ -1669,84 +1701,70 @@
     </script>
 
     <script type="module">
-      import { initAssetInspector } from './games/otter-asset-inspector/asset-inspector.mjs?v=6';
+      import { createAssetInspector, initAssetInspector } from './games/otter-asset-inspector/asset-inspector.mjs?v=7';
 
+      const embedRoot = document.getElementById('asset-inspector-embed');
       const modal = document.getElementById('asset-inspector-modal');
-      const openBtn = document.getElementById('builder-asset-open-btn');
       const assetInput = document.getElementById('builder-asset-nft-input');
-      if (!modal || !openBtn || !assetInput) {
-        /* panel not on this page */
-      } else {
-        const inspector = initAssetInspector({ modal });
+      const expandBtn = document.getElementById('builder-asset-expand-btn');
 
-        function parseOtterNum() {
-          const num = parseInt(String(assetInput.value || '').trim(), 10);
-          if (!num || num < 1 || num > 2222) return null;
-          return num;
-        }
+      const embedInspector = embedRoot ? createAssetInspector(embedRoot, { isModal: false }) : null;
+      const modalInspector = modal ? initAssetInspector({ modal }) : null;
 
-        async function openFromInput() {
-          const num = parseOtterNum();
-          if (!num) {
-            assetInput.focus();
-            assetInput.setCustomValidity('Enter an otter number from 1 to 2222');
-            assetInput.reportValidity();
-            return;
-          }
-          assetInput.setCustomValidity('');
+      let lastAssetSync = null;
+
+      function applyAssetSync(d) {
+        if (!d?.tokenId) return;
+        lastAssetSync = d;
+        if (assetInput) assetInput.value = String(d.tokenId);
+        if (embedInspector) void embedInspector.sync({ tokenId: d.tokenId, mmlUrl: d.mmlUrl });
+        if (d.open && modalInspector) {
           modal.removeAttribute('aria-hidden');
-          inspector.open(num);
+          modalInspector.open(d.tokenId, { mmlUrl: d.mmlUrl });
+        } else if (modal?.classList.contains('is-open') && modalInspector) {
+          void modalInspector.reload({ mmlUrl: d.mmlUrl });
         }
+      }
 
-        openBtn.addEventListener('click', () => void openFromInput());
-        assetInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            void openFromInput();
-          }
-        });
+      expandBtn?.addEventListener('click', () => {
+        const id = lastAssetSync?.tokenId || parseInt(String(assetInput?.value || ''), 10);
+        if (!id || id < 1 || id > 2222) return;
+        modal?.removeAttribute('aria-hidden');
+        modalInspector?.open(id, { mmlUrl: lastAssetSync?.mmlUrl });
+      });
 
-        try {
-          const params = new URLSearchParams(window.location.search);
-          const idParam = params.get('id') || params.get('token');
-          const fromHash = window.location.hash.match(/^#asset\/(\d+)$/);
-          const num = fromHash
-            ? parseInt(fromHash[1], 10)
-            : idParam
-              ? parseInt(idParam, 10)
-              : NaN;
-          if (num >= 1 && num <= 2222) {
-            assetInput.value = String(num);
-            if (window.location.hash === '#asset' || fromHash) {
-              void openFromInput();
-            }
-          }
-        } catch (_) {
-          /* ignore */
+      window.addEventListener('otterful-builder-sync-asset', (ev) => applyAssetSync(ev.detail || {}));
+      window.addEventListener('otterful-builder-selected', (ev) => {
+        const d = ev.detail || {};
+        if (!d.tokenId) return;
+        if (assetInput) assetInput.value = String(d.tokenId);
+        if (lastAssetSync?.tokenId === d.tokenId && embedInspector?.getCurrentId?.() === d.tokenId) return;
+      });
+      window.addEventListener('otterful-builder-asset-panel-open', () => {
+        if (lastAssetSync) applyAssetSync(lastAssetSync);
+      });
+
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const idParam = params.get('id') || params.get('token');
+        const fromHash = window.location.hash.match(/^#asset\/(\d+)$/);
+        const num = fromHash
+          ? parseInt(fromHash[1], 10)
+          : idParam
+            ? parseInt(idParam, 10)
+            : NaN;
+        if (num >= 1 && num <= 2222 && assetInput) {
+          assetInput.value = String(num);
+          const mmlUrl = `${window.location.origin}/api/mml?id=${num}&v=2`;
+          applyAssetSync({ tokenId: num, mmlUrl });
         }
-
-        window.addEventListener('otterful-builder-sync-asset', function (ev) {
-          const d = ev.detail || {};
-          if (!d.tokenId) return;
-          assetInput.value = String(d.tokenId);
-          if (d.open) {
-            modal.removeAttribute('aria-hidden');
-            inspector.open(d.tokenId);
-          } else if (modal.classList.contains('is-open')) {
-            void inspector.reload({ mmlUrl: d.mmlUrl });
-          }
-        });
-
-        window.addEventListener('otterful-builder-selected', function (ev) {
-          const d = ev.detail || {};
-          if (!d.tokenId) return;
-          assetInput.value = String(d.tokenId);
-        });
+      } catch (_) {
+        /* ignore */
       }
     </script>
 
     <script type="module">
-      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=6';
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=7';
       initBuilderWalletUI();
     </script>
 </body>

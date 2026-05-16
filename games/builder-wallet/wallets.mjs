@@ -59,10 +59,10 @@ export const WALLET_CATALOG = [
     id: 'glyph',
     name: 'Glyph',
     section: 'glyph',
-    icon: ICON('glyph.svg'),
-    rdns: 'com.glyph.wallet',
-    match: /glyph/i,
-    downloadUrl: 'https://www.glyph.tech/',
+    icon: ICON('glyph.ico'),
+    rdns: 'io.useglyph.wallet',
+    match: /glyph|useglyph/i,
+    downloadUrl: 'https://useglyph.io/',
   },
   {
     id: 'phantom',
@@ -176,9 +176,15 @@ export function resolveWalletProviders(announced) {
       }
     }
 
-    if (!provider && def.id === 'glyph' && window.glyph?.ethereum) {
-      provider = window.glyph.ethereum;
-      installed = true;
+    if (!provider && def.id === 'glyph') {
+      const glyphProvider =
+        window.glyph?.ethereum ||
+        window.useGlyph?.ethereum ||
+        window.useglyph?.ethereum;
+      if (glyphProvider) {
+        provider = glyphProvider;
+        installed = true;
+      }
     }
 
     return { ...def, provider, installed, icon, name };
