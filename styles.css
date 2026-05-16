@@ -1535,6 +1535,197 @@ body::before {
     }
 }
 
+/* 3D Builder: wallet connect + NFT picker */
+.builder-wallet-stage {
+    margin-top: 16px;
+}
+
+.builder-wallet-connect,
+.builder-wallet-picker {
+    padding: 22px 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(90, 255, 180, 0.4);
+    background: rgba(7, 13, 26, 0.55);
+}
+
+.builder-wallet-title {
+    margin: 0 0 10px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.builder-wallet-lede,
+.builder-wallet-hint {
+    margin: 0 0 14px;
+    color: var(--text-secondary);
+    max-width: 720px;
+    line-height: 1.5;
+}
+
+.builder-wallet-hint {
+    font-size: 0.92rem;
+    margin-bottom: 0;
+}
+
+.builder-wallet-error {
+    margin: 0 0 12px;
+    color: #ff8a8a;
+}
+
+.builder-wallet-error[hidden] {
+    display: none !important;
+}
+
+.builder-wallet-connect-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.builder-wallet-btn {
+    appearance: none;
+    border: 2px solid rgba(90, 255, 180, 0.35);
+    background: rgba(10, 26, 15, 0.75);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: transform 0.15s ease-out, background 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.builder-wallet-btn:hover {
+    transform: translateY(-1px);
+    border-color: var(--panel-blue-alt);
+}
+
+.builder-wallet-btn--primary {
+    background: linear-gradient(135deg, var(--panel-blue) 0%, var(--panel-blue-alt) 100%);
+    border-color: transparent;
+    color: var(--bg-base);
+}
+
+.builder-wallet-btn--ghost {
+    background: transparent;
+}
+
+.builder-wallet-picker-head {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.builder-wallet-count {
+    margin: 0;
+    color: var(--text-secondary);
+}
+
+.builder-wallet-picker-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.builder-wallet-address {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.builder-wallet-picker-status {
+    min-height: 1.25em;
+    margin: 0 0 12px;
+    color: var(--text-secondary);
+}
+
+.builder-wallet-picker-status.is-error {
+    color: #ff8a8a;
+}
+
+.builder-wallet-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.builder-wallet-nft-card {
+    appearance: none;
+    border: 2px solid rgba(90, 255, 180, 0.25);
+    background: rgba(10, 26, 15, 0.8);
+    border-radius: 12px;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: border-color 0.15s ease-out, transform 0.15s ease-out;
+}
+
+.builder-wallet-nft-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--panel-blue-alt);
+}
+
+.builder-wallet-nft-card.is-selected {
+    border-color: var(--panel-blue);
+    box-shadow: 0 0 0 1px var(--panel-blue);
+}
+
+.builder-wallet-nft-card img {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.builder-wallet-nft-num {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.builder-wallet-empty {
+    grid-column: 1 / -1;
+    color: var(--text-secondary);
+}
+
+.builder-wallet-session-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(90, 255, 180, 0.3);
+    background: rgba(7, 18, 14, 0.65);
+}
+
+.builder-wallet-selected-label {
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.builder-nft-load--hidden {
+    display: none !important;
+}
+
+.builder-workspace[hidden] {
+    display: none !important;
+}
+
 /* 3D Builder: main mode tabs (Otter / MML / Otter 3D) */
 .builder-page-tabs {
     display: flex;

@@ -492,6 +492,10 @@ module.exports = async (req, res) => {
   }
 
   const traits = parseTraits(metadata);
+  const furQuery = (getQueryParam(req, 'fur') || '').trim();
+  if (furQuery && furQuery.toLowerCase() !== 'none') {
+    traits.fur = furQuery;
+  }
   if (!traits.fur) {
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
     return res.status(422).send('Metadata has no Fur trait (required for MML body).');
@@ -502,7 +506,9 @@ module.exports = async (req, res) => {
     fur: buildWearableUrl(origin, glbObjectPath('MML_FUR_STORAGE_PATH', wp, 'Furs', traits.fur)),
   };
   const hatOverride = getQueryParam(req, 'hat');
-  if (hatOverride) {
+  if (hatOverride && hatOverride.trim().toLowerCase() === 'none') {
+    /* omit hat */
+  } else if (hatOverride) {
     const ho = hatOverride.trim();
     if (/^https?:\/\//i.test(ho)) {
       urls.hat = ho;
@@ -519,7 +525,8 @@ module.exports = async (req, res) => {
   const shirtEnv = (process.env.MML_SHIRT_OVERRIDE || '').trim();
   if (!skipShirt) {
     let shirtRaw = '';
-    if (shirtQuery) shirtRaw = shirtQuery.trim();
+    if (shirtQuery && shirtQuery.trim().toLowerCase() === 'none') shirtRaw = '';
+    else if (shirtQuery) shirtRaw = shirtQuery.trim();
     else if (shirtEnv) shirtRaw = shirtEnv;
     else if (traits.shirt) shirtRaw = traits.shirt;
     if (shirtRaw) {
@@ -530,6 +537,12 @@ module.exports = async (req, res) => {
         urls.shirt = buildWearableUrl(origin, glbObjectPath('MML_SHIRT_STORAGE_PATH', wp, 'Shirts', stem || shirtRaw));
       }
     }
+  }
+  const eyesQuery = (getQueryParam(req, 'eyes') || '').trim();
+  if (eyesQuery && eyesQuery.toLowerCase() !== 'none') {
+    traits.eyes = eyesQuery;
+  } else if (eyesQuery && eyesQuery.toLowerCase() === 'none') {
+    traits.eyes = '';
   }
   if (traits.eyes) {
     const eyesFolder = storageFolderFromEnv('MML_EYES_STORAGE_PATH');

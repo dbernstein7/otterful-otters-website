@@ -9,6 +9,7 @@ class AvatarBuilder {
         this.embedMode = (params.get('embed') || '').trim().toLowerCase() || null; // 'viewer' | 'gallery' | null
         this.embedPanel = (params.get('panel') || '').trim().toLowerCase() || null; // fur|hat|shirt|eyes
         this.embedSelectionKey = 'ottvatar_embed_selection_v1';
+        this.walletTraitsKey = 'ottvatar_wallet_traits_v1';
 
         this.scene = null;
         this.camera = null;
@@ -201,6 +202,45 @@ class AvatarBuilder {
             showRemoveBar(panel);
             // If parent changes panel via iframe reload, panel is fixed; no need to observe.
         }
+
+        this.filterEmbedGalleryByWalletAllowlist();
+        window.addEventListener('storage', (e) => {
+            if (e.key === this.walletTraitsKey) this.filterEmbedGalleryByWalletAllowlist();
+        });
+    }
+
+    filterEmbedGalleryByWalletAllowlist() {
+        if (this.embedMode !== 'gallery') return;
+        let allowed = null;
+        try {
+            const raw = localStorage.getItem(this.walletTraitsKey);
+            if (raw) allowed = JSON.parse(raw);
+        } catch (_) {
+            return;
+        }
+        if (!allowed || typeof allowed !== 'object') return;
+
+        const panelKeyByGallery = {
+            'fur-gallery': 'fur',
+            'hat-gallery': 'hat',
+            'shirt-gallery': 'shirt',
+            'eyes-gallery': 'eyes',
+        };
+
+        Object.entries(panelKeyByGallery).forEach(([galleryId, key]) => {
+            const list = allowed[key];
+            if (!Array.isArray(list) || list.length === 0) return;
+            const set = new Set(list.map((s) => String(s).toLowerCase()));
+            const gallery = document.getElementById(galleryId);
+            if (!gallery) return;
+            gallery.querySelectorAll('button.fur-btn').forEach((btn) => {
+                const name = (btn.dataset.traitName || btn.getAttribute('aria-label') || '').trim();
+                if (!name) return;
+                const show = set.has(name.toLowerCase());
+                btn.style.display = show ? '' : 'none';
+                btn.disabled = !show;
+            });
+        });
     }
 
     setupEmbedViewerBridge() {
@@ -840,6 +880,7 @@ class AvatarBuilder {
         this.furOptions.forEach((furName) => {
             const button = document.createElement('button');
             button.className = 'fur-btn';
+            button.dataset.traitName = furName;
             button.title = `Load ${furName}.glb from WEARABLES/Furs folder`;
             
             // Create image element with lazy loading
@@ -861,6 +902,7 @@ class AvatarBuilder {
             });
             gallery.appendChild(button);
         });
+        this.filterEmbedGalleryByWalletAllowlist();
     }
 
     setupHatGallery() {
@@ -870,6 +912,7 @@ class AvatarBuilder {
         this.hatOptions.forEach((hatName) => {
             const button = document.createElement('button');
             button.className = 'fur-btn';
+            button.dataset.traitName = hatName;
             button.title = `Load ${hatName}.glb hat`;
             
             // Create image element with lazy loading
@@ -900,6 +943,7 @@ class AvatarBuilder {
                 else this.removeHat();
             });
         }
+        this.filterEmbedGalleryByWalletAllowlist();
     }
 
     setupShirtGallery() {
@@ -909,6 +953,7 @@ class AvatarBuilder {
         this.shirtOptions.forEach((shirtName) => {
             const button = document.createElement('button');
             button.className = 'fur-btn';
+            button.dataset.traitName = shirtName;
             button.title = `Load ${shirtName}.glb shirt`;
             
             // Create image element with lazy loading
@@ -938,6 +983,7 @@ class AvatarBuilder {
                 else this.removeShirt();
             });
         }
+        this.filterEmbedGalleryByWalletAllowlist();
     }
 
     setupEyesGallery() {
@@ -947,6 +993,7 @@ class AvatarBuilder {
         this.eyeOptions.forEach((eyeName) => {
             const button = document.createElement('button');
             button.className = 'fur-btn';
+            button.dataset.traitName = eyeName;
             button.title = `Load ${eyeName}.glb eyes`;
             
             // Create image element with lazy loading
@@ -982,6 +1029,7 @@ class AvatarBuilder {
                 else this.removeEyes();
             });
         }
+        this.filterEmbedGalleryByWalletAllowlist();
     }
 
     async loadFurFile(furName, preserveWearables = true, manageLoadingScreen = true) {

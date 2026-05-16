@@ -113,6 +113,7 @@ export function initAssetInspector(opts) {
     rigMount = mod.mountMmlRigPreview({
       container: previewBox,
       canvas: canvas3d,
+      framePadding: 1.62,
       onStatus: (msg) => {
         if (mode === '3d' && msg) setStatus(msg, false);
       },
@@ -162,11 +163,11 @@ export function initAssetInspector(opts) {
       .replace(/"/g, '&quot;');
   }
 
-  async function load(id) {
+  async function load(id, options = {}) {
     currentId = id;
     bodyGlbUrl = null;
     mmlHtml = null;
-    mmlDocUrl = `${siteOrigin}/api/mml?id=${id}&v=2`;
+    mmlDocUrl = options.mmlUrl || `${siteOrigin}/api/mml?id=${id}&v=2`;
     const metaUrl = `${siteOrigin}/metadata/${id}.json`;
     const imgUrl = `images_compressed/${id}.png`;
 
@@ -182,14 +183,14 @@ export function initAssetInspector(opts) {
       mmlHtml = html;
       renderTraits(metadata);
       bodyGlbUrl = parseBodyGlbUrl(html);
-      if (btnGlb) btnGlb.disabled = false;
+      if (btnGlb) btnGlb.disabled = !mmlHtml;
       if (btnCopyGlb) btnCopyGlb.disabled = !bodyGlbUrl;
 
       if (mode === '3d') await showRigPreview();
       else setStatus('', false);
     } catch (e) {
       renderTraits(null);
-      if (btnGlb) btnGlb.disabled = false;
+      if (btnGlb) btnGlb.disabled = true;
       if (btnCopyGlb) btnCopyGlb.disabled = true;
       setStatus(e?.message || String(e), true);
     }
@@ -274,5 +275,11 @@ export function initAssetInspector(opts) {
     }
   });
 
-  return { open, close, setMode };
+  async function reload(options = {}) {
+    if (!currentId) return;
+    disposeRigPreview();
+    await load(currentId, options);
+  }
+
+  return { open, close, setMode, reload };
 }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob:; frame-src 'self' https://viewer.mml.io https: http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh https://viewer.mml.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https: wss: blob: https://rpc.apechain.com https://*.walletconnect.com https://*.walletconnect.org wss://*.walletconnect.com wss://*.walletconnect.org https://pulse.walletconnect.org; frame-src 'self' https://viewer.mml.io https: https://verify.walletconnect.com https://secure.walletconnect.com http://127.0.0.1:8080 http://localhost:8080; worker-src 'self' blob:;">
     <!-- GLTFLoader imports bare "three"; map it so the browser can resolve the module. -->
     <script type="importmap">
     {
@@ -72,6 +72,35 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
+        <section id="builder-wallet-stage" class="builder-wallet-stage" aria-label="Connect wallet">
+            <div id="builder-wallet-connect" class="builder-wallet-connect">
+                <h2 class="builder-wallet-title">Connect your wallet</h2>
+                <p class="builder-wallet-lede">Connect on ApeChain to load your Otterful Otters, pick one to customize, then use Otter Builder, MML Preview, and Asset View with your NFT metadata.</p>
+                <p id="builder-wallet-connect-error" class="builder-wallet-error" hidden role="alert"></p>
+                <div class="builder-wallet-connect-actions">
+                    <button type="button" id="builder-wallet-connect-btn" class="builder-wallet-btn builder-wallet-btn--primary">Connect</button>
+                    <button type="button" id="builder-wallet-wc-btn" class="builder-wallet-btn">WalletConnect</button>
+                </div>
+                <p class="builder-wallet-hint">Works with Glyph, MetaMask, Rabby, and other wallets via browser extension or WalletConnect QR.</p>
+            </div>
+            <div id="builder-wallet-picker" class="builder-wallet-picker" hidden>
+                <div class="builder-wallet-picker-head">
+                    <div>
+                        <h2 class="builder-wallet-title">Choose an otter</h2>
+                        <p id="builder-wallet-count" class="builder-wallet-count">0 otters</p>
+                    </div>
+                    <div class="builder-wallet-picker-actions">
+                        <span id="builder-wallet-address" class="builder-wallet-address" aria-label="Connected wallet"></span>
+                        <button type="button" id="builder-wallet-disconnect-btn" class="builder-wallet-btn builder-wallet-btn--ghost" hidden>Disconnect</button>
+                    </div>
+                </div>
+                <p id="builder-wallet-picker-status" class="builder-wallet-picker-status" aria-live="polite"></p>
+                <div id="builder-wallet-grid" class="builder-wallet-grid" role="list"></div>
+            </div>
+        </section>
+
+        <div id="builder-workspace" class="builder-workspace" hidden>
+
         <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
             <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
             <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
@@ -79,7 +108,11 @@
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
-            <div class="builder-nft-load">
+            <div class="builder-wallet-session-bar">
+                <span id="builder-wallet-selected-label" class="builder-wallet-selected-label">Customizing your otter</span>
+                <button type="button" id="builder-wallet-change-otter" class="builder-wallet-btn builder-wallet-btn--ghost">Change otter</button>
+            </div>
+            <div class="builder-nft-load builder-nft-load--hidden" aria-hidden="true">
                 <label for="builder-nft-input" class="builder-nft-load-label">Load NFT</label>
                 <input type="number" id="builder-nft-input" class="builder-nft-input" placeholder="#" min="1" max="2222" inputmode="numeric" aria-label="NFT number 1–2222">
                 <button type="button" id="builder-nft-btn" class="builder-nft-btn">Load</button>
@@ -221,13 +254,15 @@
         <div id="builder-panel-asset" class="builder-page-panel asset-inspector-launch-panel" role="tabpanel" aria-labelledby="builder-tab-asset" hidden>
             <div class="mml-hero-search" aria-label="Open asset inspector">
                 <p class="mml-hero-search-title">Inspect otter traits &amp; downloads</p>
-                <p class="asset-inspector-launch-lede">Opens a full inspector with 2D artwork, 3D MML preview, core NFT traits, and links to download or copy your MML document and body GLB.</p>
+                <p class="asset-inspector-launch-lede">Opens a full inspector with 2D artwork, 3D MML preview, core NFT traits, and links to download or copy your MML document and a combined Blender-ready GLB.</p>
                 <div class="mml-hero-search-row">
                     <span class="mml-hero-search-prefix" aria-hidden="true">#</span>
                     <input type="number" id="builder-asset-nft-input" class="mml-hero-search-input" min="1" max="2222" placeholder="1–2222" inputmode="numeric" aria-label="Otter number 1 to 2222">
                     <button type="button" id="builder-asset-open-btn" class="mml-hero-search-btn">Open inspector</button>
                 </div>
             </div>
+        </div>
+
         </div>
 
         <div id="asset-inspector-modal" class="asset-inspector-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="asset-inspector-title">
@@ -1537,6 +1572,21 @@
         syncGutter();
         if (new URLSearchParams(window.location.search).get('url') && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
         else if (window.location.hash === '#mml' && input.value && looksLikeMmlUrl(absoluteDocUrl(input.value))) void apply();
+
+        window.addEventListener('otterful-builder-sync-mml', function (ev) {
+          const d = ev.detail || {};
+          if (d.tokenId && mmlNftInput) mmlNftInput.value = String(d.tokenId);
+          if (d.traits) {
+            if (hatOverrideInput && d.traits.hat != null) hatOverrideInput.value = d.traits.hat || '';
+            if (shirtOverrideInput && d.traits.shirt != null) shirtOverrideInput.value = d.traits.shirt || '';
+          }
+          if (d.mmlUrl) {
+            input.value = d.mmlUrl;
+            void apply();
+          } else if (d.tokenId) {
+            previewBtn.click();
+          }
+        });
       })();
     </script>
 
@@ -1576,7 +1626,7 @@
     </script>
 
     <script type="module">
-      import { initAssetInspector } from './games/otter-asset-inspector/asset-inspector.mjs?v=5';
+      import { initAssetInspector } from './games/otter-asset-inspector/asset-inspector.mjs?v=6';
 
       const modal = document.getElementById('asset-inspector-modal');
       const openBtn = document.getElementById('builder-asset-open-btn');
@@ -1631,7 +1681,30 @@
         } catch (_) {
           /* ignore */
         }
+
+        window.addEventListener('otterful-builder-sync-asset', function (ev) {
+          const d = ev.detail || {};
+          if (!d.tokenId) return;
+          assetInput.value = String(d.tokenId);
+          if (d.open) {
+            modal.removeAttribute('aria-hidden');
+            inspector.open(d.tokenId);
+          } else if (modal.classList.contains('is-open')) {
+            void inspector.reload({ mmlUrl: d.mmlUrl });
+          }
+        });
+
+        window.addEventListener('otterful-builder-selected', function (ev) {
+          const d = ev.detail || {};
+          if (!d.tokenId) return;
+          assetInput.value = String(d.tokenId);
+        });
       }
+    </script>
+
+    <script type="module">
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=1';
+      initBuilderWalletUI();
     </script>
 </body>
 </html>
