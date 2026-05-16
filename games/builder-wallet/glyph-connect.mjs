@@ -1,5 +1,5 @@
 import { apeChain } from './config.mjs';
-import { connectWithProvider } from './connect.mjs';
+import { connectCrossAppProvider } from './connect.mjs';
 
 /** Glyph production Privy app id (@use-glyph/sdk-react GLYPH_PRIVY_APP_ID) */
 export const GLYPH_PRIVY_APP_ID = 'cly38x0w10ac945q9yg9sm71i';
@@ -27,8 +27,8 @@ async function apeChainViem() {
 }
 
 /**
- * Opens the Glyph Privy approval popup (privy.useglyph.io) and connects on ApeChain.
- * @returns {Promise<{ address: string, provider: object, kind: string }>}
+ * Opens the Glyph Privy approval popup (privy.useglyph.io), then connects on ApeChain
+ * and returns the wallet address for loading Otterful otters via /api/wallet-otters.
  */
 export async function connectGlyphWallet() {
   const [{ toPrivyWalletProvider }, chain] = await Promise.all([
@@ -40,7 +40,8 @@ export async function connectGlyphWallet() {
     providerAppId: GLYPH_PRIVY_APP_ID,
     chains: [chain],
     chainId: apeChain.id,
+    defaultPopupTimeout: 120_000,
   });
 
-  return connectWithProvider(provider);
+  return connectCrossAppProvider(provider, { kind: 'glyph' });
 }

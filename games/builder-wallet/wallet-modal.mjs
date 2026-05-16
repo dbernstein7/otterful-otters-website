@@ -1,6 +1,6 @@
-import { connectWithProvider, connectWalletConnect } from './connect.mjs?v=8';
-import { connectGlyphWallet } from './glyph-connect.mjs?v=8';
-import { discoverEip6963Providers, resolveWalletProviders } from './wallets.mjs?v=8';
+import { connectWithProvider, connectWalletConnect } from './connect.mjs?v=9';
+import { connectGlyphWallet } from './glyph-connect.mjs?v=9';
+import { discoverEip6963Providers, resolveWalletProviders } from './wallets.mjs?v=9';
 
 /** Always pinned at top of Popular (under MetaMask). */
 const TOP_POPULAR_IDS = ['metamask', 'glyph'];
