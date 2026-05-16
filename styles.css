@@ -2060,16 +2060,96 @@ body.wallet-modal-open {
     }
 }
 
-/* 3D Builder: main mode tabs (Otter / MML / Otter 3D) */
-.builder-page-tabs {
+/* 3D Builder: main mode tabs (Otter / MML / Asset) */
+.builder-page-tabs-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-top: 16px;
     padding: 12px 14px;
     background: rgba(7, 13, 26, 0.55);
     border: 1px solid rgba(90, 255, 180, 0.4);
     border-radius: 14px;
+}
+
+.builder-page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.builder-tabs-wallet {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.builder-tabs-wallet[hidden] {
+    display: none !important;
+}
+
+.builder-tabs-wallet--picker {
+    margin-left: 0;
+}
+
+.builder-tabs-wallet-chip {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 2px solid rgba(90, 255, 180, 0.45);
+    background: rgba(10, 26, 15, 0.9);
+    color: var(--text-primary);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: default;
+}
+
+.builder-tabs-wallet-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4fd6a5;
+    box-shadow: 0 0 8px rgba(79, 214, 165, 0.85);
+    flex-shrink: 0;
+}
+
+.builder-tabs-wallet-label {
+    letter-spacing: 0.02em;
+}
+
+.builder-tabs-wallet-disconnect {
+    appearance: none;
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: 2px solid rgba(255, 120, 120, 0.45);
+    background: transparent;
+    color: #ffb4b4;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s ease-out, border-color 0.15s ease-out;
+}
+
+.builder-tabs-wallet-disconnect:hover {
+    background: rgba(255, 80, 80, 0.12);
+    border-color: rgba(255, 140, 140, 0.7);
+}
+
+.builder-wallet-stage--connected .builder-wallet-connect {
+    display: none !important;
 }
 
 .builder-page-tab {
@@ -2106,6 +2186,19 @@ body.wallet-modal-open {
 
 .builder-page-panel[hidden] {
     display: none !important;
+}
+
+@media (max-width: 720px) {
+    .builder-page-tabs-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .builder-tabs-wallet {
+        margin-left: 0;
+        justify-content: flex-end;
+        width: 100%;
+    }
 }
 
 /* 3D Builder: MML multi-user experience tab (embed / open mml-io/3d-web-experience) */

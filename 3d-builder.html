@@ -84,9 +84,12 @@
                         <h2 class="builder-wallet-title">Choose an otter</h2>
                         <p id="builder-wallet-count" class="builder-wallet-count">0 otters</p>
                     </div>
-                    <div class="builder-wallet-picker-actions">
-                        <span id="builder-wallet-address" class="builder-wallet-address" aria-label="Connected wallet"></span>
-                        <button type="button" id="builder-wallet-disconnect-btn" class="builder-wallet-btn builder-wallet-btn--ghost" hidden>Disconnect</button>
+                    <div class="builder-wallet-picker-actions builder-tabs-wallet builder-tabs-wallet--picker" id="builder-picker-wallet" hidden>
+                        <button type="button" class="builder-tabs-wallet-chip" id="builder-picker-wallet-chip" aria-label="Connected wallet">
+                            <span class="builder-tabs-wallet-dot" aria-hidden="true"></span>
+                            <span id="builder-picker-wallet-label" class="builder-tabs-wallet-label">0x0000…0000</span>
+                        </button>
+                        <button type="button" id="builder-picker-wallet-disconnect" class="builder-tabs-wallet-disconnect">Disconnect</button>
                     </div>
                 </div>
                 <p id="builder-wallet-picker-status" class="builder-wallet-picker-status" aria-live="polite"></p>
@@ -96,10 +99,19 @@
 
         <div id="builder-workspace" class="builder-workspace" hidden>
 
-        <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
-            <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
-            <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
-            <button type="button" class="builder-page-tab" data-builder-page="asset" role="tab" aria-selected="false" aria-controls="builder-panel-asset" id="builder-tab-asset">Asset view</button>
+        <div class="builder-page-tabs-row">
+            <div class="builder-page-tabs" role="tablist" aria-label="3D Builder mode">
+                <button type="button" class="builder-page-tab is-active" data-builder-page="otter" role="tab" aria-selected="true" aria-controls="builder-panel-otter" id="builder-tab-otter">Otter builder</button>
+                <button type="button" class="builder-page-tab" data-builder-page="mml" role="tab" aria-selected="false" aria-controls="builder-panel-mml" id="builder-tab-mml">MML preview</button>
+                <button type="button" class="builder-page-tab" data-builder-page="asset" role="tab" aria-selected="false" aria-controls="builder-panel-asset" id="builder-tab-asset">Asset view</button>
+            </div>
+            <div class="builder-tabs-wallet" id="builder-tabs-wallet" hidden>
+                <button type="button" class="builder-tabs-wallet-chip" id="builder-tabs-wallet-chip" aria-label="Connected wallet">
+                    <span class="builder-tabs-wallet-dot" aria-hidden="true"></span>
+                    <span id="builder-tabs-wallet-label" class="builder-tabs-wallet-label">0x0000…0000</span>
+                </button>
+                <button type="button" id="builder-tabs-wallet-disconnect" class="builder-tabs-wallet-disconnect">Disconnect</button>
+            </div>
         </div>
 
         <div id="builder-panel-otter" class="builder-page-panel is-active" role="tabpanel" aria-labelledby="builder-tab-otter">
@@ -1760,7 +1772,7 @@
     </script>
 
     <script type="module">
-      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=9';
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=10';
       initBuilderWalletUI();
     </script>
 </body>

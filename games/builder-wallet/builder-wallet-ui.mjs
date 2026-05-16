@@ -3,7 +3,7 @@ import {
   EMBED_SELECTION_KEY,
 } from './config.mjs';
 import { disconnectWallet } from './connect.mjs';
-import { initWalletModal } from './wallet-modal.mjs?v=9';
+import { initWalletModal } from './wallet-modal.mjs?v=10';
 import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,
@@ -22,8 +22,12 @@ export function initBuilderWalletUI() {
   const pickerPanel = document.getElementById('builder-wallet-picker');
   const workspace = document.getElementById('builder-workspace');
   const connectBtn = document.getElementById('builder-wallet-connect-btn');
-  const disconnectBtn = document.getElementById('builder-wallet-disconnect-btn');
-  const walletAddrEl = document.getElementById('builder-wallet-address');
+  const tabsWallet = document.getElementById('builder-tabs-wallet');
+  const tabsWalletLabel = document.getElementById('builder-tabs-wallet-label');
+  const tabsDisconnectBtn = document.getElementById('builder-tabs-wallet-disconnect');
+  const pickerWallet = document.getElementById('builder-picker-wallet');
+  const pickerWalletLabel = document.getElementById('builder-picker-wallet-label');
+  const pickerDisconnectBtn = document.getElementById('builder-picker-wallet-disconnect');
   const pickerGrid = document.getElementById('builder-wallet-grid');
   const pickerStatus = document.getElementById('builder-wallet-picker-status');
   const pickerCount = document.getElementById('builder-wallet-count');
@@ -34,18 +38,18 @@ export function initBuilderWalletUI() {
   let walletModal = { open: () => {}, close: () => {} };
   try {
     walletModal = initWalletModal({
-    onConnected: async ({ address }) => {
-      const errEl = document.getElementById('builder-wallet-connect-error');
-      if (errEl) errEl.hidden = true;
-      await afterConnect(address);
-    },
-    onError: (err) => {
-      const errEl = document.getElementById('builder-wallet-connect-error');
-      if (errEl) {
-        errEl.textContent = err.message || String(err);
-        errEl.hidden = false;
-      }
-    },
+      onConnected: async ({ address }) => {
+        const errEl = document.getElementById('builder-wallet-connect-error');
+        if (errEl) errEl.hidden = true;
+        await afterConnect(address);
+      },
+      onError: (err) => {
+        const errEl = document.getElementById('builder-wallet-connect-error');
+        if (errEl) {
+          errEl.textContent = err.message || String(err);
+          errEl.hidden = false;
+        }
+      },
     });
   } catch (err) {
     console.error('Wallet modal failed to init:', err);
@@ -62,6 +66,8 @@ export function initBuilderWalletUI() {
   let selectedId = null;
   /** @type {Record<string, string|null>} */
   let liveTraits = {};
+  /** @type {string|null} */
+  let connectedAddress = null;
 
   function shortAddr(addr) {
     return addr ? `${addr.slice(0, 6)}…${addr.slice(-4)}` : '';
@@ -73,13 +79,32 @@ export function initBuilderWalletUI() {
     pickerStatus.classList.toggle('is-error', !!isError);
   }
 
+  function setWalletConnected(address) {
+    connectedAddress = address ? String(address).toLowerCase() : null;
+    const connected = !!connectedAddress;
+    const label = shortAddr(connectedAddress);
+
+    stage.classList.toggle('builder-wallet-stage--connected', connected);
+    connectPanel.hidden = connected;
+
+    if (tabsWallet) tabsWallet.hidden = !connected;
+    if (tabsWalletLabel) tabsWalletLabel.textContent = label;
+    if (pickerWallet) pickerWallet.hidden = !connected;
+    if (pickerWalletLabel) pickerWalletLabel.textContent = label;
+  }
+
   function showStage(mode) {
     const isConnect = mode === 'connect';
     const isPicker = mode === 'picker';
     const isWorkspace = mode === 'workspace';
-    connectPanel.hidden = !isConnect;
+
+    if (!connectedAddress) {
+      connectPanel.hidden = !isConnect;
+    }
+
     pickerPanel.hidden = !isPicker;
     workspace.hidden = !isWorkspace;
+    stage.hidden = isWorkspace;
     stage.dataset.mode = mode;
   }
 
@@ -201,8 +226,7 @@ export function initBuilderWalletUI() {
   }
 
   async function afterConnect(address) {
-    if (walletAddrEl) walletAddrEl.textContent = shortAddr(address);
-    if (disconnectBtn) disconnectBtn.hidden = false;
+    setWalletConnected(address);
     showStage('picker');
     setPickerStatus('Loading your Otterful Otters…');
 
@@ -230,26 +254,28 @@ export function initBuilderWalletUI() {
     }
   }
 
-  connectBtn?.addEventListener('click', () => {
-    const errEl = document.getElementById('builder-wallet-connect-error');
-    if (errEl) errEl.hidden = true;
-    walletModal.open();
-  });
-
-  disconnectBtn?.addEventListener('click', async () => {
+  async function handleDisconnect() {
     await disconnectWallet();
     walletOtters = [];
     selectedId = null;
     liveTraits = {};
-    if (walletAddrEl) walletAddrEl.textContent = '';
-    disconnectBtn.hidden = true;
+    setWalletConnected(null);
     try {
       localStorage.removeItem(WALLET_TRAITS_KEY);
     } catch {
       /* ignore */
     }
     showStage('connect');
+  }
+
+  connectBtn?.addEventListener('click', () => {
+    const errEl = document.getElementById('builder-wallet-connect-error');
+    if (errEl) errEl.hidden = true;
+    walletModal.open();
   });
+
+  tabsDisconnectBtn?.addEventListener('click', () => void handleDisconnect());
+  pickerDisconnectBtn?.addEventListener('click', () => void handleDisconnect());
 
   changeOtterBtn?.addEventListener('click', () => {
     showStage('picker');
