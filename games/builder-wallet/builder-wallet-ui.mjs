@@ -3,7 +3,7 @@ import {
   EMBED_SELECTION_KEY,
 } from './config.mjs';
 import { disconnectWallet } from './connect.mjs';
-import { initWalletModal } from './wallet-modal.mjs?v=7';
+import { initWalletModal } from './wallet-modal.mjs?v=8';
 import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,

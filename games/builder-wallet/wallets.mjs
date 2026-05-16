@@ -1,7 +1,7 @@
 /** Wallet registry + EIP-6963 discovery */
 const ICON = (file) => `/images/wallets/${file}`;
 
-/** @type {Array<{ id: string, name: string, section: 'installed'|'popular'|'glyph', icon: string, rdns?: string, match?: RegExp, isWalletConnect?: boolean, downloadUrl?: string, hiddenUnlessInstalled?: boolean }>} */
+/** @type {Array<{ id: string, name: string, section: 'installed'|'popular', icon: string, rdns?: string, match?: RegExp, isWalletConnect?: boolean, downloadUrl?: string, hiddenUnlessInstalled?: boolean }>} */
 export const WALLET_CATALOG = [
   {
     id: 'metamask',
@@ -11,6 +11,15 @@ export const WALLET_CATALOG = [
     rdns: 'io.metamask',
     match: /metamask/i,
     downloadUrl: 'https://metamask.io/download/',
+  },
+  {
+    id: 'glyph',
+    name: 'Glyph',
+    section: 'popular',
+    icon: ICON('glyph.ico'),
+    rdns: 'io.useglyph.privy',
+    match: /glyph|useglyph/i,
+    downloadUrl: 'https://useglyph.io/',
   },
   {
     id: 'walletconnect',
@@ -54,15 +63,6 @@ export const WALLET_CATALOG = [
     rdns: 'com.bitget.web3',
     match: /bitget|bitkeep/i,
     downloadUrl: 'https://web3.bitget.com/en/wallet-download',
-  },
-  {
-    id: 'glyph',
-    name: 'Glyph',
-    section: 'glyph',
-    icon: ICON('glyph.ico'),
-    rdns: 'io.useglyph.wallet',
-    match: /glyph|useglyph/i,
-    downloadUrl: 'https://useglyph.io/',
   },
   {
     id: 'phantom',

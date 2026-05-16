@@ -1,5 +1,9 @@
-import { connectWithProvider, connectWalletConnect } from './connect.mjs?v=6';
-import { discoverEip6963Providers, resolveWalletProviders } from './wallets.mjs?v=6';
+import { connectWithProvider, connectWalletConnect } from './connect.mjs?v=8';
+import { connectGlyphWallet } from './glyph-connect.mjs?v=8';
+import { discoverEip6963Providers, resolveWalletProviders } from './wallets.mjs?v=8';
+
+/** Always pinned at top of Popular (under MetaMask). */
+const TOP_POPULAR_IDS = ['metamask', 'glyph'];
 
 /**
  * @param {{ onConnected: (session: { address: string, provider: object }) => void | Promise<void>, onError?: (err: Error) => void }} opts
@@ -17,7 +21,6 @@ export function initWalletModal(opts) {
   const closeBtn = modal?.querySelector('[data-wallet-close]');
   const listInstalled = document.getElementById('wallet-list-installed');
   const listPopular = document.getElementById('wallet-list-popular');
-  const listGlyph = document.getElementById('wallet-list-glyph');
   const sectionInstalled = document.getElementById('wallet-section-installed');
 
   if (!modal || !listPopular) return { open: () => {}, close: () => {} };
@@ -38,30 +41,47 @@ export function initWalletModal(opts) {
     void refreshWalletList();
   }
 
+  function sortPopular(items) {
+    const catalogOrder = new Map(wallets.map((w, i) => [w.id, i]));
+    return [...items].sort((a, b) => {
+      const topA = TOP_POPULAR_IDS.indexOf(a.id);
+      const topB = TOP_POPULAR_IDS.indexOf(b.id);
+      if (topA !== -1 || topB !== -1) {
+        if (topA === -1) return 1;
+        if (topB === -1) return -1;
+        return topA - topB;
+      }
+      return (catalogOrder.get(a.id) ?? 999) - (catalogOrder.get(b.id) ?? 999);
+    });
+  }
+
   async function refreshWalletList() {
     const announced = await discoverEip6963Providers();
     wallets = resolveWalletProviders(announced);
 
     const installed = wallets.filter(
-      (w) => w.installed && !w.isWalletConnect && !w.hiddenUnlessInstalled
+      (w) =>
+        w.installed &&
+        !w.isWalletConnect &&
+        !w.hiddenUnlessInstalled &&
+        !TOP_POPULAR_IDS.includes(w.id)
     );
     const installedIds = new Set(installed.map((w) => w.id));
 
-    const popular = wallets.filter(
-      (w) =>
-        w.section === 'popular' &&
-        (!installedIds.has(w.id) || w.isWalletConnect) &&
-        (!w.hiddenUnlessInstalled || w.installed)
+    const popular = sortPopular(
+      wallets.filter((w) => {
+        if (TOP_POPULAR_IDS.includes(w.id)) return w.section === 'popular';
+        if (w.section !== 'popular') return false;
+        if (w.hiddenUnlessInstalled && !w.installed) return false;
+        return !installedIds.has(w.id) || w.isWalletConnect;
+      })
     );
-
-    const glyph = wallets.filter((w) => w.section === 'glyph' && !installedIds.has(w.id));
 
     if (sectionInstalled) {
       sectionInstalled.hidden = installed.length === 0;
     }
     renderList(listInstalled, installed, { showRecent: true });
     renderList(listPopular, popular, { showRecent: false });
-    if (listGlyph) renderList(listGlyph, glyph, { showRecent: false });
   }
 
   /**
@@ -131,7 +151,9 @@ export function initWalletModal(opts) {
 
     try {
       let session;
-      if (wallet.isWalletConnect) {
+      if (wallet.id === 'glyph') {
+        session = await connectGlyphWallet();
+      } else if (wallet.isWalletConnect) {
         session = await connectWalletConnect();
       } else if (wallet.provider) {
         session = await connectWithProvider(wallet.provider);
