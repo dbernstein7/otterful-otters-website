@@ -1,15 +1,18 @@
 /**
  * List Otterful token IDs owned by a wallet on ApeChain.
- * The collection contract is not ERC721Enumerable, so we use OpenSea / Reservoir.
+ * Indexers can over-report; we always verify with on-chain ownerOf.
  *
  * GET /api/wallet-otters?wallet=0x...
- * Env: OPENSEA_API_KEY, RESERVOIR_API_KEY (optional but recommended)
+ * Env: OPENSEA_API_KEY, RESERVOIR_API_KEY (optional)
  */
 const https = require('https');
 
 const CONTRACT = '0x4e5913922b7ddf916c8d27d1016827f799687e66';
+const CONTRACT_LOWER = CONTRACT.toLowerCase();
 const OPENSEA_SLUG = 'otterful-otters';
-const MAX_IDS = 500;
+const APECHAIN_RPC = 'https://rpc.apechain.com/http';
+const MAX_CANDIDATES = 800;
+const OWNER_OF_SELECTOR = '6352211e'; // ownerOf(uint256)
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -27,33 +30,35 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const candidates = new Set();
+    let indexerSource = 'none';
+
     const openSeaIds = await fetchOpenSeaWalletOtters(wallet).catch(() => []);
     if (openSeaIds.length > 0) {
-      return res.status(200).json({
-        wallet,
-        tokenIds: openSeaIds,
-        source: 'opensea',
-        fetchedAt: new Date().toISOString(),
-      });
+      openSeaIds.forEach((id) => candidates.add(id));
+      indexerSource = 'opensea';
+    } else {
+      const reservoirIds = await fetchReservoirWalletOtters(wallet).catch(() => []);
+      if (reservoirIds.length > 0) {
+        reservoirIds.forEach((id) => candidates.add(id));
+        indexerSource = 'reservoir';
+      }
     }
 
-    const reservoirIds = await fetchReservoirWalletOtters(wallet).catch(() => []);
-    if (reservoirIds.length > 0) {
-      return res.status(200).json({
-        wallet,
-        tokenIds: reservoirIds,
-        source: 'reservoir',
-        fetchedAt: new Date().toISOString(),
-      });
-    }
+    const candidateList = [...candidates].slice(0, MAX_CANDIDATES);
+    const tokenIds = await verifyOwnershipOnChain(wallet, candidateList);
 
     return res.status(200).json({
       wallet,
-      tokenIds: [],
-      source: 'none',
+      tokenIds,
+      source: indexerSource,
+      verifiedOnChain: true,
+      indexerCandidates: candidateList.length,
       fetchedAt: new Date().toISOString(),
       hint:
-        'No otters found for this wallet, or the NFT indexer is unavailable. If you own otters, try again in a minute.',
+        tokenIds.length === 0
+          ? 'No Otterful Otters found for this wallet on ApeChain.'
+          : undefined,
     });
   } catch (err) {
     console.error('wallet-otters error:', err);
@@ -64,32 +69,38 @@ module.exports = async (req, res) => {
   }
 };
 
-function fetchJson(opts) {
+function fetchJson(opts, body) {
   const options = {
-    method: 'GET',
-    headers: { Accept: 'application/json', 'User-Agent': 'otterful-otters-dashboard/1.0' },
+    method: body ? 'POST' : 'GET',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'User-Agent': 'otterful-otters-dashboard/1.0',
+      ...(opts.headers || {}),
+    },
     ...opts,
   };
   return new Promise((resolve, reject) => {
     const req = https.request(options, (resp) => {
-      let body = '';
+      let data = '';
       resp.on('data', (chunk) => {
-        body += chunk;
+        data += chunk;
       });
       resp.on('end', () => {
         if (resp.statusCode >= 200 && resp.statusCode < 300) {
           try {
-            resolve(JSON.parse(body));
+            resolve(JSON.parse(data));
           } catch (e) {
-            reject(new Error('Invalid JSON from indexer'));
+            reject(new Error('Invalid JSON'));
           }
           return;
         }
-        reject(new Error(`Indexer ${resp.statusCode}: ${body.slice(0, 240)}`));
+        reject(new Error(`HTTP ${resp.statusCode}: ${data.slice(0, 240)}`));
       });
     });
     req.on('error', reject);
-    req.setTimeout(20000, () => req.destroy(new Error('Indexer timeout')));
+    req.setTimeout(25000, () => req.destroy(new Error('Timeout')));
+    if (body) req.write(JSON.stringify(body));
     req.end();
   });
 }
@@ -106,44 +117,44 @@ function parseTokenId(nft) {
   return id;
 }
 
-function dedupeSort(ids) {
-  return [...new Set(ids)].sort((a, b) => a - b).slice(0, MAX_IDS);
+function isOtterfulContract(nft) {
+  const c = String(nft?.contract || nft?.contract_address || nft?.token?.contract || '')
+    .trim()
+    .toLowerCase();
+  return !c || c === CONTRACT_LOWER;
 }
 
+function dedupeSort(ids) {
+  return [...new Set(ids)].sort((a, b) => a - b);
+}
+
+/** OpenSea account NFTs — only `collection` is a valid filter (not `contract`). */
 async function fetchOpenSeaWalletOtters(wallet) {
   const apiKey = process.env.OPENSEA_API_KEY || '';
   if (!apiKey) return [];
 
   const ids = [];
-  const bases = [
-    `/api/v2/chain/ape_chain/account/${wallet}/nfts?limit=200&contract=${CONTRACT}`,
-    `/api/v2/chain/ape_chain/account/${wallet}/nfts?limit=200&collection=${OPENSEA_SLUG}`,
-  ];
+  let next = null;
+  const basePath = `/api/v2/chain/ape_chain/account/${wallet}/nfts?limit=200&collection=${encodeURIComponent(OPENSEA_SLUG)}`;
 
-  for (const basePath of bases) {
-    let next = null;
-    ids.length = 0;
+  do {
+    let path = basePath;
+    if (next) path += `&next=${encodeURIComponent(next)}`;
 
-    do {
-      let path = basePath;
-      if (next) path += `&next=${encodeURIComponent(next)}`;
+    const headers = { Accept: 'application/json', 'User-Agent': 'otterful-otters-dashboard/1.0' };
+    if (apiKey) headers['x-api-key'] = apiKey;
 
-      const headers = { Accept: 'application/json', 'User-Agent': 'otterful-otters-dashboard/1.0' };
-      if (apiKey) headers['x-api-key'] = apiKey;
+    const data = await fetchJson({ hostname: 'api.opensea.io', path, method: 'GET', headers });
+    const nfts = Array.isArray(data?.nfts) ? data.nfts : [];
+    for (const nft of nfts) {
+      if (!isOtterfulContract(nft)) continue;
+      const id = parseTokenId(nft);
+      if (id) ids.push(id);
+    }
+    next = data?.next;
+  } while (next && ids.length < MAX_CANDIDATES);
 
-      const data = await fetchJson({ hostname: 'api.opensea.io', path, method: 'GET', headers });
-      const nfts = Array.isArray(data?.nfts) ? data.nfts : [];
-      for (const nft of nfts) {
-        const id = parseTokenId(nft);
-        if (id) ids.push(id);
-      }
-      next = data?.next;
-    } while (next && ids.length < MAX_IDS);
-
-    if (ids.length > 0) return dedupeSort(ids);
-  }
-
-  return [];
+  return dedupeSort(ids);
 }
 
 async function fetchReservoirWalletOtters(wallet) {
@@ -170,14 +181,73 @@ async function fetchReservoirWalletOtters(wallet) {
       const data = await fetchJson(opts);
       const tokens = Array.isArray(data?.tokens) ? data.tokens : [];
       for (const row of tokens) {
-        const id = parseTokenId(row?.token || row);
+        const token = row?.token || row;
+        const contract = String(token?.contract || '').toLowerCase();
+        if (contract && contract !== CONTRACT_LOWER) continue;
+        const id = parseTokenId(token);
         if (id) ids.push(id);
       }
       continuation = data?.continuation;
-    } while (continuation && ids.length < MAX_IDS);
+    } while (continuation && ids.length < MAX_CANDIDATES);
 
     if (ids.length > 0) return dedupeSort(ids);
   }
 
   return [];
+}
+
+function encodeOwnerOfCall(tokenId) {
+  const hex = BigInt(tokenId).toString(16).padStart(64, '0');
+  return '0x' + OWNER_OF_SELECTOR + hex;
+}
+
+function decodeAddressFromRpcResult(result) {
+  if (!result || result === '0x') return null;
+  const h = String(result).replace(/^0x/i, '');
+  if (h.length < 40) return null;
+  return ('0x' + h.slice(-40)).toLowerCase();
+}
+
+async function rpcOwnerOf(tokenId) {
+  const body = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'eth_call',
+    params: [
+      { to: CONTRACT, data: encodeOwnerOfCall(tokenId) },
+      'latest',
+    ],
+  };
+  const data = await fetchJson(
+    {
+      hostname: 'rpc.apechain.com',
+      path: '/http',
+      method: 'POST',
+    },
+    body
+  );
+  if (data.error) throw new Error(data.error.message || 'RPC error');
+  return decodeAddressFromRpcResult(data.result);
+}
+
+/** Source of truth — only tokens where ownerOf(id) === wallet. */
+async function verifyOwnershipOnChain(wallet, candidateIds) {
+  if (!candidateIds.length) return [];
+
+  const owned = [];
+  const batchSize = 24;
+
+  for (let i = 0; i < candidateIds.length; i += batchSize) {
+    const chunk = candidateIds.slice(i, i + batchSize);
+    const owners = await Promise.all(
+      chunk.map((id) =>
+        rpcOwnerOf(id).catch(() => null)
+      )
+    );
+    for (let j = 0; j < chunk.length; j += 1) {
+      if (owners[j] === wallet) owned.push(chunk[j]);
+    }
+  }
+
+  return owned.sort((a, b) => a - b);
 }
