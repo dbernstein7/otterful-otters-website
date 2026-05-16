@@ -35,17 +35,26 @@ async function ensureApeChain(provider) {
 }
 
 /**
+ * Connect via a specific injected provider (MetaMask, Glyph, etc.)
+ * @param {import('viem').EIP1193Provider} provider
+ */
+export async function connectWithProvider(provider) {
+  if (!provider) throw new Error('No wallet provider selected.');
+  await ensureApeChain(provider);
+  const accounts = await provider.request({ method: 'eth_requestAccounts' });
+  if (!accounts?.length) throw new Error('Wallet connection was cancelled.');
+  activeProvider = provider;
+  activeAddress = accounts[0].toLowerCase();
+  return { address: activeAddress, provider, kind: 'injected' };
+}
+
+/**
  * Injected wallet (Glyph, MetaMask, Rabby, etc.)
  */
 async function connectInjected() {
   const eth = window.ethereum;
   if (!eth) throw new Error('No browser wallet found. Use WalletConnect instead.');
-  await ensureApeChain(eth);
-  const accounts = await eth.request({ method: 'eth_requestAccounts' });
-  if (!accounts?.length) throw new Error('Wallet connection was cancelled.');
-  activeProvider = eth;
-  activeAddress = accounts[0].toLowerCase();
-  return { address: activeAddress, provider: eth, kind: 'injected' };
+  return connectWithProvider(eth);
 }
 
 /**

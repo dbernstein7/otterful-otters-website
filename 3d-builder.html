@@ -78,10 +78,9 @@
                 <p class="builder-wallet-lede">Connect on ApeChain to load your Otterful Otters, pick one to customize, then use Otter Builder, MML Preview, and Asset View with your NFT metadata.</p>
                 <p id="builder-wallet-connect-error" class="builder-wallet-error" hidden role="alert"></p>
                 <div class="builder-wallet-connect-actions">
-                    <button type="button" id="builder-wallet-connect-btn" class="builder-wallet-btn builder-wallet-btn--primary">Connect</button>
-                    <button type="button" id="builder-wallet-wc-btn" class="builder-wallet-btn">WalletConnect</button>
+                    <button type="button" id="builder-wallet-connect-btn" class="builder-wallet-btn builder-wallet-btn--primary">Connect wallet</button>
                 </div>
-                <p class="builder-wallet-hint">Works with Glyph, MetaMask, Rabby, and other wallets via browser extension or WalletConnect QR.</p>
+                <p class="builder-wallet-hint">Opens a wallet picker — MetaMask, Glyph, WalletConnect, Rainbow, and more on ApeChain.</p>
             </div>
             <div id="builder-wallet-picker" class="builder-wallet-picker" hidden>
                 <div class="builder-wallet-picker-head">
@@ -1703,7 +1702,7 @@
     </script>
 
     <script type="module">
-      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=3';
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=4';
       initBuilderWalletUI();
     </script>
 </body>

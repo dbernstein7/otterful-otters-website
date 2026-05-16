@@ -2,12 +2,8 @@ import {
   WALLET_TRAITS_KEY,
   EMBED_SELECTION_KEY,
 } from './config.mjs';
-import {
-  connectWallet,
-  openWalletConnectModal,
-  disconnectWallet,
-  getActiveSession,
-} from './connect.mjs';
+import { disconnectWallet } from './connect.mjs';
+import { initWalletModal } from './wallet-modal.mjs';
 import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,
@@ -26,7 +22,6 @@ export function initBuilderWalletUI() {
   const pickerPanel = document.getElementById('builder-wallet-picker');
   const workspace = document.getElementById('builder-workspace');
   const connectBtn = document.getElementById('builder-wallet-connect-btn');
-  const wcBtn = document.getElementById('builder-wallet-wc-btn');
   const disconnectBtn = document.getElementById('builder-wallet-disconnect-btn');
   const walletAddrEl = document.getElementById('builder-wallet-address');
   const pickerGrid = document.getElementById('builder-wallet-grid');
@@ -35,6 +30,21 @@ export function initBuilderWalletUI() {
   const changeOtterBtn = document.getElementById('builder-wallet-change-otter');
 
   if (!stage || !connectPanel || !pickerPanel || !workspace) return null;
+
+  const walletModal = initWalletModal({
+    onConnected: async ({ address }) => {
+      const errEl = document.getElementById('builder-wallet-connect-error');
+      if (errEl) errEl.hidden = true;
+      await afterConnect(address);
+    },
+    onError: (err) => {
+      const errEl = document.getElementById('builder-wallet-connect-error');
+      if (errEl) {
+        errEl.textContent = err.message || String(err);
+        errEl.hidden = false;
+      }
+    },
+  });
 
   /** @type {WalletOtter[]} */
   let walletOtters = [];
@@ -215,41 +225,10 @@ export function initBuilderWalletUI() {
     }
   }
 
-  connectBtn?.addEventListener('click', async () => {
-    connectBtn.disabled = true;
-    setPickerStatus('');
+  connectBtn?.addEventListener('click', () => {
     const errEl = document.getElementById('builder-wallet-connect-error');
     if (errEl) errEl.hidden = true;
-    try {
-      const { address } = await connectWallet();
-      await afterConnect(address);
-    } catch (err) {
-      if (connectPanel) {
-        const errEl = document.getElementById('builder-wallet-connect-error');
-        if (errEl) {
-          errEl.textContent = err?.message || String(err);
-          errEl.hidden = false;
-        }
-      }
-    } finally {
-      connectBtn.disabled = false;
-    }
-  });
-
-  wcBtn?.addEventListener('click', async () => {
-    wcBtn.disabled = true;
-    try {
-      const { address } = await openWalletConnectModal();
-      await afterConnect(address);
-    } catch (err) {
-      const errEl = document.getElementById('builder-wallet-connect-error');
-      if (errEl) {
-        errEl.textContent = err?.message || String(err);
-        errEl.hidden = false;
-      }
-    } finally {
-      wcBtn.disabled = false;
-    }
+    walletModal.open();
   });
 
   disconnectBtn?.addEventListener('click', async () => {
