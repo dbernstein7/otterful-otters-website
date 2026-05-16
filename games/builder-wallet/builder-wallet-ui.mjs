@@ -3,7 +3,7 @@ import {
   EMBED_SELECTION_KEY,
 } from './config.mjs';
 import { disconnectWallet } from './connect.mjs';
-import { initWalletModal } from './wallet-modal.mjs';
+import { initWalletModal } from './wallet-modal.mjs?v=5';
 import { fetchOwnedTokenIds, loadWalletOtters } from './nfts.mjs';
 import {
   parseOtterTraits,
@@ -31,7 +31,9 @@ export function initBuilderWalletUI() {
 
   if (!stage || !connectPanel || !pickerPanel || !workspace) return null;
 
-  const walletModal = initWalletModal({
+  let walletModal = { open: () => {}, close: () => {} };
+  try {
+    walletModal = initWalletModal({
     onConnected: async ({ address }) => {
       const errEl = document.getElementById('builder-wallet-connect-error');
       if (errEl) errEl.hidden = true;
@@ -44,7 +46,15 @@ export function initBuilderWalletUI() {
         errEl.hidden = false;
       }
     },
-  });
+    });
+  } catch (err) {
+    console.error('Wallet modal failed to init:', err);
+    const errEl = document.getElementById('builder-wallet-connect-error');
+    if (errEl) {
+      errEl.textContent = err?.message || 'Wallet picker failed to load. Hard refresh the page.';
+      errEl.hidden = false;
+    }
+  }
 
   /** @type {WalletOtter[]} */
   let walletOtters = [];

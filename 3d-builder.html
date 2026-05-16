@@ -73,14 +73,10 @@
         </header>
 
         <section id="builder-wallet-stage" class="builder-wallet-stage" aria-label="Connect wallet">
-            <div id="builder-wallet-connect" class="builder-wallet-connect">
-                <h2 class="builder-wallet-title">Connect your wallet</h2>
-                <p class="builder-wallet-lede">Connect on ApeChain to load your Otterful Otters, pick one to customize, then use Otter Builder, MML Preview, and Asset View with your NFT metadata.</p>
+            <div id="builder-wallet-connect" class="builder-wallet-connect builder-wallet-connect--hero">
                 <p id="builder-wallet-connect-error" class="builder-wallet-error" hidden role="alert"></p>
-                <div class="builder-wallet-connect-actions">
-                    <button type="button" id="builder-wallet-connect-btn" class="builder-wallet-btn builder-wallet-btn--primary">Connect wallet</button>
-                </div>
-                <p class="builder-wallet-hint">Opens a wallet picker — MetaMask, Glyph, WalletConnect, Rainbow, and more on ApeChain.</p>
+                <button type="button" id="builder-wallet-connect-btn" class="builder-wallet-btn builder-wallet-btn--primary builder-wallet-btn--hero">Connect wallet</button>
+                <p class="builder-wallet-hint">Connect on ApeChain to load your otters — MetaMask, Glyph, WalletConnect, Rainbow, and more.</p>
             </div>
             <div id="builder-wallet-picker" class="builder-wallet-picker" hidden>
                 <div class="builder-wallet-picker-head">
@@ -1702,7 +1698,7 @@
     </script>
 
     <script type="module">
-      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=4';
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=5';
       initBuilderWalletUI();
     </script>
 </body>

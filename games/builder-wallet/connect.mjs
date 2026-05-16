@@ -61,7 +61,7 @@ async function connectInjected() {
  * WalletConnect v2 (supports mobile wallets, Glyph via WC, etc.)
  * @see https://docs.walletconnect.com/
  */
-async function connectWalletConnect() {
+export async function connectWalletConnect() {
   const projectId = await fetchWalletConnectProjectId();
   if (!projectId) {
     throw new Error(

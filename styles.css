@@ -1540,7 +1540,39 @@ body::before {
     margin-top: 16px;
 }
 
-.builder-wallet-connect,
+.builder-wallet-connect--hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: min(42vh, 360px);
+    padding: 32px 16px 48px;
+    margin-top: 8px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.builder-wallet-connect--hero .builder-wallet-hint {
+    margin: 14px 0 0;
+    max-width: 420px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: var(--text-secondary);
+}
+
+.builder-wallet-connect--hero .builder-wallet-error {
+    margin-bottom: 12px;
+    max-width: 420px;
+}
+
+.builder-wallet-btn--hero {
+    padding: 16px 40px;
+    font-size: 1rem;
+    min-width: 220px;
+}
+
 .builder-wallet-picker {
     padding: 22px 20px;
     border-radius: 14px;

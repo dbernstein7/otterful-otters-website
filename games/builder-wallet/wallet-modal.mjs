@@ -1,4 +1,4 @@
-import { connectWithProvider, connectWalletConnect } from './connect.mjs';
+import { connectWithProvider, connectWalletConnect } from './connect.mjs?v=5';
 import { discoverEip6963Providers, resolveWalletProviders } from './wallets.mjs';
 
 const MODAL_HTML = [
