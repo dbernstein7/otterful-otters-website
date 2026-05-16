@@ -260,6 +260,54 @@
 
         </div>
 
+        <div id="wallet-connect-modal" class="wallet-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="wallet-modal-title">
+            <div class="wallet-modal-backdrop" data-wallet-backdrop aria-hidden="true"></div>
+            <div class="wallet-modal-dialog" role="document">
+                <button type="button" class="wallet-modal-close" data-wallet-close aria-label="Close">×</button>
+                <div class="wallet-modal-columns">
+                    <div class="wallet-modal-wallets">
+                        <h2 id="wallet-modal-title" class="wallet-modal-heading">Connect a Wallet</h2>
+                        <div id="wallet-section-installed" class="wallet-modal-section wallet-modal-section--installed" hidden>
+                            <h3 class="wallet-modal-section-title">Installed</h3>
+                            <div id="wallet-list-installed" class="wallet-modal-list" role="list"></div>
+                        </div>
+                        <div class="wallet-modal-section wallet-modal-section--popular">
+                            <h3 class="wallet-modal-section-title wallet-modal-section-title--muted">Popular</h3>
+                            <div id="wallet-list-popular" class="wallet-modal-list" role="list"></div>
+                        </div>
+                        <div class="wallet-modal-section wallet-modal-section--glyph">
+                            <h3 class="wallet-modal-section-title wallet-modal-section-title--muted">Glyph</h3>
+                            <div id="wallet-list-glyph" class="wallet-modal-list" role="list"></div>
+                        </div>
+                    </div>
+                    <aside class="wallet-modal-about" aria-label="About wallets">
+                        <h2 class="wallet-modal-heading wallet-modal-heading--about">What is a Wallet?</h2>
+                        <div class="wallet-about-block">
+                            <div class="wallet-about-icon wallet-about-icon--assets" aria-hidden="true">
+                                <span class="wallet-about-tile wallet-about-tile--a"></span>
+                                <span class="wallet-about-tile wallet-about-tile--b"></span>
+                                <span class="wallet-about-tile wallet-about-tile--c"></span>
+                                <span class="wallet-about-tile wallet-about-tile--d"></span>
+                            </div>
+                            <div>
+                                <h3 class="wallet-about-title">A Home for your Digital Assets</h3>
+                                <p class="wallet-about-text">Wallets are used to send, receive, store, and display digital assets like Ethereum and NFTs.</p>
+                            </div>
+                        </div>
+                        <div class="wallet-about-block">
+                            <div class="wallet-about-icon wallet-about-icon--login" aria-hidden="true"></div>
+                            <div>
+                                <h3 class="wallet-about-title">A New Way to Log In</h3>
+                                <p class="wallet-about-text">Instead of creating new accounts and passwords on every website, just connect your wallet.</p>
+                            </div>
+                        </div>
+                        <a href="https://ethereum.org/en/wallets/" target="_blank" rel="noopener noreferrer" class="wallet-modal-cta">Get a Wallet</a>
+                        <a href="https://ethereum.org/en/wallets/find-wallet/" target="_blank" rel="noopener noreferrer" class="wallet-modal-learn">Learn More</a>
+                    </aside>
+                </div>
+            </div>
+        </div>
+
         <div id="asset-inspector-modal" class="asset-inspector-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="asset-inspector-title">
             <div class="asset-inspector-backdrop" data-asset-backdrop aria-hidden="true"></div>
             <div class="asset-inspector-frame" role="document">
@@ -1698,7 +1746,7 @@
     </script>
 
     <script type="module">
-      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=5';
+      import { initBuilderWalletUI } from './games/builder-wallet/builder-wallet-ui.mjs?v=6';
       initBuilderWalletUI();
     </script>
 </body>

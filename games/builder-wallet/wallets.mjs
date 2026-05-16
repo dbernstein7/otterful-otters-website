@@ -1,13 +1,13 @@
 /** Wallet registry + EIP-6963 discovery */
-const WC_ASSETS = 'https://raw.githubusercontent.com/walletconnect/walletconnect-assets/master/wallets';
+const ICON = (file) => `/images/wallets/${file}`;
 
-/** @type {Array<{ id: string, name: string, section: 'installed'|'popular'|'glyph', icon: string, rdns?: string, match?: RegExp, isWalletConnect?: boolean, downloadUrl?: string }>} */
+/** @type {Array<{ id: string, name: string, section: 'installed'|'popular'|'glyph', icon: string, rdns?: string, match?: RegExp, isWalletConnect?: boolean, downloadUrl?: string, hiddenUnlessInstalled?: boolean }>} */
 export const WALLET_CATALOG = [
   {
     id: 'metamask',
     name: 'MetaMask',
     section: 'popular',
-    icon: `${WC_ASSETS}/metamask.png`,
+    icon: ICON('metamask.svg'),
     rdns: 'io.metamask',
     match: /metamask/i,
     downloadUrl: 'https://metamask.io/download/',
@@ -16,14 +16,14 @@ export const WALLET_CATALOG = [
     id: 'walletconnect',
     name: 'WalletConnect',
     section: 'popular',
-    icon: `${WC_ASSETS}/walletconnect.png`,
+    icon: ICON('walletconnect.png'),
     isWalletConnect: true,
   },
   {
     id: 'rainbow',
     name: 'Rainbow',
     section: 'popular',
-    icon: `${WC_ASSETS}/rainbow.png`,
+    icon: ICON('rainbow.svg'),
     rdns: 'me.rainbow',
     match: /rainbow/i,
     downloadUrl: 'https://rainbow.me/download',
@@ -32,7 +32,7 @@ export const WALLET_CATALOG = [
     id: 'trust',
     name: 'Trust Wallet',
     section: 'popular',
-    icon: `${WC_ASSETS}/trust.png`,
+    icon: ICON('trust.svg'),
     rdns: 'com.trustwallet.app',
     match: /trust/i,
     downloadUrl: 'https://trustwallet.com/download',
@@ -41,7 +41,7 @@ export const WALLET_CATALOG = [
     id: 'coinbase',
     name: 'Coinbase Wallet',
     section: 'popular',
-    icon: `${WC_ASSETS}/coinbase.png`,
+    icon: ICON('coinbase.svg'),
     rdns: 'com.coinbase.wallet',
     match: /coinbase/i,
     downloadUrl: 'https://www.coinbase.com/wallet/downloads',
@@ -50,7 +50,7 @@ export const WALLET_CATALOG = [
     id: 'bitget',
     name: 'Bitget Wallet',
     section: 'popular',
-    icon: `${WC_ASSETS}/bitget.png`,
+    icon: ICON('bitget.svg'),
     rdns: 'com.bitget.web3',
     match: /bitget|bitkeep/i,
     downloadUrl: 'https://web3.bitget.com/en/wallet-download',
@@ -59,7 +59,7 @@ export const WALLET_CATALOG = [
     id: 'glyph',
     name: 'Glyph',
     section: 'glyph',
-    icon: 'https://www.otterfulotters.xyz/otterre.png',
+    icon: ICON('glyph.svg'),
     rdns: 'com.glyph.wallet',
     match: /glyph/i,
     downloadUrl: 'https://www.glyph.tech/',
@@ -68,7 +68,7 @@ export const WALLET_CATALOG = [
     id: 'phantom',
     name: 'Phantom',
     section: 'popular',
-    icon: `${WC_ASSETS}/phantom.png`,
+    icon: ICON('phantom.svg'),
     rdns: 'app.phantom',
     match: /phantom/i,
     downloadUrl: 'https://phantom.app/download',
@@ -79,7 +79,7 @@ export const WALLET_CATALOG = [
 /**
  * @returns {Promise<Map<string, { info: object, provider: object }>>}
  */
-export function discoverEip6963Providers(timeoutMs = 400) {
+export function discoverEip6963Providers(timeoutMs = 500) {
   return new Promise((resolve) => {
     /** @type {Map<string, { info: object, provider: object }>} */
     const byRdns = new Map();
@@ -87,8 +87,8 @@ export function discoverEip6963Providers(timeoutMs = 400) {
     function onAnnounce(event) {
       const detail = event.detail;
       if (!detail?.info || !detail?.provider) return;
-      const rdns = detail.info.rdns || detail.info.uuid || detail.info.name;
-      if (rdns) byRdns.set(String(rdns), detail);
+      const key = detail.info.rdns || detail.info.uuid || detail.info.name;
+      if (key) byRdns.set(String(key), detail);
     }
 
     window.addEventListener('eip6963:announceProvider', onAnnounce);
