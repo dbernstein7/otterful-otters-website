@@ -28,7 +28,9 @@ import {
   getGameViewportSize,
   isDesktopEmbedLayout,
   isEmbedded,
+  isStandaloneGame,
   setEmbedViewport,
+  syncStandaloneShellViewport,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 import { initTouchControls } from "./touch-controls.js";
@@ -131,8 +133,16 @@ const START_IMG_URL = "./OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15";
 let mapImgNatural = { w: 0, h: 0 };
 let startImgNatural = { w: 0, h: 0 };
 let hotspotLayoutRaf = 0;
-/** Desktop site embed: map hotspots calibrated from CSS once per size. */
+/** Desktop iframe: map hotspots calibrated from CSS once, then image-space relayout. */
 let mapEmbedCssCalibrated = false;
+
+function isMapHomeVisible() {
+  return (
+    document.body?.classList?.contains?.("otter-ui-menu") &&
+    document.body?.classList?.contains?.("otter-ui-playtab") &&
+    !document.body?.classList?.contains?.("otter-ui-garage")
+  );
+}
 
 /** Image-space hitboxes for OtterKart-Start-Menu.png (1024×572). */
 const START_HOTSPOT_BOXES = {
@@ -161,11 +171,7 @@ function coverTransform(imgW, imgH, vw, vh) {
   return { s, ox, oy, dw, dh };
 }
 
-function isDesktopEmbedMapLayout() {
-  return isEmbedded() && isDesktopEmbedLayout();
-}
-
-/** Desktop map: iframe embed or full-page — same CSS calibration + resize path. */
+/** Desktop map (iframe CSS calibration path only). */
 function isDesktopMapHotspotCssPath() {
   const vw = document.documentElement.clientWidth || window.innerWidth || 0;
   const vh = document.documentElement.clientHeight || window.innerHeight || 0;
@@ -221,7 +227,7 @@ function resolveCoverPaint(imgW, imgH) {
  */
 function boxForMapHotspotEl(el, fallback) {
   const key = el.getAttribute("data-map-mode");
-  if (mapEmbedCssCalibrated && isDesktopMapHotspotCssPath()) {
+  if (isEmbedded() && mapEmbedCssCalibrated && isDesktopMapHotspotCssPath()) {
     const ix = Number(el.dataset.ix);
     const iy = Number(el.dataset.iy);
     const iw = Number(el.dataset.iw);
@@ -250,11 +256,11 @@ async function waitForMenuCoverFrame() {
   });
 }
 
-/** Desktop map: read CSS-tuned positions into image-space (iframe + full-page). */
+/** Desktop iframe only: read CSS-tuned positions into image-space. */
 async function calibrateMapHotspotsFromCss() {
-  if (mapEmbedCssCalibrated || !isDesktopMapHotspotCssPath()) return;
+  if (!isEmbedded() || mapEmbedCssCalibrated || !isDesktopMapHotspotCssPath()) return;
   if (!(mapHotspots instanceof HTMLElement)) return;
-  if (isEmbedded() && !getEmbedViewport()) return;
+  if (!getEmbedViewport()) return;
 
   clearMapHotspotInlineStyles();
   await ensureMapImageSize();
@@ -369,11 +375,12 @@ function relayoutMenuHotspots() {
       ih,
       "data-start-action",
     );
-  } else if (
-    document.body?.classList?.contains?.("otter-ui-playtab") &&
-    !document.body?.classList?.contains?.("otter-ui-garage")
-  ) {
-    void layoutMapHotspotsNow();
+  } else if (isMapHomeVisible()) {
+    if (isStandaloneGame()) {
+      layoutMapHotspotsPaintSync();
+    } else {
+      void layoutMapHotspotsNow();
+    }
   }
 }
 
@@ -389,7 +396,14 @@ function scheduleHotspotRelayout() {
 
 function installHotspotResizeWatchers() {
   const onResize = () => {
-    applyHudViewportVars();
+    if (isStandaloneGame()) {
+      syncStandaloneShellViewport();
+    } else {
+      applyHudViewportVars();
+    }
+    if (isStandaloneGame() && isMapHomeVisible()) {
+      layoutMapHotspotsPaintSync();
+    }
     scheduleHotspotRelayout();
     try {
       game.resize();
@@ -459,13 +473,22 @@ function resetMenuCoverToFullFrame() {
   }
 }
 
-/** Sync placement from painted map image (runs on every resize). */
-function layoutMapHotspotsSync() {
+/**
+ * Map hotspots from the painted cover image (standalone + iframe after calibration).
+ * Standalone calls this synchronously on every window resize.
+ */
+function layoutMapHotspotsPaintSync() {
   if (!(mapHotspots instanceof HTMLElement)) return;
   const iw = mapImgNatural.w || 1672;
   const ih = mapImgNatural.h || 941;
   const img = getMenuCoverImageEl();
-  if (!img?.complete) return;
+  if (!img) return;
+  if (!img.complete) {
+    img.addEventListener("load", () => layoutMapHotspotsPaintSync(), { once: true });
+    return;
+  }
+  const paint = getCoverImagePaintRect(img, iw, ih);
+  if (!paint) return;
   layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
   layoutMapClaimBar();
 }
@@ -477,10 +500,10 @@ async function layoutMapHotspotsNow() {
   if (img && !img.complete) {
     await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
   }
-  if (isDesktopMapHotspotCssPath() && !mapEmbedCssCalibrated) {
+  if (isEmbedded() && isDesktopMapHotspotCssPath() && !mapEmbedCssCalibrated) {
     await calibrateMapHotspotsFromCss();
   }
-  layoutMapHotspotsSync();
+  layoutMapHotspotsPaintSync();
 }
 
 function syncMenuCover() {
@@ -1351,6 +1374,7 @@ window.addEventListener("otterkart-loadout-change", () => safeMountLoadoutPicker
 startImgNatural = { w: 1024, h: 572 };
 mapImgNatural = { w: 1672, h: 941 };
 installHotspotResizeWatchers();
+if (isStandaloneGame()) syncStandaloneShellViewport();
 void ensureStartImageSize().then(() => scheduleHotspotRelayout());
 void ensureMapImageSize().then(() => scheduleHotspotRelayout());
 scheduleHotspotRelayout();

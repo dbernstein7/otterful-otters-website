@@ -300,45 +300,46 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspot:focus {
 }
 
 /*
- * Desktop map (iframe + Open OtterKart full-page): CSS seed for calibration, then JS on resize.
+ * Desktop iframe only: CSS seed for one-time calibration, then JS tracks resize via image space.
+ * Full-page (Open OtterKart) uses MAP_HOTSPOT_BOXES + painted cover rect — no iframe/CSS path.
  */
 @media (min-width: 560px) {
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--practice {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--practice {
     left: calc(10% + 200px);
     top: calc(20% + 20px);
     width: max(60px, calc(30% - 300px));
     height: 13%;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--daily {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--daily {
     left: calc(57% + 90px);
     top: calc(16% - 60px);
     width: max(60px, calc(30% - 200px));
     height: 11%;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--gp {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--gp {
     left: calc(36% + 20px);
     top: calc(48% + 100px);
     width: max(60px, calc(28% - 200px));
     height: 11%;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--touge {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--touge {
     left: calc(64% + 100px);
     top: calc(46% + 140px);
     width: max(60px, calc(26% - 200px));
     height: 12%;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--endless {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--endless {
     left: calc(12% + 100px);
     top: calc(62% + 170px);
     width: max(60px, calc(32% - 300px));
     height: 13%;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--claim {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--claim {
     left: calc(78% + 110px);
     top: calc(74% + 200px);
     width: max(60px, calc(18% - 200px));
@@ -346,7 +347,7 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspot:focus {
     border-radius: 14px;
   }
 
-  body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--garage {
+  html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--garage {
     left: 48px;
     top: 198px;
     width: 220px;
@@ -3077,7 +3078,9 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
 
 /* ——— Embedded on otterful site (iframe): use iframe bounds, not browser dvh/vw ——— */
 html.otter-embed,
-html.otter-embed body {
+html.otter-embed body,
+html.otter-standalone,
+html.otter-standalone body {
   width: 100% !important;
   height: 100% !important;
   min-height: 0 !important;
@@ -3087,12 +3090,15 @@ html.otter-embed body {
 }
 
 html.otter-embed #game,
-html.otter-embed .menu-cover {
+html.otter-embed .menu-cover,
+html.otter-standalone #game,
+html.otter-standalone .menu-cover {
   width: 100% !important;
   height: 100% !important;
 }
 
-html.otter-embed .menu-cover {
+html.otter-embed .menu-cover,
+html.otter-standalone .menu-cover {
   inset: 0 !important;
   left: 0 !important;
   top: 0 !important;

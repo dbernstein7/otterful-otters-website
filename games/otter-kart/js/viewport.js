@@ -45,6 +45,23 @@ export function isEmbedded() {
   }
 }
 
+export function isStandaloneGame() {
+  return !isEmbedded();
+}
+
+/** Full-page tab: keep shell size in sync with the window for cover + hotspot math. */
+export function syncStandaloneShellViewport() {
+  if (!isStandaloneGame()) return;
+  const vw = Math.round(
+    document.documentElement.clientWidth || window.innerWidth || 1,
+  );
+  const vh = Math.round(
+    document.documentElement.clientHeight || window.innerHeight || 1,
+  );
+  embedViewport = { vw: Math.max(1, vw), vh: Math.max(1, vh) };
+  applyHudViewportVars();
+}
+
 /** Desktop iframe: use real client size + CSS fill (parent rect often differs by a few px). */
 export function isDesktopEmbedLayout() {
   if (!isEmbedded()) return false;

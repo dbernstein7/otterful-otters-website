@@ -10,6 +10,8 @@
         try {
           if (window.self !== window.top) {
             document.documentElement.classList.add("otter-embed");
+          } else {
+            document.documentElement.classList.add("otter-standalone");
           }
         } catch {
           document.documentElement.classList.add("otter-embed");
@@ -18,7 +20,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-fullpage-hotspots" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-standalone-map" />
     <script>
       (function () {
         function reportGameSize() {
@@ -380,7 +382,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-fullpage-hotspots"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-standalone-map"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
