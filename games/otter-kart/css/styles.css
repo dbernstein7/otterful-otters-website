@@ -266,6 +266,31 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   outline-offset: 2px;
 }
 
+/* Visible hit-area outlines (start + map + garage) */
+body.otter-ui-menu.otter-ui-start .start-hotspot,
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot,
+body.otter-ui-menu.otter-ui-garage .garage-hotspot {
+  outline: 2px dashed rgba(125, 249, 255, 0.92);
+  outline-offset: 2px;
+  background: rgba(125, 249, 255, 0.16) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+body.otter-ui-menu.otter-ui-start .start-hotspot:hover,
+body.otter-ui-menu.otter-ui-start .start-hotspot:active,
+body.otter-ui-menu.otter-ui-start .start-hotspot:focus,
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot:hover,
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot:active,
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot:focus,
+body.otter-ui-menu.otter-ui-garage .garage-hotspot:hover,
+body.otter-ui-menu.otter-ui-garage .garage-hotspot:active,
+body.otter-ui-menu.otter-ui-garage .garage-hotspot:focus {
+  background: rgba(125, 249, 255, 0.3) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(125, 249, 255, 0.35);
+}
+
 /* Map hit regions: JS layout; offscreen until placed (standalone / mobile). */
 .map-hotspot[data-map-mode] {
   left: -9999px;
