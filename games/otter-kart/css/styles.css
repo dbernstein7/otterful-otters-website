@@ -131,7 +131,7 @@ body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
   position: fixed;
   left: 50%;
   bottom: 12%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 50px);
   z-index: 64;
   max-width: min(92vw, 420px);
   padding: 10px 16px;

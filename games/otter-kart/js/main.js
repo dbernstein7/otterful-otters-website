@@ -807,15 +807,20 @@ function enterMapFromStart(opts = {}) {
 }
 
 let walletToastTimer = 0;
-function showStartWalletToast(text, persist) {
+/** @param {string} text @param {{ persist?: boolean, durationMs?: number } | boolean} [opts] */
+function showStartWalletToast(text, opts) {
   if (!(startWalletToast instanceof HTMLElement)) return;
+  const options = typeof opts === "boolean" ? { persist: opts } : opts || {};
+  const persist = !!options.persist;
+  const durationMs = options.durationMs ?? (persist ? 0 : 5200);
+
   startWalletToast.textContent = text;
   startWalletToast.classList.remove("hidden");
   window.clearTimeout(walletToastTimer);
-  if (!persist) {
+  if (durationMs > 0) {
     walletToastTimer = window.setTimeout(() => {
       startWalletToast.classList.add("hidden");
-    }, 5200);
+    }, durationMs);
   }
 }
 
@@ -829,7 +834,7 @@ async function handleWalletConnectHotspot() {
     const result = await connectAndCheckRewards(getConnectedWallet());
     const short = result.wallet ? shortWallet(result.wallet) : "";
     const prefix = short ? `${short} — ` : "";
-    showStartWalletToast(`${prefix}${result.text}`, result.tone === "ok");
+    showStartWalletToast(`${prefix}${result.text}`, { durationMs: 15000 });
   } catch {
     showStartWalletToast("Wallet check failed. Try again.", false);
   } finally {
