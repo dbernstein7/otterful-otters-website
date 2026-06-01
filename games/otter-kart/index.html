@@ -170,6 +170,36 @@
       <!-- Controls hint removed (settings panel replaces it). -->
     </div>
 
+    <button
+      type="button"
+      id="btn-music"
+      class="hud-music"
+      aria-label="Music"
+      title="Music (M)"
+      aria-expanded="false"
+      aria-controls="music-panel"
+    >
+      <span class="hud-music__icon" aria-hidden="true">♪</span>
+    </button>
+
+    <div id="music-panel" class="music-panel hidden" role="region" aria-label="Music" aria-hidden="true">
+      <p class="music-panel__title">Pixel Drift I</p>
+      <p class="music-panel__meta">Track 1 / 7</p>
+      <div class="music-panel__controls">
+        <button type="button" class="music-panel__btn" data-music-prev" aria-label="Previous track">‹</button>
+        <button type="button" class="music-panel__btn" data-music-play" aria-label="Play or pause">▶ Play</button>
+        <button type="button" class="music-panel__btn" data-music-next" aria-label="Next track">›</button>
+      </div>
+      <div class="music-panel__row">
+        <button type="button" class="music-panel__btn music-panel__btn--mute" data-music-mute">Mute</button>
+        <label class="music-panel__vol">
+          <span>Volume</span>
+          <input type="range" data-music-volume min="0" max="1" step="0.02" value="0.45" />
+        </label>
+      </div>
+      <button type="button" class="music-panel__close" data-music-close>Close</button>
+    </div>
+
     <button type="button" id="btn-settings" class="hud-settings hidden" aria-label="Settings">
       <span class="hud-settings__icon" aria-hidden="true">⚙</span>
     </button>
@@ -319,7 +349,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-live"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-music-ingame"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {

@@ -819,6 +819,127 @@ body.otter-ui-menu .panel-settings {
   display: none;
 }
 
+/* In-game music (menu screens) — press M or ♪ button */
+body:not(.otter-ui-menu) .hud-music,
+body:not(.otter-ui-menu) .music-panel {
+  display: none !important;
+}
+
+.hud-music {
+  position: fixed;
+  z-index: 210;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: rgba(10, 16, 24, 0.88);
+  color: rgba(125, 249, 255, 0.95);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.hud-music__icon {
+  display: block;
+  line-height: 1;
+}
+
+.music-panel {
+  position: fixed;
+  z-index: 211;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  width: min(280px, calc(100vw - 28px));
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: rgba(8, 14, 22, 0.94);
+  color: #e8f4ff;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.music-panel.hidden {
+  display: none;
+}
+
+.music-panel__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.music-panel__meta {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  color: rgba(200, 220, 235, 0.7);
+}
+
+.music-panel__controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.music-panel__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.music-panel__btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: #e8f4ff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.music-panel__btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.music-panel__vol {
+  flex: 1 1 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(200, 220, 235, 0.55);
+}
+
+.music-panel__vol input[type="range"] {
+  width: 100%;
+  accent-color: #7df9ff;
+}
+
+.music-panel__close {
+  width: 100%;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(200, 220, 235, 0.85);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 /* Settings — Settings.png asset + invisible button hotspots */
 .panel-settings {
   position: fixed;

@@ -11,7 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="games/embed-music.css">
 </head>
 <body class="embed-page">
     <div class="stars"></div>
@@ -71,30 +70,26 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
-        <div class="page-embed-layout">
-            <div class="page-embed-main">
-                <div class="page-embed">
-                    <div id="otterKartEmbedShell" class="otter-kart-embed-shell">
-                    <iframe
-                        id="otterKartFrame"
-                        class="page-embed-frame page-embed-frame--otter-kart"
-                        src="/games/otter-kart/index.html?v=2026-06-02-live"
-                        title="OtterKart"
-                        loading="eager"
-                        referrerpolicy="no-referrer"
-                        allow="clipboard-read; clipboard-write; fullscreen"
-                        tabindex="0"
-                    ></iframe>
-                    </div>
-                    <div class="page-embed-note">
-                        If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
-                        <strong>Wallet:</strong> use the <strong>Wallet connect</strong> hotspot on the start screen to link Snag Drip rewards (same as Shell Snag).
-                        <strong>Claim:</strong> earn shells in races, then use the <strong>Claim</strong> hotspot on the map to send them to drip points.
-                        <a class="action-btn primary page-embed-link" href="/games/otter-kart/index.html" target="_blank" rel="noopener noreferrer">Open OtterKart</a>
-                    </div>
-                </div>
+        <div class="page-embed">
+            <div id="otterKartEmbedShell" class="otter-kart-embed-shell">
+                <iframe
+                    id="otterKartFrame"
+                    class="page-embed-frame page-embed-frame--otter-kart"
+                    src="/games/otter-kart/index.html?v=2026-06-02-music-ingame"
+                    title="OtterKart"
+                    loading="eager"
+                    referrerpolicy="no-referrer"
+                    allow="clipboard-read; clipboard-write; fullscreen"
+                    tabindex="0"
+                ></iframe>
             </div>
-            <div id="embedMusicMount" class="embed-music-dock" aria-label="Background music"></div>
+            <div class="page-embed-note">
+                If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
+                <strong>Wallet:</strong> use the <strong>Wallet connect</strong> hotspot on the start screen to link Snag Drip rewards.
+                <strong>Claim:</strong> earn shells in races, then use the <strong>Claim</strong> hotspot on the map to send them to drip points.
+                <strong>Music:</strong> press <strong>M</strong> or the <strong>♪</strong> button inside the game (bottom-left on menus).
+                <a class="action-btn primary page-embed-link" href="/games/otter-kart/index.html" target="_blank" rel="noopener noreferrer">Open OtterKart</a>
+            </div>
         </div>
     </div>
 
@@ -193,10 +188,6 @@
 
         postEmbedViewport();
       })();
-    </script>
-    <script type="module">
-      import { mountEmbedMusic } from './games/embed-music.mjs';
-      mountEmbedMusic(document.getElementById('embedMusicMount'));
     </script>
 </body>
 </html>

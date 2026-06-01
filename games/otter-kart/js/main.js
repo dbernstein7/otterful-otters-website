@@ -27,6 +27,7 @@ import {
   getEmbedViewport,
   setEmbedViewport,
 } from "./viewport.js";
+import { initOtterKartMusic } from "./music.js";
 
 function embedViewportBeforeSet() {
   return getEmbedViewport();
@@ -1430,5 +1431,7 @@ if (panelEnd && modalBackdrop) {
   });
   syncBackdrop();
 }
+
+initOtterKartMusic();
 
 window.__otterKartBooted = true;

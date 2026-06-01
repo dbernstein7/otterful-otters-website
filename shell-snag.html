@@ -11,7 +11,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="games/embed-music.css">
 </head>
 <body class="embed-page">
     <div class="stars"></div>
@@ -71,27 +70,22 @@
             <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
         </header>
 
-        <div class="page-embed-layout">
-            <div class="page-embed-main">
-                <div class="page-embed">
-                    <iframe
-                        id="shellSnagFrame"
-                        class="page-embed-frame"
-                        src="games/shell-snag/index.html"
-                        title="Shell Snag"
-                        loading="eager"
-                        referrerpolicy="no-referrer"
-                        allow="clipboard-read; clipboard-write; fullscreen; pointer-lock"
-                    ></iframe>
-                    <div class="page-embed-note">
-                        If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
-                        <strong>Controller:</strong> press any face button once so the browser sees the pad. After <strong>Start run</strong>, click the game for pointer lock. Full layout: use the <strong>gear</strong> in the bottom-left of the game frame <strong>before</strong> you start a run (it hides once you’re playing).
-                        <strong>Music:</strong> use the panel beside the game or press <strong>M</strong>.
-                        <a class="action-btn primary page-embed-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open Shell Snag</a>
-                    </div>
-                </div>
+        <div class="page-embed">
+            <iframe
+                id="shellSnagFrame"
+                class="page-embed-frame"
+                src="games/shell-snag/index.html"
+                title="Shell Snag"
+                loading="eager"
+                referrerpolicy="no-referrer"
+                allow="clipboard-read; clipboard-write; fullscreen; pointer-lock"
+            ></iframe>
+            <div class="page-embed-note">
+                If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
+                <strong>Controller:</strong> press any face button once so the browser sees the pad. After <strong>Start run</strong>, click the game for pointer lock. Full layout: use the <strong>gear</strong> in the bottom-left of the game frame <strong>before</strong> you start a run (it hides once you’re playing).
+                <strong>Music:</strong> press <strong>M</strong> inside the game.
+                <a class="action-btn primary page-embed-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open Shell Snag</a>
             </div>
-            <div id="embedMusicMount" class="embed-music-dock" aria-label="Background music"></div>
         </div>
 
         <section class="info-card" style="margin-top: 18px;">
@@ -248,10 +242,6 @@
         loadLb();
         setInterval(loadLb, 15000);
       })();
-    </script>
-    <script type="module">
-      import { mountEmbedMusic } from './games/embed-music.mjs';
-      mountEmbedMusic(document.getElementById('embedMusicMount'));
     </script>
 </body>
 </html>
