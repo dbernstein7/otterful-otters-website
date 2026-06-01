@@ -165,6 +165,13 @@ function isDesktopEmbedMapLayout() {
   return isEmbedded() && isDesktopEmbedLayout();
 }
 
+/** Desktop map: iframe embed or full-page — same CSS calibration + resize path. */
+function isDesktopMapHotspotCssPath() {
+  const vw = document.documentElement.clientWidth || window.innerWidth || 0;
+  const vh = document.documentElement.clientHeight || window.innerHeight || 0;
+  return Math.min(vw, vh) >= 560;
+}
+
 function getMenuCoverImageEl() {
   const img = document.getElementById("menu-cover-img");
   return img instanceof HTMLImageElement ? img : null;
@@ -214,7 +221,7 @@ function resolveCoverPaint(imgW, imgH) {
  */
 function boxForMapHotspotEl(el, fallback) {
   const key = el.getAttribute("data-map-mode");
-  if (isDesktopEmbedMapLayout() && mapEmbedCssCalibrated) {
+  if (mapEmbedCssCalibrated && isDesktopMapHotspotCssPath()) {
     const ix = Number(el.dataset.ix);
     const iy = Number(el.dataset.iy);
     const iw = Number(el.dataset.iw);
@@ -243,9 +250,9 @@ async function waitForMenuCoverFrame() {
   });
 }
 
-/** Desktop iframe: read CSS-tuned hotspot positions into image-space dataset. */
-async function calibrateDesktopEmbedMapFromCss() {
-  if (mapEmbedCssCalibrated || !isDesktopEmbedMapLayout()) return;
+/** Desktop map: read CSS-tuned positions into image-space (iframe + full-page). */
+async function calibrateMapHotspotsFromCss() {
+  if (mapEmbedCssCalibrated || !isDesktopMapHotspotCssPath()) return;
   if (!(mapHotspots instanceof HTMLElement)) return;
   if (isEmbedded() && !getEmbedViewport()) return;
 
@@ -470,8 +477,8 @@ async function layoutMapHotspotsNow() {
   if (img && !img.complete) {
     await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
   }
-  if (isDesktopEmbedMapLayout() && !mapEmbedCssCalibrated) {
-    await calibrateDesktopEmbedMapFromCss();
+  if (isDesktopMapHotspotCssPath() && !mapEmbedCssCalibrated) {
+    await calibrateMapHotspotsFromCss();
   }
   layoutMapHotspotsSync();
 }
