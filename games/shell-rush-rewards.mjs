@@ -72,7 +72,7 @@ async function personalSign(message, address) {
 
 function attestationMessage(wallet, shells, runId, issuedAtSec) {
   return [
-    "Otter Shell Rush — shells collected attestation",
+    "Otter Kart - Shells Collected",
     "v1",
     `wallet:${wallet.toLowerCase()}`,
     `shells:${shells}`,
