@@ -76,11 +76,14 @@ function clampCam(x, a, b) {
 /**
  * Pixels-per-world-unit so karts visually fill most of the window (full-screen canvas).
  */
+/** Phones / small landscape — touch HUD + closer cam; never used on desktop. */
+export function isMobileRaceViewport(viewW, viewH) {
+  return Math.min(viewW || 320, viewH || 320) < 560;
+}
+
 export function raceZoomForViewport(viewW, viewH) {
   const minor = Math.min(viewW || 320, viewH || 320);
-  const mobile = minor < 560;
-  if (mobile) {
-    /** Closer follow-cam on phones only (desktop/iframe unchanged). */
+  if (isMobileRaceViewport(viewW, viewH)) {
     const kartFill = 0.44;
     const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
     return clampCam(raw * 0.72, 1.45, 7);
@@ -89,6 +92,20 @@ export function raceZoomForViewport(viewW, viewH) {
   const kartFill = 0.38;
   const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
   return clampCam(raw * 0.5, 1.35, 6);
+}
+
+/**
+ * Nudge world draw left on mobile so the kart isn’t framed under the right-side minimap + buttons.
+ * @returns {number} pixels subtracted from camera translate X (0 on desktop)
+ */
+export function mobileRaceCameraScreenOffsetX(viewW, viewH) {
+  if (!isMobileRaceViewport(viewW, viewH)) return 0;
+  return Math.round((viewW || 320) * 0.07);
+}
+
+/** Snappier follow on mobile so the kart stays centered while turning. */
+export function cameraLerpForViewport(viewW, viewH) {
+  return isMobileRaceViewport(viewW, viewH) ? 14 : CAMERA.lerp;
 }
 
 export const CAMERA = {

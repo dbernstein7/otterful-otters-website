@@ -1,12 +1,18 @@
 import {
   PHYS,
-  CAMERA,
   KART_RADIUS,
   TOTAL_LAPS,
   TARGET_FPS,
   raceZoomForViewport,
+  cameraLerpForViewport,
+  mobileRaceCameraScreenOffsetX,
+  isMobileRaceViewport,
 } from "./config.js";
-import { applyHudViewportVars, getGameViewportSize } from "./viewport.js";
+import {
+  applyHudViewportVars,
+  getEmbedViewport,
+  getGameViewportSize,
+} from "./viewport.js";
 import { getTouchMinimapLayout, readTouchInput } from "./touch-controls.js";
 import {
   surfaceAt,
@@ -2626,11 +2632,35 @@ export class Game {
 
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const { vw: w, vh: h } = getGameViewportSize();
-    this.canvas.width = Math.floor(w * dpr);
-    this.canvas.height = Math.floor(h * dpr);
-    this.canvas.style.width = `${w}px`;
-    this.canvas.style.height = `${h}px`;
+    const canvas = this.canvas;
+    const vp0 = getGameViewportSize();
+    let w = vp0.vw;
+    let h = vp0.vh;
+    const mobileStandalone =
+      !getEmbedViewport() && isMobileRaceViewport(w, h);
+
+    if (mobileStandalone && window.visualViewport) {
+      const vv = window.visualViewport;
+      w = Math.max(1, Math.round(vv.width));
+      h = Math.max(1, Math.round(vv.height));
+      canvas.style.position = "fixed";
+      canvas.style.inset = "auto";
+      canvas.style.left = `${Math.round(vv.offsetLeft)}px`;
+      canvas.style.top = `${Math.round(vv.offsetTop)}px`;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    } else {
+      ({ vw: w, vh: h } = getGameViewportSize());
+      canvas.style.position = "";
+      canvas.style.inset = "";
+      canvas.style.left = "";
+      canvas.style.top = "";
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+    }
+
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.viewW = w;
     this.viewH = h;
@@ -4220,7 +4250,8 @@ export class Game {
   }
 
   stepCameraFollow(dt) {
-    const lfac = clamp(1 - Math.exp(-CAMERA.lerp * dt), 0, 1);
+    const lerp = cameraLerpForViewport(this.viewW, this.viewH);
+    const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
     this.cam.x += (this.kart.x - this.cam.x) * lfac;
     this.cam.y += (this.kart.y - this.cam.y) * lfac;
   }
@@ -4560,6 +4591,7 @@ export class Game {
     }
 
     const zx = raceZoomForViewport(w, h);
+    const camOffX = mobileRaceCameraScreenOffsetX(w, h);
 
     ctx.save();
     try {
@@ -4568,7 +4600,7 @@ export class Game {
         0,
         0,
         zx,
-        w * 0.5 - zx * this.cam.x,
+        w * 0.5 - zx * this.cam.x - camOffX,
         h * 0.5 - zx * this.cam.y,
       );
 
