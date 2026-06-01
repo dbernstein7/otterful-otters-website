@@ -5,8 +5,9 @@
 
 const MAX_SHELLS_PER_CLAIM = 50000;
 const WALLET_STORAGE_KEY = "otterKartWallet";
-const CHECK_URL = "/api/otter-kart/rewards/check";
-const AWARD_URL = "/api/otter-kart/rewards/award";
+const CHECK_URL = "/api/rewards/check";
+const AWARD_URL = "/api/rewards/award";
+const GAME_ID = "otter-kart";
 
 /** @type {string | null} */
 let connectedWallet = null;
@@ -147,7 +148,7 @@ export async function checkRewardsStatus(preferredWallet) {
   const signature = await personalSign(message, wallet);
   if (!signature) return { kind: "no_signature" };
 
-  const body = { wallet, issuedAtSec, signature };
+  const body = { game: GAME_ID, wallet, issuedAtSec, signature };
   const res = await fetch(CHECK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -256,7 +257,7 @@ export async function claimSessionShells(shells, runId, score) {
     };
   }
 
-  const body = { wallet, shells: capped, runId: id, issuedAtSec, signature };
+  const body = { game: GAME_ID, wallet, shells: capped, runId: id, issuedAtSec, signature };
   if (typeof score === "number" && Number.isFinite(score)) {
     body.score = Math.max(0, Math.floor(score));
   }

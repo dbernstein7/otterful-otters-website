@@ -1,5 +1,9 @@
-// Vercel serverless function used by the embedded Shell Snag game.
-// Proxies to the dedicated Shell Rush deployment so the iframe behaves identically.
+// Shell Snag → Shell Rush proxy; Otter Kart → local Drip handler (same route, no extra function).
+
+const {
+  isOtterKartRewardsRequest,
+  handleOtterKartAward,
+} = require("../../lib/otter-kart-rewards/handlers.js");
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -12,6 +16,18 @@ module.exports = async (req, res) => {
 
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
+  }
+
+  let bodyObj;
+  try {
+    bodyObj = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
+  } catch {
+    return res.status(400).json({ ok: false, code: "bad_json", message: "Invalid JSON body." });
+  }
+
+  if (isOtterKartRewardsRequest(bodyObj)) {
+    const result = await handleOtterKartAward(bodyObj);
+    return res.status(result.status).json(result.json);
   }
 
   const upstream = "https://shell-rush-otterful-otters.vercel.app/api/rewards/award";
@@ -44,8 +60,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const bodyObj = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-
     const upstreamRes = await fetch(upstream, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -53,7 +67,6 @@ module.exports = async (req, res) => {
     });
     const text = await upstreamRes.text();
 
-    // Best-effort: if KV is configured and the request looks like a valid award, track it locally.
     try {
       const kv = getKvRest();
       const wallet = typeof bodyObj.wallet === "string" ? bodyObj.wallet.trim().toLowerCase() : "";
@@ -133,4 +146,3 @@ module.exports = async (req, res) => {
     });
   }
 };
-
