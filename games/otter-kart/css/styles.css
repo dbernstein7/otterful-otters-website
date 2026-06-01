@@ -46,6 +46,10 @@ body.otter-ui-menu.otter-ui-start::after {
   background-position: center;
 }
 
+body.otter-ui-menu #game {
+  pointer-events: none;
+}
+
 body.otter-ui-menu.otter-ui-start #game {
   z-index: -1;
 }
@@ -74,9 +78,10 @@ body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
 .start-menu-hotspots {
   position: fixed;
   inset: 0;
-  z-index: 63;
+  z-index: 100;
   pointer-events: auto;
   display: none;
+  isolation: isolate;
 }
 
 .start-hotspot {
@@ -173,6 +178,7 @@ body.otter-ui-menu:not(.otter-ui-garage) #panel-start {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
+  z-index: -1 !important;
 }
 
 body.otter-ui-menu.otter-ui-playtab #panel-start::before {
@@ -197,9 +203,10 @@ body.otter-ui-menu.otter-ui-playtab #tab-pane-play .sub {
 .map-hotspots {
   position: fixed;
   inset: 0;
-  z-index: 62;
+  z-index: 100;
   pointer-events: auto;
   display: none;
+  isolation: isolate;
 }
 
 body.otter-ui-menu.otter-ui-playtab .map-hotspots {

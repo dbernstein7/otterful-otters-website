@@ -76,12 +76,13 @@
                 <div class="page-embed">
                     <iframe
                         id="otterKartFrame"
-                        class="page-embed-frame"
+                        class="page-embed-frame page-embed-frame--otter-kart"
                         src="games/otter-kart/index.html"
                         title="OtterKart"
                         loading="eager"
                         referrerpolicy="no-referrer"
                         allow="clipboard-read; clipboard-write; fullscreen"
+                        tabindex="0"
                     ></iframe>
                     <div class="page-embed-note">
                         If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
@@ -146,28 +147,44 @@
         const iframe = document.getElementById('otterKartFrame');
         if (!iframe) return;
 
-        function clampHeight(px) {
-          const min = 560;
-          const max = Math.max(min, window.innerHeight - 230);
-          return Math.max(min, Math.min(px, max));
+        function embedHeightPx() {
+          const min = 640;
+          const max = Math.max(min, window.innerHeight - 220);
+          return Math.max(min, max);
         }
 
-        function requestSize() {
+        function applyEmbedHeight() {
+          iframe.style.height = embedHeightPx() + 'px';
+        }
+
+        function pingEmbedLayout() {
           try {
-            iframe.contentWindow && iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
+            iframe.contentWindow &&
+              iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
           } catch {}
         }
 
-        window.addEventListener('message', function (event) {
-          if (!event || !event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
-          const h = Number(event.data.height);
-          if (!Number.isFinite(h) || h <= 0) return;
-          iframe.style.height = clampHeight(h) + 'px';
+        applyEmbedHeight();
+        window.addEventListener('resize', () => {
+          applyEmbedHeight();
+          pingEmbedLayout();
         });
-
-        window.addEventListener('load', requestSize);
-        window.addEventListener('resize', requestSize);
-        setTimeout(requestSize, 300);
+        iframe.addEventListener('load', () => {
+          applyEmbedHeight();
+          pingEmbedLayout();
+          setTimeout(pingEmbedLayout, 150);
+          setTimeout(pingEmbedLayout, 500);
+        });
+        iframe.addEventListener('pointerenter', () => {
+          try {
+            iframe.focus({ preventScroll: true });
+          } catch {}
+        });
+        iframe.addEventListener('click', () => {
+          try {
+            iframe.focus({ preventScroll: true });
+          } catch {}
+        });
       })();
     </script>
     <script type="module">

@@ -1094,7 +1094,31 @@ safeMountLoadoutPicker();
 window.addEventListener("otterkart-loadout-change", () => safeMountLoadoutPicker());
 
 applyStartHotspotImageBoxes();
+// Lay out immediately (embedded iframes may report size before the menu image loads).
+startImgNatural = { w: 1024, h: 572 };
+void layoutStartHotspots();
 ensureStartImageSize().then(() => layoutStartHotspots());
+
+const isEmbedded = window.parent !== window;
+if (isEmbedded) {
+  const relayoutMenuHotspots = () => {
+    if (document.body?.classList?.contains?.("otter-ui-start")) {
+      void layoutStartHotspots();
+    }
+    if (document.body?.classList?.contains?.("otter-ui-playtab")) {
+      void layoutMapHotspots();
+    }
+  };
+  window.addEventListener("message", (event) => {
+    if (event?.data?.type === "REQUEST_GAME_SIZE") relayoutMenuHotspots();
+  });
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => relayoutMenuHotspots());
+    ro.observe(document.documentElement);
+  }
+  window.setTimeout(relayoutMenuHotspots, 100);
+  window.setTimeout(relayoutMenuHotspots, 400);
+}
 
 startMenuHotspots?.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-start-action]");
