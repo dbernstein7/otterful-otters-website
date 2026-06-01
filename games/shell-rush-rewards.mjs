@@ -83,7 +83,7 @@ function attestationMessage(wallet, shells, runId, issuedAtSec) {
 
 function checkMessage(wallet, issuedAtSec) {
   return [
-    "Otter Shell Rush — rewards status check",
+    "Otter Kart - Rewards Check",
     "v1",
     `wallet:${wallet.toLowerCase()}`,
     `issuedAt:${issuedAtSec}`,
