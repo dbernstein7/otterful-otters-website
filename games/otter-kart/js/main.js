@@ -898,8 +898,15 @@ async function ensureStartImageSize() {
 }
 
 function syncDemoSessionBadge() {
+  const demo = isDemoSessionActive();
+  document.body?.classList?.toggle("otter-demo-session", demo);
+  if (demo) setAdminPanelOpen(false);
+  if (btnAdminOpen instanceof HTMLElement) {
+    btnAdminOpen.hidden = demo;
+    btnAdminOpen.setAttribute("aria-hidden", demo ? "true" : "false");
+  }
   const show =
-    isDemoSessionActive() &&
+    demo &&
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage");
   demoSessionBadge?.classList.toggle("hidden", !show);

@@ -3016,6 +3016,10 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   display: block;
 }
 
+body.otter-demo-session .menu-admin-open {
+  display: none !important;
+}
+
 .panel.panel--admin {
   width: min(360px, calc(100vw - 24px));
   max-height: min(88dvh, calc(100dvh - 24px));
