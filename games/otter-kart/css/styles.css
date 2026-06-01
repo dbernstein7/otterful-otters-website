@@ -238,7 +238,7 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
 }
 
 .map-hotspot {
-  position: absolute;
+  position: fixed;
   pointer-events: auto;
   background: none !important;
   background-color: transparent !important;
@@ -300,16 +300,9 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspot:focus {
 }
 
 /*
- * Desktop site embed (otter-kart.html): CSS positions only — do not override with JS.
- * Full-page /games/otter-kart/ uses MAP_HOTSPOT_BOXES + coverTransform (local file).
+ * Desktop site embed (otter-kart.html): CSS seed positions for one-time calibration.
+ * Local full-page file uses MAP_HOTSPOT_BOXES + painted image rect only.
  */
-html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot[data-map-mode] {
-  left: auto;
-  top: auto;
-  width: auto;
-  height: auto;
-}
-
 html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--practice {
   left: calc(10% + 200px);
   top: calc(20% + 20px);
