@@ -1,0 +1,2582 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #080c10;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Menu-only backdrop (remove “lighting” while racing) */
+body.otter-ui-menu {
+  background: radial-gradient(
+      1200px 700px at 18% 12%,
+      rgba(125, 249, 255, 0.12),
+      rgba(8, 12, 16, 0) 60%
+    ),
+    radial-gradient(
+      900px 620px at 82% 18%,
+      rgba(255, 154, 46, 0.09),
+      rgba(8, 12, 16, 0) 62%
+    ),
+    radial-gradient(
+      1200px 900px at 50% 92%,
+      rgba(90, 120, 255, 0.08),
+      rgba(8, 12, 16, 0) 70%
+    ),
+    #080c10;
+}
+
+/* Start screen (before map) */
+body.otter-ui-menu.otter-ui-start::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("../OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15");
+  background-size: cover;
+  background-position: center;
+}
+
+body.otter-ui-menu.otter-ui-start #game {
+  z-index: -1;
+}
+
+body.otter-ui-menu.otter-ui-start::before {
+  opacity: 0;
+}
+
+body.otter-ui-menu.otter-ui-start .start-menu-hotspots {
+  display: block;
+}
+
+body.otter-ui-menu.otter-ui-start .map-hotspots,
+body.otter-ui-menu.otter-ui-start .map-claim-bar {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-start .menu-admin-open {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
+  display: none !important;
+}
+
+.start-menu-hotspots {
+  position: fixed;
+  inset: 0;
+  z-index: 63;
+  pointer-events: auto;
+  display: none;
+}
+
+.start-hotspot {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.start-hotspot:hover,
+.start-hotspot:active,
+.start-hotspot:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.start-hotspot:focus-visible {
+  outline: 3px solid rgba(125, 249, 255, 0.95);
+  outline-offset: 2px;
+}
+
+.start-wallet-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+  z-index: 64;
+  max-width: min(92vw, 420px);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-align: center;
+  color: #e8f4ff;
+  background: rgba(6, 12, 22, 0.92);
+  border: 1px solid rgba(125, 249, 255, 0.45);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.start-wallet-toast.hidden {
+  display: none;
+}
+
+.demo-session-badge {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 65;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0a1020;
+  background: linear-gradient(180deg, #ffe566, #ffb830);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+
+.demo-session-badge.hidden {
+  display: none;
+}
+
+/* Play tab: full-screen map background behind menu */
+body.otter-ui-menu.otter-ui-playtab::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("../OtterKart-Map.png?v=2026-05-07-1236");
+  background-size: cover;
+  background-position: center;
+  filter: none;
+}
+
+body.otter-ui-menu.otter-ui-playtab #game {
+  z-index: -1;
+}
+
+/* Play tab: full brightness, no dim vignette overlay */
+body.otter-ui-menu.otter-ui-playtab::before {
+  opacity: 0;
+}
+
+/* Map home: keep the legacy menu panel off-screen so it never steals map clicks. */
+body.otter-ui-menu:not(.otter-ui-garage) #panel-start {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body.otter-ui-menu.otter-ui-playtab #panel-start::before {
+  opacity: 0;
+}
+
+/* Play tab: remove menu header + Play/Garage tabs (garage uses map hotspot instead). */
+body.otter-ui-menu.otter-ui-playtab #panel-start h1,
+body.otter-ui-menu.otter-ui-playtab #panel-start h1::after,
+body.otter-ui-menu.otter-ui-playtab #panel-start .start-tabs {
+  display: none !important;
+}
+
+/* Play tab: hide old menu buttons, use map hotspots */
+body.otter-ui-menu.otter-ui-playtab #tab-pane-play .tagline,
+body.otter-ui-menu.otter-ui-playtab #tab-pane-play .buttons,
+body.otter-ui-menu.otter-ui-playtab #tab-pane-play .home-claim,
+body.otter-ui-menu.otter-ui-playtab #tab-pane-play .sub {
+  display: none !important;
+}
+
+.map-hotspots {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  pointer-events: auto;
+  display: none;
+}
+
+body.otter-ui-menu.otter-ui-playtab .map-hotspots {
+  display: block;
+}
+
+body.otter-ui-menu.otter-ui-playtab .start-menu-hotspots {
+  display: none !important;
+}
+
+/* While admin track picker is open, don’t let the full-screen hotspot layer steal clicks. */
+body.otter-ui-admin-open .map-hotspots {
+  pointer-events: none;
+}
+
+/* Dim / dismiss layer: above map hotspots (60), below admin panel (73). */
+body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
+  z-index: 70;
+  pointer-events: auto;
+}
+
+.map-hotspot {
+  position: absolute;
+  pointer-events: auto;
+  background: none !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0;
+  border-radius: 10px;
+  box-shadow: none !important;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-hotspot:hover,
+.map-hotspot:active,
+.map-hotspot:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.map-hotspot:focus-visible {
+  outline: 3px solid rgba(125, 249, 255, 0.95);
+  outline-offset: 2px;
+}
+
+/* Hotspot positions are % relative to viewport (map is cover-centered).
+   Tuned for the current map art; adjust if the image changes. */
+.map-hotspot--practice {
+  left: calc(10% + 200px);
+  top: calc(20% + 20px);
+  width: max(60px, calc(30% - 300px));
+  height: 13%;
+}
+.map-hotspot--daily {
+  left: calc(57% + 90px);
+  top: calc(16% - 60px);
+  width: max(60px, calc(30% - 200px));
+  height: 11%;
+}
+.map-hotspot--gp {
+  left: calc(36% + 20px);
+  top: calc(48% + 100px);
+  width: max(60px, calc(28% - 200px));
+  height: 11%;
+}
+.map-hotspot--touge {
+  left: calc(64% + 100px);
+  top: calc(46% + 140px);
+  width: max(60px, calc(26% - 200px));
+  height: 12%;
+}
+.map-hotspot--endless {
+  left: calc(12% + 100px);
+  top: calc(62% + 170px);
+  width: max(60px, calc(32% - 300px));
+  height: 13%;
+}
+.map-hotspot--claim {
+  left: calc(78% + 110px);
+  top: calc(74% + 200px);
+  width: max(60px, calc(18% - 200px));
+  height: calc(11% - 20px);
+  border-radius: 14px;
+}
+
+.map-claim-bar {
+  position: fixed;
+  z-index: 61;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(6, 10, 16, 0.78);
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Map homescreen only (Play tab) — never during races or Garage */
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-claim-bar {
+  display: flex;
+}
+
+body:not(.otter-ui-menu) .map-claim-bar,
+body.otter-ui-garage .map-claim-bar,
+body.otter-ui-admin-open .map-claim-bar {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.map-claim-bar__count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.map-claim-bar__shell {
+  font-size: 1.15rem;
+  filter: drop-shadow(0 0 6px rgba(125, 249, 255, 0.35));
+}
+
+.map-claim-bar__num {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #7df9ff;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 18px rgba(125, 249, 255, 0.2);
+}
+
+/* Top-left Garage hotspot */
+.map-hotspot--garage {
+  left: 48px;
+  top: 198px;
+  width: 220px;
+  height: 184px;
+  border-radius: 14px;
+}
+
+/* Garage tab: full-screen Garage.png background */
+body.otter-ui-menu.otter-ui-garage {
+  background: #080c10;
+  /* Keep Garage UI positioning stable even if the background image changes */
+  --garage-options-left: 400px;
+  --garage-options-top: 630px;
+}
+
+body.otter-ui-menu.otter-ui-garage::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("../Character%20Select/Garage.png");
+  background-size: cover;
+  background-position: center;
+  filter: none;
+}
+
+/* Garage: do not apply the menu vignette/dimmer */
+body.otter-ui-menu.otter-ui-garage::before {
+  opacity: 0 !important;
+}
+
+/* Garage: minimap overlay (do NOT use ::before; menu vignette overrides it) */
+.garage-minimap {
+  position: fixed;
+  right: 342px; /* moved left 320px total */
+  bottom: 188px; /* moved up 170px total */
+  width: 320px;
+  height: 300px;
+  z-index: 64;
+  pointer-events: none;
+  background: url("../Character%20Select/GarageMAP.png?v=2026-05-07-1343");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+body.otter-ui-menu:not(.otter-ui-garage) .garage-minimap {
+  display: none;
+}
+
+.garage-hotspots {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  pointer-events: none; /* don't block clicks on the rest of the UI */
+  display: none;
+}
+
+body.otter-ui-menu.otter-ui-garage .garage-hotspots {
+  display: block;
+}
+
+.garage-hotspot {
+  position: absolute;
+  pointer-events: auto; /* only the hotspot itself is clickable */
+  background: none !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: none !important;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.garage-hotspot:hover,
+.garage-hotspot:active,
+.garage-hotspot:focus {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.garage-hotspot:focus-visible {
+  outline: 3px solid rgba(125, 249, 255, 0.95);
+  outline-offset: 2px;
+}
+
+/* Back-to-map hotspot (tuned to current GarageMAP art) */
+.garage-hotspot--to-map {
+  right: 342px;
+  bottom: 188px;
+  width: 320px;
+  height: 300px;
+}
+
+/* Put the canvas behind the garage image while in the menu garage tab. */
+body.otter-ui-menu.otter-ui-garage #game {
+  z-index: -1;
+}
+
+/* Garage tab: remove UI "boxes" so controls float */
+body.otter-ui-menu.otter-ui-garage #panel-start {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  border-radius: 0 !important;
+  padding: 18px 18px 28px !important;
+}
+
+body.otter-ui-menu.otter-ui-garage #panel-start::before {
+  opacity: 0 !important;
+}
+
+/* Garage: remove header/loadout copy text */
+body.otter-ui-menu.otter-ui-garage #panel-start h1,
+body.otter-ui-menu.otter-ui-garage #panel-start h1::after,
+body.otter-ui-menu.otter-ui-garage #panel-start h2.loadout-panel__title,
+body.otter-ui-menu.otter-ui-garage #panel-start p.loadout-panel__hint {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-layout {
+  grid-template-columns: minmax(220px, 320px) 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-layout__right {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-layout__left {
+  align-items: flex-start;
+  padding-left: 10px; /* move options right a bit */
+}
+
+/* Center the big kart preview in Garage */
+body.otter-ui-menu.otter-ui-garage .loadout-equipped {
+  position: fixed;
+  left: 50%;
+  top: calc(52% + 100px);
+  transform: translate(calc(-50% - 15px), -50%);
+  z-index: 40;
+  align-items: center !important;
+  width: min(600px, 58vw);
+  pointer-events: none;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-equipped__strip {
+  gap: 10px;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-equipped__meta,
+body.otter-ui-menu.otter-ui-garage .loadout-equipped__title {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-equipped__preview {
+  max-width: min(600px, 58vw) !important;
+  max-height: min(600px, 58vw) !important;
+  border-radius: 0 !important;
+}
+
+/* Move option rows to the left side */
+body.otter-ui-menu.otter-ui-garage .loadout-row {
+  width: 100%;
+  align-items: flex-start;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__name {
+  text-align: center;
+  width: 100%;
+}
+
+/* Garage: shift options block (kart/hat/eyes) */
+body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
+  position: relative;
+  left: var(--garage-options-left);
+  top: var(--garage-options-top);
+}
+
+/* Garage: add soft shadow "plate" under each option row */
+body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translate(-50%, 10px);
+  width: min(360px, 48vw);
+  height: 22px;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0));
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-row__label {
+  text-align: center;
+  width: 100%;
+  opacity: 1;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(245, 252, 255, 0.92);
+  text-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(125, 249, 255, 0.12);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__name {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Randomize at bottom of page */
+body.otter-ui-menu.otter-ui-garage .loadout-randWrap {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 24px));
+  z-index: 60;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-rand {
+  border-radius: 16px;
+  padding: 16px 18px;
+  font-size: 16px;
+}
+
+body.otter-ui-menu.otter-ui-garage .start-tabs {
+  background: rgba(4, 10, 18, 0.35);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Garage: remove Play/Garage buttons */
+body.otter-ui-menu.otter-ui-garage .start-tabs {
+  display: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-equipped,
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__center,
+body.otter-ui-menu.otter-ui-garage .loadout-layout__right,
+body.otter-ui-menu.otter-ui-garage .garage-card,
+body.otter-ui-menu.otter-ui-garage .loadout-row,
+body.otter-ui-menu.otter-ui-garage .loadout-panel {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-equipped__preview {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .garage-overlay {
+  background: transparent !important;
+  border-bottom-color: transparent !important;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-nav {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  width: 64px;
+  height: 64px;
+  font-size: 44px;
+  border-radius: 0;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-rand {
+  box-shadow: none;
+}
+
+body.otter-ui-menu::before {
+  content: "";
+  position: fixed;
+  inset: -2px;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    1000px 680px at 50% 35%,
+    rgba(0, 0, 0, 0),
+    rgba(0, 0, 0, 0.42) 72%,
+    rgba(0, 0, 0, 0.62)
+  );
+  opacity: 1;
+  mix-blend-mode: normal;
+}
+
+#game {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+/* ——— Modal backdrop (results screen) ——— */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 700px at 50% 35%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.74)),
+    rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+/* ——— Countdown ——— */
+.countdown {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #f3fbff;
+  text-shadow:
+    0 6px 30px rgba(0, 0, 0, 0.75),
+    0 0 28px rgba(125, 249, 255, 0.25);
+}
+
+.countdown.hidden {
+  display: none;
+}
+
+.countdown__num {
+  font-size: clamp(72px, 16vw, 150px);
+}
+
+.countdown__go {
+  font-size: clamp(56px, 12vw, 120px);
+  color: #7df9ff;
+}
+
+/* ——— HUD ——— */
+#hud {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: calc(12px + env(safe-area-inset-top, 0px))
+    calc(14px + env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px))
+    calc(14px + env(safe-area-inset-left, 0px));
+  gap: 0;
+}
+
+.hud-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 400px);
+}
+
+.hud-stack .hud-panel {
+  width: 100%;
+}
+
+#hud .hud-drift-board--under-time {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  align-self: center;
+  width: min(78%, 176px);
+  max-width: 176px;
+  margin-top: 2px;
+  aspect-ratio: 1414 / 487;
+  filter: drop-shadow(0 5px 16px rgba(0, 0, 0, 0.38));
+}
+
+#hud .hud-drift-board--under-time .hud-drift-board__inner {
+  inset: 12% 5% 10% 5%;
+}
+
+#hud .hud-drift-board--under-time .hud-drift-board__val {
+  font-size: clamp(0.9rem, 2.9vw, 1.12rem);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.12;
+  white-space: nowrap;
+}
+
+body.otter-ui-menu #hud,
+body.otter-ui-menu #hud-randomizer {
+  visibility: hidden;
+}
+
+body.otter-ui-menu #hud-place {
+  visibility: hidden;
+}
+
+/* Safety: these HUD widgets should never show on the home/menu */
+body.otter-ui-menu #hud-drift-board,
+body.otter-ui-menu #hud-lives {
+  display: none !important;
+}
+
+body.otter-ui-menu #btn-settings,
+body.otter-ui-menu .panel-settings {
+  display: none !important;
+}
+
+.hud-settings {
+  position: fixed;
+  z-index: 55;
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(10, 16, 24, 0.82);
+  color: rgba(240, 249, 252, 0.95);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.4);
+}
+
+.hud-settings__icon {
+  display: block;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+.hud-settings.hidden {
+  display: none;
+}
+
+/* Settings — Settings.png asset + invisible button hotspots */
+.panel-settings {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  width: min(1000px, calc(100vw - 16px));
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.panel-settings.hidden {
+  display: none;
+}
+
+.settings-panel {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 550;
+  pointer-events: auto;
+  border-radius: clamp(12px, 1.6vw, 18px);
+  overflow: hidden;
+  filter: drop-shadow(0 16px 40px rgba(0, 0, 0, 0.55));
+}
+
+.settings-panel__art {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: inherit;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.settings-panel__hotspot {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.settings-panel__hotspot:hover,
+.settings-panel__hotspot:focus {
+  background: transparent !important;
+}
+
+.settings-panel__hotspot:focus-visible {
+  outline: 3px solid rgba(125, 249, 255, 0.9);
+  outline-offset: 2px;
+}
+
+/* ——— Race position (top-right) ——— */
+.hud-place {
+  position: fixed;
+  z-index: 45;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  pointer-events: none;
+  text-align: right;
+}
+
+.hud-place:not(.hud-place--drift) {
+  position: fixed;
+  width: min(210px, 42vw);
+  aspect-ratio: 975 / 1414;
+  max-height: min(56vh, 420px);
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  text-align: center;
+  background: transparent
+    url("../Track%20Assets/PlacementBoard.png?v=2026-05-28-track-assets-v3") center / 100% 100%
+    no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.hud-place__inner {
+  position: absolute;
+  inset: 12% 9% 10% 9%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(8px, 2.2vh, 14px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.hud-place:not(.hud-place--drift) .hud-place__lbl {
+  font-size: clamp(10px, 2.4vw, 12px);
+  margin-bottom: 0;
+  letter-spacing: 0.14em;
+  color: rgba(210, 228, 245, 0.72);
+}
+
+.hud-place:not(.hud-place--drift) .hud-place__big {
+  font-size: clamp(1.85rem, 6.2vw, 2.45rem);
+  line-height: 1;
+}
+
+.hud-place:not(.hud-place--drift) .hud-place__big span {
+  font-size: 0.62em;
+}
+
+.hud-place:not(.hud-place--drift) .hud-place__list {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(13px, 3.4vw, 16px);
+  line-height: 1.55;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  overflow: hidden;
+}
+
+.hud-place:not(.hud-place--drift) .hud-place__list span.idx {
+  width: 2em;
+  text-align: center;
+}
+
+.hud-place--drift {
+  display: none !important;
+}
+
+/* Driftboard — current drift distance */
+.hud-drift-board {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  pointer-events: none;
+  background: transparent
+    url("../Track%20Assets/Driftboard.png?v=2026-05-28-track-assets-v3") center / 100% 100%
+    no-repeat;
+  box-shadow: none;
+}
+
+/* Drift challenge / Neon Snake / Endless — top-right */
+.hud-drift-board.hud-drift-board--corner {
+  position: fixed;
+  z-index: 45;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  width: min(300px, 54vw);
+  aspect-ratio: 1414 / 487;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
+}
+
+body.hud-placement-active .hud-drift-board.hud-drift-board--corner {
+  top: calc(min(46vh, 320px) + 20px + env(safe-area-inset-top, 0px));
+}
+
+/* Practice / GP — under Timeboard */
+.hud-drift-board.hud-drift-board--under-time {
+  aspect-ratio: 1414 / 487;
+}
+
+.hud-drift-board.hidden {
+  display: none !important;
+}
+
+.hud-drift-board__inner {
+  position: absolute;
+  inset: 22% 10% 18% 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.hud-drift-board__val {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.15rem, 4.2vw, 1.65rem);
+  font-weight: 900;
+  line-height: 1;
+  color: #ffe8c8;
+  text-align: center;
+  text-shadow:
+    0 1px 10px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(255, 154, 46, 0.2);
+  white-space: nowrap;
+}
+
+.hud-lives {
+  position: fixed;
+  z-index: 46;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+  background: rgba(6, 10, 16, 0.72);
+  border: 1px solid rgba(255, 210, 120, 0.22);
+  box-shadow:
+    0 14px 42px rgba(0, 0, 0, 0.42),
+    0 0 26px rgba(255, 210, 120, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.hud-lives.hidden {
+  display: none;
+}
+
+.hud-lives__lbl {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 230, 190, 0.72);
+}
+
+.hud-lives__val {
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 900;
+  color: #fff0d6;
+  text-shadow: 0 0 16px rgba(255, 210, 120, 0.12);
+  min-width: 1.2em;
+  text-align: center;
+}
+
+.hud-place__lbl {
+  display: block;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(200, 220, 235, 0.62);
+  margin-bottom: 2px;
+}
+
+.hud-place__big {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.05rem, 3.4vw, 1.45rem);
+  font-weight: 800;
+  color: #f0f9fc;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+}
+
+.hud-place__big span {
+  font-weight: 600;
+  color: rgba(200, 220, 235, 0.55);
+}
+
+.hud-place__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  font-size: 10px;
+  line-height: 1.45;
+  color: rgba(220, 232, 245, 0.78);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.hud-place__list li.you {
+  color: #7df9ff;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(125, 249, 255, 0.22);
+}
+
+.hud-place__list span.idx {
+  display: inline-block;
+  width: 1.75em;
+  text-align: right;
+  opacity: 0.55;
+}
+
+.hud-randomizer {
+  position: fixed;
+  z-index: 41;
+  top: calc(6px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(200px, 44vw);
+  pointer-events: auto;
+  cursor: pointer;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
+}
+
+.hud-randomizer.hidden {
+  display: none;
+}
+
+.hud-randomizer__frame {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.hud-randomizer__item {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  transform: translate(-50%, -50%);
+  width: 26%;
+  max-width: 48px;
+  height: auto;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 0 10px rgba(125, 249, 255, 0.35));
+}
+
+.hud-randomizer__item--lg {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+.hud-randomizer__item--rolling {
+  animation: hud-randomizer-pulse 0.08s ease-in-out;
+}
+
+.hud-randomizer__item--rolling.hud-randomizer__item--lg {
+  animation: hud-randomizer-pulse-lg 0.08s ease-in-out;
+}
+
+@keyframes hud-randomizer-pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.92);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hud-randomizer-pulse-lg {
+  0% {
+    transform: translate(-50%, -50%) scale(1.104);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+}
+
+.hud-panel {
+  pointer-events: none;
+  position: relative;
+  width: min(100%, 400px);
+  aspect-ratio: 640 / 280;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent url("../Track%20Assets/Timeboard.png?v=2026-05-28-track-assets-v3")
+    center / 100% 100% no-repeat;
+  box-shadow: none;
+  filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
+}
+
+.hud-panel__inner {
+  position: absolute;
+  inset: 13% 11% 14% 11%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+}
+
+.hud-panel__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.badge {
+  flex-shrink: 0;
+  background: rgba(8, 18, 32, 0.55);
+  border: 1px solid rgba(125, 249, 255, 0.42);
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #dff8ff;
+}
+
+.hud-time-wrap {
+  text-align: right;
+  line-height: 1.15;
+}
+
+/* shells chip lives inline with lap chip (see .hud-chip--shells) */
+
+.hud-time-wrap__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(200, 220, 235, 0.55);
+}
+
+#hud-time,
+.hud-time-wrap__value {
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.35rem, 4.2vw, 1.72rem);
+  font-weight: 800;
+  color: #7df9ff;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 20px rgba(125, 249, 255, 0.25);
+}
+
+.hud-panel__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.hud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e8eef5;
+  background: rgba(8, 18, 32, 0.5);
+  border: 1px solid rgba(125, 249, 255, 0.22);
+}
+
+.hud-chip--shells {
+  background: rgba(125, 249, 255, 0.1);
+  border-color: rgba(125, 249, 255, 0.22);
+}
+
+.drift-box {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.drift-box.hidden {
+  display: none;
+}
+
+.drift-box__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(232, 238, 245, 0.65);
+  margin-bottom: 6px;
+}
+
+.meter-track {
+  height: 11px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff9a2e, #ffe94a);
+  border-radius: 5px;
+  transition: width 0.07s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .meter-fill {
+    transition: none;
+  }
+}
+
+.hud-hints {
+  pointer-events: none;
+  margin-top: auto;
+  width: 100%;
+  max-width: min(560px, 100%);
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(4, 8, 12, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.hud-hints__title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(200, 215, 230, 0.5);
+  margin-bottom: 6px;
+}
+
+.hud-hints__keys {
+  font-size: 11px;
+  line-height: 1.55;
+  color: rgba(228, 236, 245, 0.78);
+}
+
+kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  margin: 0 1px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #e8eef5;
+}
+
+.shell-icon {
+  filter: saturate(1.08);
+}
+
+/* ——— Modals ——— */
+.panel--wide.panel--modal {
+  width: min(940px, calc(100vw - 24px));
+}
+
+.panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  width: min(420px, calc(100vw - 28px));
+  max-height: min(720px, calc(100dvh - 18px));
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+  background: linear-gradient(
+    180deg,
+    rgba(14, 22, 34, 0.92) 0%,
+    rgba(10, 16, 24, 0.92) 100%
+  );
+  border: 1px solid rgba(125, 249, 255, 0.26);
+  border-radius: 18px;
+  padding: 22px 24px 24px;
+  color: #e8eef5;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Home screen: no scrolling; fit everything like a real game menu */
+body.otter-ui-menu #panel-start {
+  overflow: hidden;
+  max-height: min(86dvh, calc(100dvh - 18px));
+  padding: 18px 18px 16px;
+}
+
+body.otter-ui-menu #tab-pane-play .tagline {
+  margin: 6px 0 10px;
+  font-size: 12px;
+}
+
+body.otter-ui-menu #tab-pane-play .sub {
+  margin-top: 10px;
+  font-size: 11px;
+}
+
+.home-claim {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(6, 10, 16, 0.56);
+  border: 1px solid rgba(125, 249, 255, 0.22);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+}
+
+.home-claim__lbl {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(200, 220, 235, 0.62);
+}
+
+.home-claim__val {
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 900;
+  color: #7df9ff;
+  text-shadow: 0 0 22px rgba(125, 249, 255, 0.14);
+}
+
+.home-claim__btn {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(34, 52, 72, 0.95);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(
+    900px 420px at 30% 0%,
+    rgba(125, 249, 255, 0.13),
+    rgba(125, 249, 255, 0) 55%
+  );
+  opacity: 0.9;
+}
+
+.panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/** Character tab: use more of the viewport, less padding — helps avoid scrolling */
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) {
+  width: min(960px, calc(100vw - 18px));
+  max-height: min(94dvh, calc(100dvh - 10px));
+  padding: 18px 18px 16px;
+  text-align: center;
+  border-color: rgba(125, 249, 255, 0.34);
+  box-shadow:
+    0 28px 86px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(0, 0, 0, 0.28),
+    0 0 44px rgba(125, 249, 255, 0.09);
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden]))::before {
+  opacity: 1;
+  background:
+    radial-gradient(980px 520px at 24% 0%, rgba(125, 249, 255, 0.18), rgba(125, 249, 255, 0) 55%),
+    radial-gradient(900px 520px at 90% 15%, rgba(255, 154, 46, 0.10), rgba(255, 154, 46, 0) 58%);
+}
+
+.panel.hidden {
+  display: none;
+}
+
+/**
+ * Results panel also uses `display: flex`; that rule must not override `.hidden`
+ * (same specificity + later in file was leaving #panel-end visible on the home screen).
+ */
+.panel.panel--results.hidden {
+  display: none;
+}
+
+.panel h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 5vw, 1.85rem);
+  letter-spacing: -0.02em;
+  color: #f0f7fc;
+}
+
+.panel h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 2px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(125, 249, 255, 0.95), rgba(125, 249, 255, 0.15));
+  opacity: 0.95;
+}
+
+/* Start menu / character picker: center header + tabs text */
+#panel-start h1 {
+  text-align: center;
+}
+
+#panel-start h1::after {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.start-tabs {
+  justify-content: center;
+}
+
+.start-tabs button[role="tab"] {
+  text-align: center;
+}
+
+.panel h2 {
+  margin: 0 0 16px;
+  font-size: 1.35rem;
+  color: #f0f7fc;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) h1 {
+  margin: 0 0 4px;
+  font-size: clamp(1.25rem, 4.2vw, 1.55rem);
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) h2.loadout-panel__title {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+
+.panel .tagline {
+  margin: 0 0 16px;
+  line-height: 1.5;
+  font-size: 14px;
+  color: rgba(220, 232, 245, 0.88);
+}
+
+/* ——— Start menu tabs ——— */
+.start-tabs {
+  display: flex;
+  gap: 0;
+  margin: 16px 0 18px;
+  padding: 4px;
+  border-radius: 12px;
+  background: rgba(4, 10, 18, 0.85);
+  border: 1px solid rgba(125, 249, 255, 0.15);
+}
+
+.start-tabs button[role="tab"] {
+  flex: 1;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: rgba(200, 218, 235, 0.68);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+}
+
+.start-tabs button[role="tab"]:hover {
+  color: rgba(232, 240, 250, 0.95);
+  background: rgba(36, 56, 78, 0.45);
+}
+
+.start-tabs button[role="tab"][aria-selected="true"] {
+  color: #0a1018;
+  background: linear-gradient(180deg, #7ae8ff 0%, #52b8dc 100%);
+  box-shadow: 0 2px 12px rgba(82, 184, 220, 0.35);
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .start-tabs {
+  margin: 8px 0 8px;
+  justify-content: center;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .start-tabs button[role="tab"] {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.start-tab-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.start-tab-pane[hidden] {
+  display: none;
+}
+
+.start-tab-pane .tagline {
+  margin-top: 0;
+}
+
+/* ——— Character loadout (character tab) ——— */
+.loadout-panel {
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-height: 0;
+}
+
+.loadout-panel__title {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(125, 249, 255, 0.85);
+}
+
+.loadout-panel__hint {
+  margin: 0 0 8px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: rgba(180, 200, 220, 0.65);
+}
+
+.loadout-mount {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.loadout-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(360px, 1.15fr) minmax(240px, 0.85fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.loadout-layout__left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.loadout-layout__right {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  padding: 0;
+  border-radius: 16px;
+  background: transparent;
+  border: 1px solid rgba(125, 249, 255, 0.18);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.garage-card {
+  position: relative;
+  width: 100%;
+  min-height: 360px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(6, 10, 16, 0.6);
+}
+
+.garage-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.05) contrast(1.04);
+}
+
+.garage-overlay {
+  position: relative;
+  z-index: 1;
+  padding: 14px 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(6, 10, 16, 0.74) 0%,
+    rgba(6, 10, 16, 0.22) 55%,
+    rgba(6, 10, 16, 0.08) 100%
+  );
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.garage-overlay [data-garage-line] {
+  display: inline-block;
+  font-weight: 800;
+  color: rgba(232, 240, 250, 0.92);
+}
+
+.loadout-sideTitle {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: rgba(240, 249, 252, 0.96);
+  margin: 0 0 6px;
+}
+
+.loadout-sideSub {
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(200, 218, 235, 0.78);
+}
+
+.loadout-rand {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 249, 255, 0.28);
+  background: linear-gradient(180deg, rgba(34, 86, 110, 0.92) 0%, rgba(20, 52, 72, 0.92) 100%);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.42);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.loadout-rand:hover {
+  border-color: rgba(125, 249, 255, 0.45);
+  background: linear-gradient(180deg, rgba(48, 110, 138, 0.95) 0%, rgba(28, 66, 90, 0.95) 100%);
+}
+
+.loadout-randWrap {
+  margin-top: 6px;
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .loadout-layout {
+    grid-template-columns: 1fr;
+  }
+  .loadout-layout__right {
+    position: static;
+    order: -1;
+  }
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-row {
+  gap: 4px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-row__label {
+  font-size: 10px;
+  text-align: center;
+}
+
+.loadout-row--carousel {
+  align-items: center;
+}
+
+.loadout-carousel {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 38px 1fr 38px;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadout-nav {
+  padding: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+  background: rgba(12, 18, 28, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.loadout-nav:hover {
+  background: rgba(20, 30, 44, 0.92);
+  border-color: rgba(125, 249, 255, 0.22);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
+}
+
+.loadout-carousel__center {
+  padding: 6px 8px;
+  border-radius: 16px;
+  background: rgba(10, 16, 24, 0.55);
+  border: 1px solid rgba(125, 249, 255, 0.18);
+  display: grid;
+  place-items: center;
+  min-height: 78px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.32);
+}
+
+.loadout-carousel__canvas {
+  width: 100%;
+  max-width: min(190px, 54vw);
+  height: 66px;
+  display: block;
+}
+
+.loadout-carousel__canvas[data-slot="kart"] {
+  width: 100%;
+  max-width: min(176px, 48vw);
+  height: 64px;
+}
+
+.loadout-carousel__canvas[data-slot="hat"],
+.loadout-carousel__canvas[data-slot="eye"] {
+  width: 100%;
+  max-width: min(220px, 62vw);
+  height: 78px;
+}
+
+.loadout-carousel__canvas[data-slot="eye"] {
+  width: 100%;
+  max-width: min(120px, 42vw);
+  height: 44px;
+}
+
+.loadout-row[data-slot="eye"] .loadout-carousel__center {
+  min-height: 64px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.loadout-carousel__name {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgba(232, 240, 250, 0.9);
+  letter-spacing: 0.01em;
+  margin-top: 2px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-chips {
+  max-height: none;
+  overflow: visible;
+  gap: 6px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-chip {
+  --loadout-chip: 52px;
+}
+
+.loadout-equipped {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 6px 8px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(125, 249, 255, 0.28);
+  background: rgba(12, 20, 32, 0.72);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  min-height: 0;
+  max-width: 100%;
+}
+
+.loadout-equipped__title {
+  margin: 0 0 6px;
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(125, 249, 255, 0.9);
+  text-align: center;
+}
+
+.loadout-equipped__strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  width: 100%;
+  min-height: 0;
+  max-width: 100%;
+}
+
+.loadout-equipped__previewWrap {
+  width: 100%;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadout-equipped__preview {
+  box-sizing: border-box;
+  width: auto;
+  height: auto;
+  max-width: min(172px, 72vw);
+  max-height: min(172px, 72vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 16px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: rgba(20, 32, 50, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.35);
+  display: block;
+}
+
+.loadout-equipped__meta {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-equipped__line {
+  font-size: 11px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-equipped__sub {
+  font-size: 8px;
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-equipped__preview {
+  max-width: min(340px, 86vw);
+  max-height: min(340px, 86vw);
+  border-color: rgba(125, 249, 255, 0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 46px rgba(125, 249, 255, 0.12);
+}
+
+.panel.panel--wide:has(#tab-pane-character:not([hidden])) .loadout-equipped {
+  background: rgba(10, 18, 30, 0.74);
+  border-color: rgba(125, 249, 255, 0.34);
+}
+
+.loadout-equipped__line {
+  font-size: 13px;
+  font-weight: 800;
+  color: #e8eef5;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.loadout-equipped__sub {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(200, 215, 230, 0.55);
+}
+
+.loadout-stats {
+  width: 100%;
+  max-width: 280px;
+  margin: 8px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.loadout-stat {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.loadout-stat__label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(200, 215, 230, 0.75);
+  text-align: left;
+}
+
+.loadout-stat__track {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(125, 249, 255, 0.15);
+  overflow: hidden;
+}
+
+.loadout-stat__fill {
+  height: 100%;
+  width: 50%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(80, 200, 255, 0.85), rgba(125, 249, 255, 0.95));
+  transition: width 0.2s ease;
+}
+
+.loadout-stat[data-stat="speed"] .loadout-stat__fill {
+  background: linear-gradient(90deg, rgba(255, 180, 80, 0.85), rgba(255, 220, 120, 0.95));
+}
+
+.loadout-stat[data-stat="control"] .loadout-stat__fill {
+  background: linear-gradient(90deg, rgba(100, 220, 160, 0.85), rgba(140, 255, 200, 0.95));
+}
+
+.loadout-stat[data-stat="drift"] .loadout-stat__fill {
+  background: linear-gradient(90deg, rgba(200, 120, 255, 0.85), rgba(230, 160, 255, 0.95));
+}
+
+.loadout-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loadout-row__label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(200, 215, 230, 0.55);
+}
+
+.loadout-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: min(280px, 42vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.loadout-chip {
+  --loadout-chip: 30px;
+  cursor: pointer;
+  width: var(--loadout-chip);
+  height: var(--loadout-chip);
+  min-width: var(--loadout-chip);
+  min-height: var(--loadout-chip);
+  max-width: var(--loadout-chip);
+  max-height: var(--loadout-chip);
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(22, 32, 48, 0.95);
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  contain: content;
+}
+
+.loadout-chip img {
+  max-width: calc(var(--loadout-chip) - 2px);
+  max-height: calc(var(--loadout-chip) - 2px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  display: block;
+}
+
+.loadout-chip:hover:not(:disabled) {
+  border-color: rgba(125, 249, 255, 0.45);
+  background: rgba(32, 48, 65, 0.98);
+}
+
+.loadout-chip--selected {
+  border-color: rgba(125, 249, 255, 0.75);
+  box-shadow: 0 0 0 2px rgba(125, 249, 255, 0.2);
+}
+
+.loadout-chip--locked {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.loadout-chip--locked:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(22, 32, 48, 0.95);
+}
+
+.panel .sub {
+  margin: 16px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(180, 200, 220, 0.65);
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 400px) {
+  .buttons {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+button {
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(34, 52, 72, 0.95);
+  color: #e8eef5;
+  flex: 0 0 auto;
+  min-width: 0;
+  transition:
+    transform 120ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+button:hover {
+  background: rgba(44, 66, 90, 0.98);
+  border-color: rgba(125, 249, 255, 0.25);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0px);
+}
+
+button:focus-visible {
+  outline: 2px solid #7df9ff;
+  outline-offset: 2px;
+}
+
+button.primary {
+  border-color: rgba(125, 249, 255, 0.55);
+  background: linear-gradient(180deg, #1d6782 0%, #154a5f 100%);
+}
+
+button.primary:hover {
+  background: linear-gradient(180deg, #247a96 0%, #18566f 100%);
+}
+
+/* ——— Menu buttons ——— */
+.menu-btn {
+  text-align: left;
+  width: 100%;
+  padding: 10px 12px 9px;
+  border-radius: 14px;
+}
+
+.menu-btn:hover .menu-btn__sub {
+  color: rgba(220, 236, 248, 0.82);
+}
+
+.primary.menu-btn {
+  border-color: rgba(125, 249, 255, 0.45);
+}
+
+.primary.menu-btn .menu-btn__sub {
+  color: rgba(220, 242, 252, 0.86);
+}
+
+.menu-btn__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-btn__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  flex: 0 0 auto;
+}
+
+.menu-btn__title {
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  font-size: 13px;
+}
+
+.menu-btn__sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(200, 218, 235, 0.75);
+}
+
+.primary.menu-btn .menu-btn__icon {
+  background: rgba(125, 249, 255, 0.12);
+  border-color: rgba(125, 249, 255, 0.22);
+}
+
+.end-stats {
+  margin: 0;
+  padding: 0;
+}
+
+.end-stats__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.end-stats__row:last-of-type {
+  border-bottom: none;
+}
+
+.end-stats dt {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(180, 200, 215, 0.75);
+}
+
+.end-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 17px;
+  font-weight: 700;
+  color: #7df9ff;
+  text-align: right;
+}
+
+.end-rank {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(200, 218, 235, 0.85);
+}
+
+.end-rank.hidden {
+  display: none;
+}
+
+.end-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* Grand Prix: make Next Race big + golden */
+.panel--gp .end-actions {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.panel--gp #btn-restart {
+  flex: 1.35;
+  background: linear-gradient(180deg, #ffd56a 0%, #d89b22 100%);
+  border-color: rgba(255, 220, 140, 0.55);
+  color: #f0f7fc;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.42),
+    0 0 30px rgba(255, 210, 120, 0.18);
+}
+
+.panel--gp #btn-restart:hover {
+  background: linear-gradient(180deg, #ffe59a 0%, #e2a52a 100%);
+  border-color: rgba(255, 240, 180, 0.7);
+}
+
+.panel--gp #btn-main-menu {
+  flex: 1;
+}
+
+.btn-restart,
+#btn-restart,
+.btn-main-menu,
+#btn-main-menu {
+  width: 100%;
+  margin-top: 0;
+  padding: 14px;
+  font-size: 15px;
+}
+
+#btn-main-menu {
+  background: rgba(22, 34, 48, 0.88);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(220, 235, 248, 0.9);
+}
+
+#btn-main-menu:hover {
+  background: rgba(32, 48, 66, 0.95);
+  border-color: rgba(125, 249, 255, 0.22);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.leaderboard {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.leaderboard h3 {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(160, 180, 200, 0.8);
+}
+
+.lb-list {
+  margin: 0;
+  padding-left: 22px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(228, 236, 245, 0.92);
+}
+
+.lb-sub {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(200, 218, 235, 0.85);
+}
+
+.lb-list li::marker {
+  color: rgba(125, 249, 255, 0.55);
+}
+
+/** Race complete modal: EndScreen.png frame + inset content */
+.panel.panel--results:not(.hidden) {
+  position: fixed;
+  width: min(
+    640px,
+    calc(100vw - 20px),
+    calc((min(96dvh, 100dvh - 12px)) * 1414 / 975)
+  );
+  aspect-ratio: 1414 / 975;
+  max-height: min(96dvh, calc(100dvh - 12px));
+  padding: 0;
+  overflow: hidden;
+  display: block;
+  background: transparent
+    url("../Track%20Assets/EndScreen.png?v=2026-05-28-track-assets-v3") center / 100% 100%
+    no-repeat;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 16px 48px rgba(0, 0, 0, 0.65));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.panel.panel--results::before {
+  display: none;
+}
+
+.panel.panel--results .panel-end__inner {
+  position: absolute;
+  inset: 9% 9% 8.5% 9%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: #e8eef5;
+}
+
+.panel.panel--results .panel-end__inner > h2 {
+  margin: 0 0 8px;
+  font-size: clamp(1.05rem, 4.2vw, 1.45rem);
+  line-height: 1.2;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
+  color: #f0f7fc;
+  text-shadow: 0 0 18px rgba(125, 249, 255, 0.12);
+}
+
+.panel.panel--results .end-stats {
+  flex: 0 0 auto;
+}
+
+.panel.panel--results .end-stats__row {
+  padding: 6px 0;
+  gap: 12px;
+  border-bottom-color: rgba(125, 249, 255, 0.12);
+}
+
+.panel.panel--results .end-stats dt {
+  font-size: 10px;
+}
+
+.panel.panel--results .end-stats dd {
+  font-size: 16px;
+}
+
+.panel.panel--results .end-rank {
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  flex-shrink: 0;
+}
+
+.panel.panel--results .end-actions {
+  margin-top: 8px;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.panel.panel--results #btn-restart,
+.panel.panel--results #btn-main-menu {
+  padding: 10px 12px;
+  font-size: 13px;
+  background: rgba(8, 18, 32, 0.72);
+  border-color: rgba(125, 249, 255, 0.28);
+  color: #f0f7fc;
+}
+
+.panel.panel--results.panel--gp #btn-main-menu {
+  background: rgba(22, 34, 48, 0.88);
+  border-color: rgba(125, 249, 255, 0.28);
+  color: #f0f7fc;
+}
+
+.panel.panel--results .leaderboard {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top-color: rgba(125, 249, 255, 0.12);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 38%;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel.panel--results .leaderboard h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.panel.panel--results .lb-list {
+  font-size: 12px;
+  line-height: 1.4;
+  padding-left: 18px;
+  margin: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/** Main map menu: admin GP track picker (top-right).
+   Must sit above `.map-hotspots` (z-index 60, full-screen) or clicks never reach this button. */
+.menu-admin-open {
+  display: none;
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: calc(10px + env(safe-area-inset-right, 0px));
+  z-index: 72;
+  font: 600 11px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+  padding: 7px 11px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(10, 14, 20, 0.62);
+  color: #eef4fb;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
+  display: block;
+}
+
+.panel.panel--admin {
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(88dvh, calc(100dvh - 24px));
+  padding: 18px 18px 16px;
+  z-index: 73;
+}
+
+.panel.panel--admin h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.panel-admin__hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(200, 218, 235, 0.88);
+}
+
+.admin-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+  max-height: min(52dvh, 360px);
+  overflow-y: auto;
+}
+
+.admin-track-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(125, 249, 255, 0.2);
+  background: rgba(18, 28, 40, 0.75);
+  color: #e8f2ff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.admin-track-btn:hover {
+  background: rgba(30, 48, 68, 0.9);
+  border-color: rgba(125, 249, 255, 0.38);
+}
+
+.panel-admin__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .hud-panel {
+    width: 100%;
+  }
+
+  .hud-panel__metrics {
+    gap: 6px;
+  }
+
+  .hud-chip {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .hud-hints__keys {
+    font-size: 10px;
+  }
+}

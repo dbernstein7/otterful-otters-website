@@ -1296,9 +1296,17 @@ body::before {
     padding: 130px 45px 45px;
 }
 
+.page-embed-layout {
+    margin-top: 18px;
+}
+
 .page-embed {
     margin-top: 18px;
     width: 100%;
+}
+
+.page-embed-layout .page-embed {
+    margin-top: 0;
 }
 
 .page-embed-note {

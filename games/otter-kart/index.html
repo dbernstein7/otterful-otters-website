@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>OtterKart · Arcade Sprint</title>
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <link rel="stylesheet" href="./css/styles.css?v=2026-05-28-no-hotspot-debug-v24" />
+    <script>
+      (function () {
+        function reportGameSize() {
+          const height = Math.max(
+            document.body.scrollHeight,
+            document.documentElement.scrollHeight,
+          );
+          const width = Math.max(
+            document.body.scrollWidth,
+            document.documentElement.scrollWidth,
+          );
+          window.parent.postMessage(
+            { type: "GAME_SIZE_RESPONSE", height: height, width: width },
+            "*",
+          );
+        }
+        window.addEventListener("load", reportGameSize);
+        window.addEventListener("resize", reportGameSize);
+        window.addEventListener("message", function (event) {
+          if (event.data && event.data.type === "REQUEST_GAME_SIZE") {
+            reportGameSize();
+          }
+        });
+      })();
+    </script>
+    <script>
+      (function () {
+        try {
+          if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
+            window.ethereum = window.top.ethereum;
+          }
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="otter-ui-menu otter-ui-start">
+    <canvas id="game" aria-label="OtterKart racing game"></canvas>
+
+    <button type="button" id="btn-admin-open" class="menu-admin-open" aria-haspopup="dialog" aria-controls="panel-admin" aria-expanded="false" aria-label="Admin: pick a Grand Prix track">
+      Admin
+    </button>
+
+    <div id="panel-admin" class="panel panel--modal panel--admin hidden" role="dialog" aria-modal="true" aria-labelledby="panel-admin-title">
+      <h2 id="panel-admin-title">Admin · GP track</h2>
+      <p class="panel-admin__hint">Jump into any Grand Prix course with CPUs (not saved).</p>
+      <div id="admin-track-list" class="admin-track-list"></div>
+      <div class="panel-admin__actions">
+        <button type="button" id="btn-admin-close" class="btn-restart">Close</button>
+      </div>
+    </div>
+
+    <div id="start-menu-hotspots" class="start-menu-hotspots" aria-hidden="false">
+      <button type="button" class="start-hotspot start-hotspot--start" data-start-action="start" data-ix="358" data-iy="208" data-iw="306" data-ih="92" aria-label="Start"></button>
+      <button type="button" class="start-hotspot start-hotspot--demo" data-start-action="demo" data-ix="368" data-iy="323" data-iw="276" data-ih="60" aria-label="Demo"></button>
+      <button type="button" class="start-hotspot start-hotspot--wallet" data-start-action="wallet" data-ix="394" data-iy="402" data-iw="224" data-ih="48" aria-label="Wallet connect"></button>
+    </div>
+    <div id="start-wallet-toast" class="start-wallet-toast hidden" role="status" aria-live="polite"></div>
+    <div id="demo-session-badge" class="demo-session-badge hidden" aria-hidden="true">Demo</div>
+
+    <div id="map-hotspots" class="map-hotspots" aria-hidden="true">
+      <button type="button" class="map-hotspot map-hotspot--garage" data-map-mode="garage" aria-label="Garage"></button>
+      <button type="button" class="map-hotspot map-hotspot--practice" data-map-mode="practice" aria-label="Practice"></button>
+      <button type="button" class="map-hotspot map-hotspot--daily" data-map-mode="daily" aria-label="Drift challenge"></button>
+      <button type="button" class="map-hotspot map-hotspot--gp" data-map-mode="grandprix" aria-label="Grand Prix"></button>
+      <button type="button" class="map-hotspot map-hotspot--touge" data-map-mode="touge" aria-label="Neon Snake"></button>
+      <button type="button" class="map-hotspot map-hotspot--endless" data-map-mode="endless" aria-label="Endless Neon Snake"></button>
+      <button type="button" class="map-hotspot map-hotspot--claim" data-map-mode="claim" aria-label="Claim"></button>
+    </div>
+
+    <div id="map-claim-bar" class="map-claim-bar" aria-hidden="true" aria-label="Session shells earned">
+      <div class="map-claim-bar__count" title="Shells earned this session">
+        <span class="map-claim-bar__shell" aria-hidden="true">🐚</span>
+        <span id="map-session-shells" class="map-claim-bar__num">0</span>
+      </div>
+    </div>
+
+    <div id="garage-hotspots" class="garage-hotspots" aria-hidden="true">
+      <div class="garage-minimap" aria-hidden="true"></div>
+      <button type="button" class="garage-hotspot garage-hotspot--to-map" aria-label="Back to map"></button>
+    </div>
+
+    <div id="modal-backdrop" class="modal-backdrop hidden" aria-hidden="true"></div>
+
+    <div id="countdown" class="countdown hidden" aria-live="assertive"></div>
+
+    <div id="hud-place" class="hud-place" hidden aria-label="Race position">
+      <div class="hud-place__inner"></div>
+    </div>
+
+    <div id="hud-lives" class="hud-lives hidden" aria-label="Lives remaining">
+      <span class="hud-lives__lbl">Lives</span>
+      <span id="hud-lives-val" class="hud-lives__val">3</span>
+    </div>
+
+    <div id="hud-randomizer" class="hud-randomizer hidden" aria-label="Item randomizer">
+      <img
+        class="hud-randomizer__frame"
+        src="./Track%20Assets/Randomizer.png?v=2026-05-28-boost-balance-v14"
+        alt=""
+        decoding="async"
+      />
+      <img
+        id="hud-randomizer-item"
+        class="hud-randomizer__item"
+        alt=""
+        decoding="async"
+        hidden
+      />
+    </div>
+
+    <div id="hud" class="hud" aria-live="polite" aria-label="Race status">
+      <div class="hud-stack">
+      <div class="hud-panel">
+        <div class="hud-panel__inner">
+          <div class="hud-panel__top">
+            <span id="hud-mode" class="badge">Practice</span>
+            <div class="hud-time-wrap">
+              <span class="hud-time-wrap__label">Time</span>
+              <span id="hud-time" class="hud-time-wrap__value">00:00.00</span>
+            </div>
+          </div>
+          <div class="hud-panel__metrics">
+            <span id="hud-lap" class="hud-chip">Lap 1 / 3</span>
+            <span class="hud-chip hud-chip--shells" title="Shells (score)">
+              <span class="shell-icon" aria-hidden="true">🐚</span>
+              <span id="shell-count">0</span>
+            </span>
+            <!-- Banana/boost HUD chips removed (mystery box system). -->
+          </div>
+          <div id="drift-meter-wrap" class="drift-box hidden">
+            <div class="drift-box__label">Drift boost</div>
+            <div class="meter-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="drift-meter-track">
+              <div id="drift-meter-fill" class="meter-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="hud-drift-board" class="hud-drift-board hidden" aria-label="Drift distance">
+        <div class="hud-drift-board__inner">
+          <span id="hud-drift-cur-val" class="hud-drift-board__val">0 m</span>
+        </div>
+      </div>
+      </div>
+      <!-- Controls hint removed (settings panel replaces it). -->
+    </div>
+
+    <button type="button" id="btn-settings" class="hud-settings hidden" aria-label="Settings">
+      <span class="hud-settings__icon" aria-hidden="true">⚙</span>
+    </button>
+
+    <div id="panel-settings" class="panel-settings hidden" role="dialog" aria-modal="true" aria-label="Settings">
+      <div id="settings-panel" class="settings-panel">
+        <img
+          class="settings-panel__art"
+          src="./Track%20Assets/Settings.png?v=2026-05-28-settings-asset-v21"
+          alt="Settings — keyboard and controller controls"
+          width="1000"
+          height="550"
+          decoding="async"
+        />
+        <button
+          type="button"
+          id="btn-settings-menu"
+          class="settings-panel__hotspot settings-panel__hotspot--menu"
+          data-ix="160"
+          data-iy="472"
+          data-iw="214"
+          data-ih="44"
+          aria-label="Main menu"
+        ></button>
+        <button
+          type="button"
+          id="btn-settings-close"
+          class="settings-panel__hotspot settings-panel__hotspot--close"
+          data-ix="730"
+          data-iy="472"
+          data-iw="124"
+          data-ih="44"
+          aria-label="Close"
+        ></button>
+      </div>
+    </div>
+
+    <div id="panel-start" class="panel panel--modal panel--wide">
+      <h1>OtterKart</h1>
+
+      <div class="start-tabs" role="tablist" aria-label="Main menu">
+        <button type="button" id="btn-tab-play" role="tab" aria-selected="true" aria-controls="tab-pane-play">
+          Play
+        </button>
+        <button type="button" id="btn-tab-character" role="tab" aria-selected="false" aria-controls="tab-pane-character">
+          Garage
+        </button>
+      </div>
+
+      <div id="tab-pane-play" class="start-tab-pane" role="tabpanel" aria-labelledby="btn-tab-play">
+        <p class="tagline">Drift corners, bounce off boost pads, beat CPU rivals.</p>
+        <div class="buttons">
+          <button type="button" id="btn-practice" class="menu-btn">
+            <span class="menu-btn__top">
+              <span class="menu-btn__icon" aria-hidden="true">🏁</span>
+              <span class="menu-btn__title">Practice</span>
+            </span>
+            <span class="menu-btn__sub">Warm up, learn the track, set a best lap.</span>
+          </button>
+          <button type="button" id="btn-daily" class="primary menu-btn">
+            <span class="menu-btn__top">
+              <span class="menu-btn__icon" aria-hidden="true">📅</span>
+              <span class="menu-btn__title">Drift challenge</span>
+            </span>
+            <span class="menu-btn__sub">2 minutes to collect shells. Set a drift record.</span>
+          </button>
+          <button type="button" id="btn-gp" class="menu-btn">
+            <span class="menu-btn__top">
+              <span class="menu-btn__icon" aria-hidden="true">🏆</span>
+              <span class="menu-btn__title">Grand Prix</span>
+            </span>
+            <span class="menu-btn__sub">A full series across all tracks. Unlock rewards.</span>
+          </button>
+          <button type="button" id="btn-touge" class="menu-btn">
+            <span class="menu-btn__top">
+              <span class="menu-btn__icon" aria-hidden="true">🗼</span>
+              <span class="menu-btn__title">Neon Snake</span>
+            </span>
+            <span class="menu-btn__sub">A long neon snake run. Drift clean, chain tiers, grab shells.</span>
+          </button>
+          <button type="button" id="btn-endless" class="menu-btn">
+            <span class="menu-btn__top">
+              <span class="menu-btn__icon" aria-hidden="true">♾️</span>
+              <span class="menu-btn__title">Endless Neon Snake</span>
+            </span>
+            <span class="menu-btn__sub">No finish line. 3 lives. Dodge traps. +50 shells every 5 mi driven.</span>
+          </button>
+        </div>
+        <div class="home-claim" aria-label="Session shells">
+          <div class="home-claim__left">
+            <div class="home-claim__lbl">Session shells</div>
+            <div class="home-claim__val"><span id="home-shells-total">0</span></div>
+          </div>
+          <button type="button" id="btn-claim" class="home-claim__btn">Claim</button>
+        </div>
+        <p class="sub">
+          Race CPU opponents. Leaderboard is saved in this browser.
+        </p>
+      </div>
+
+      <div id="tab-pane-character" class="start-tab-pane" role="tabpanel" aria-labelledby="btn-tab-character" hidden>
+        <section class="loadout-panel" aria-label="Garage">
+          <h2 class="loadout-panel__title">Loadout</h2>
+          <p class="loadout-panel__hint">
+            Tap an icon to equip. Saved in this browser.
+          </p>
+          <div id="loadout-mount" class="loadout-mount"></div>
+        </section>
+      </div>
+    </div>
+
+    <div id="panel-end" class="panel panel--modal panel--results hidden">
+      <div class="panel-end__inner">
+        <h2 id="end-title">Race complete</h2>
+        <dl class="end-stats">
+          <div class="end-stats__row">
+            <dt>Total time</dt>
+            <dd id="end-time">—</dd>
+          </div>
+          <div class="end-stats__row">
+            <dt id="end-bestlap-label">Best lap</dt>
+            <dd id="end-best-lap">—</dd>
+          </div>
+          <div class="end-stats__row">
+            <dt id="end-drift-time-label">Longest drift time</dt>
+            <dd id="end-drift-time">—</dd>
+          </div>
+          <div class="end-stats__row">
+            <dt>Shells</dt>
+            <dd id="end-shells-n">0</dd>
+          </div>
+          <div class="end-stats__row">
+            <dt>Finish</dt>
+            <dd id="end-finish-place">—</dd>
+          </div>
+        </dl>
+        <p id="end-daily-rank" class="end-rank hidden"></p>
+        <div class="end-actions">
+          <button type="button" id="btn-restart" class="btn-restart">Race again</button>
+          <button type="button" id="btn-main-menu" class="btn-main-menu">Main menu</button>
+        </div>
+        <div id="leaderboard" class="leaderboard">
+          <h3>Leaderboard · <span id="lb-label">Practice</span></h3>
+          <div id="lb-sub" class="lb-sub" aria-live="polite"></div>
+          <ol id="lb-list" class="lb-list"></ol>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./js/main.js?v=2026-05-28-start-menu-v15"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
