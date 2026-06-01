@@ -1141,9 +1141,14 @@ body.otter-ui-menu .panel-settings {
   display: none;
 }
 
-/* In-game music (menu screens) — press M or ♪ button */
-body:not(.otter-ui-menu) .hud-music,
-body:not(.otter-ui-menu) .music-panel {
+/* Music — menu + races (iframe-safe z-index above HUD) */
+.hud-music,
+.music-panel {
+  display: block;
+}
+
+.hud-music.hidden,
+.music-panel.hidden {
   display: none !important;
 }
 

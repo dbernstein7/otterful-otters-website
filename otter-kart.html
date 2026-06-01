@@ -75,11 +75,11 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-hotspot-cover"
+                    src="/games/otter-kart/index.html?v=2026-06-02-music-iframe"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
-                    allow="clipboard-read; clipboard-write; fullscreen"
+                    allow="autoplay; clipboard-read; clipboard-write; fullscreen"
                     tabindex="0"
                 ></iframe>
             </div>
@@ -139,7 +139,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-hotspot-cover';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-music-iframe';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;

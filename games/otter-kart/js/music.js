@@ -14,8 +14,8 @@ const TRACKS = [
 
 const STORAGE_KEY = "otterKartMusic";
 
-function trackUrl(file) {
-  return `music/${file}`;
+function resolveTrackUrl(file) {
+  return new URL(`music/${file}`, document.baseURI || window.location.href).href;
 }
 
 function loadPrefs() {
@@ -52,6 +52,7 @@ export function initOtterKartMusic() {
   let paused = prefs.paused === true;
   let panelOpen = !!prefs.panelOpen;
   let unlocked = false;
+  let switching = false;
 
   const audio = new Audio();
   audio.loop = false;
@@ -77,7 +78,9 @@ export function initOtterKartMusic() {
   function syncLabels() {
     const t = TRACKS[trackIndex];
     if (titleEl) titleEl.textContent = t.label;
-    if (metaEl) metaEl.textContent = `Track ${trackIndex + 1} / ${TRACKS.length}`;
+    if (metaEl) {
+      metaEl.textContent = `Track ${trackIndex + 1} / ${TRACKS.length}`;
+    }
     if (playBtn instanceof HTMLButtonElement) {
       playBtn.textContent = paused ? "▶ Play" : "❚❚ Pause";
     }
@@ -89,41 +92,65 @@ export function initOtterKartMusic() {
     }
   }
 
-  function playWhenReady() {
-    if (!unlocked || paused || muted) return;
-    const start = () => {
-      audio.play().catch(() => {});
-    };
-    if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      start();
-      return;
-    }
-    audio.addEventListener("canplay", start, { once: true });
-    audio.load();
+  function markUnlocked() {
+    unlocked = true;
+  }
+
+  /** @returns {Promise<void>} */
+  function playCurrent() {
+    markUnlocked();
+    if (paused || muted) return Promise.resolve();
+    applyVolume();
+    return audio.play().catch(() => {});
   }
 
   /** @param {boolean} andPlay */
   function loadTrack(andPlay) {
     audio.pause();
-    audio.src = trackUrl(TRACKS[trackIndex].file);
-    applyVolume();
-    syncLabels();
-    persist();
-    if (andPlay) playWhenReady();
+    const url = resolveTrackUrl(TRACKS[trackIndex].file);
+    return new Promise((resolve) => {
+      const finish = () => {
+        applyVolume();
+        syncLabels();
+        persist();
+        resolve();
+      };
+      const onReady = () => {
+        if (andPlay && unlocked && !paused && !muted) {
+          playCurrent().finally(finish);
+        } else {
+          finish();
+        }
+      };
+      const onError = () => {
+        console.warn("[OtterKart music] failed to load", TRACKS[trackIndex].file);
+        finish();
+      };
+
+      if (audio.src === url && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+        onReady();
+        return;
+      }
+
+      audio.addEventListener("canplay", onReady, { once: true });
+      audio.addEventListener("error", onError, { once: true });
+      audio.src = url;
+      audio.load();
+    });
   }
 
-  function changeTrack(delta) {
+  /** @param {number} delta */
+  async function changeTrack(delta) {
+    if (switching) return;
+    switching = true;
+    markUnlocked();
     trackIndex = (trackIndex + delta + TRACKS.length) % TRACKS.length;
     paused = false;
-    unlocked = true;
-    loadTrack(true);
-  }
-
-  function tryPlay() {
-    unlocked = true;
-    if (paused || muted) return;
-    if (!audio.src) loadTrack(false);
-    playWhenReady();
+    try {
+      await loadTrack(true);
+    } finally {
+      switching = false;
+    }
   }
 
   function setPanelOpen(open) {
@@ -135,50 +162,55 @@ export function initOtterKartMusic() {
   }
 
   audio.addEventListener("ended", () => {
-    if (paused) return;
-    changeTrack(1);
+    if (paused || switching) return;
+    void changeTrack(1);
   });
 
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
+  function bindControl(el, handler) {
+    if (!(el instanceof HTMLElement)) return;
+    const run = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      markUnlocked();
+      void handler(e);
+    };
+    el.addEventListener("click", run);
+  }
+
+  bindControl(btn, () => {
     setPanelOpen(!panelOpen);
-    tryPlay();
+    if (!panelOpen) return;
+    if (!paused && !muted) void loadTrack(true);
   });
 
-  closeBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
+  bindControl(closeBtn, () => {
     setPanelOpen(false);
   });
 
-  prevBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    changeTrack(-1);
+  bindControl(prevBtn, () => {
+    void changeTrack(-1);
   });
 
-  nextBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    changeTrack(1);
+  bindControl(nextBtn, () => {
+    void changeTrack(1);
   });
 
-  playBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    unlocked = true;
+  bindControl(playBtn, async () => {
     paused = !paused;
     if (paused) {
       audio.pause();
     } else {
-      if (!audio.src) loadTrack(false);
-      playWhenReady();
+      if (!audio.src) await loadTrack(false);
+      await playCurrent();
     }
     syncLabels();
     persist();
   });
 
-  muteBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
+  bindControl(muteBtn, async () => {
     muted = !muted;
     applyVolume();
-    if (!muted && !paused && unlocked) playWhenReady();
+    if (!muted && !paused) await playCurrent();
     syncLabels();
     persist();
   });
@@ -186,10 +218,11 @@ export function initOtterKartMusic() {
   volInput?.addEventListener("input", (e) => {
     e.stopPropagation();
     if (!(volInput instanceof HTMLInputElement)) return;
+    markUnlocked();
     volume = Number(volInput.value);
     if (volume > 0 && muted) muted = false;
     applyVolume();
-    if (!paused && !muted && unlocked) playWhenReady();
+    if (!paused && !muted) void playCurrent();
     syncLabels();
     persist();
   });
@@ -208,17 +241,13 @@ export function initOtterKartMusic() {
       return;
     }
     ev.preventDefault();
+    markUnlocked();
     setPanelOpen(!panelOpen);
-    tryPlay();
+    if (!panelOpen || paused || muted) return;
+    void loadTrack(true);
   });
 
-  const unlock = () => {
-    tryPlay();
-  };
-  document.addEventListener("pointerdown", unlock, { once: true, capture: true });
-  document.addEventListener("keydown", unlock, { once: true, capture: true });
-
   setPanelOpen(panelOpen);
-  loadTrack(false);
+  void loadTrack(false);
   syncLabels();
 }
