@@ -450,12 +450,19 @@ function installHotspotResizeWatchers() {
   }
 }
 
-/** Map on right workbench (1672×941) */
-const GARAGE_MAP_BOX = { x: 0.752, y: 0.655, w: 0.145, h: 0.215 };
+/** Map on right workbench (1672×941); offsetY px raises map on screen */
+const GARAGE_MAP_BOX = { x: 0.752, y: 0.655, w: 0.145, h: 0.215, offsetY: -20 };
 
-/** Kart / hat / eyes column — compact, left of kart (offsetLeft nudges further left in px) */
-const GARAGE_PICKER_DESKTOP = { x: 0.26, y: 0.42, w: 0.145, maxW: 200, offsetLeft: 100 };
-const GARAGE_PICKER_MOBILE = { x: 0.05, y: 0.38, w: 0.3, maxW: 240, offsetLeft: 0 };
+/** Kart / hat / eyes column; offsetLeft/offsetTop in px */
+const GARAGE_PICKER_DESKTOP = {
+  x: 0.26,
+  y: 0.42,
+  w: 0.145,
+  maxW: 200,
+  offsetLeft: 120,
+  offsetTop: 20,
+};
+const GARAGE_PICKER_MOBILE = { x: 0.05, y: 0.38, w: 0.3, maxW: 240, offsetLeft: 0, offsetTop: 0 };
 
 function getGaragePickerLayout() {
   const { vw, vh } = getGameViewportSize();
@@ -483,11 +490,13 @@ function layoutGarageLayout() {
     garageHotspots.style.bottom = "auto";
 
     const map = GARAGE_MAP_BOX;
+    const mapLift = map.offsetY ?? 0;
     for (const el of garageHotspots.querySelectorAll(".garage-minimap, .garage-hotspot--to-map")) {
       if (!(el instanceof HTMLElement)) continue;
       el.style.position = "absolute";
       el.style.left = `${map.x * 100}%`;
-      el.style.top = `${map.y * 100}%`;
+      el.style.top =
+        mapLift !== 0 ? `calc(${map.y * 100}% + ${mapLift}px)` : `${map.y * 100}%`;
       el.style.width = `${map.w * 100}%`;
       el.style.height = `${map.h * 100}%`;
       el.style.right = "auto";
@@ -501,9 +510,10 @@ function layoutGarageLayout() {
   if (leftCol instanceof HTMLElement) {
     const colW = Math.min(picker.maxW ?? 200, picker.w * dw);
     const shiftL = picker.offsetLeft ?? 0;
+    const shiftT = picker.offsetTop ?? 0;
     leftCol.style.position = "fixed";
     leftCol.style.left = `${ox + picker.x * dw - shiftL}px`;
-    leftCol.style.top = `${oy + picker.y * dh}px`;
+    leftCol.style.top = `${oy + picker.y * dh + shiftT}px`;
     leftCol.style.width = `${colW}px`;
     leftCol.style.maxWidth = `${colW}px`;
     leftCol.style.zIndex = "45";
