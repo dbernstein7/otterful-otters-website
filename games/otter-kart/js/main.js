@@ -614,9 +614,11 @@ function layoutMapClaimBar() {
   const bw = mapClaimBar.offsetWidth || 88;
   const bh = mapClaimBar.offsetHeight || 40;
   const gap = 232;
-  const { vh } = getGameViewportSize();
+  const { vw, vh } = getGameViewportSize();
+  const desktop = Math.min(vw, vh) >= 560;
   let left = cr.left - bw - gap;
   let top = cr.top + (cr.height - bh) * 0.5;
+  if (desktop) top -= 30;
   left = Math.max(8, left);
   top = Math.max(8, Math.min(top, vh - bh - 8));
   mapClaimBar.style.left = `${left}px`;
