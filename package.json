@@ -10,6 +10,7 @@
     "@gltf-transform/core": "^3.10.1",
     "gl-matrix": "^3.4.4",
     "redis": "^5.8.0",
-    "three": "^0.160.0"
+    "three": "^0.160.0",
+    "viem": "^2.47.17"
   }
 }

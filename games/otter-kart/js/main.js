@@ -40,7 +40,7 @@ import {
   connectAndCheckRewards,
   getConnectedWallet,
   shortWallet,
-} from "../../shell-rush-rewards.mjs";
+} from "../../otter-kart-rewards.mjs";
 
 const canvas = document.getElementById("game");
 const countdownEl = document.getElementById("countdown");

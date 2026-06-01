@@ -1,10 +1,12 @@
 /**
- * Shell Rush / Snag Drip rewards — wallet connect, status check, and claim.
- * Matches the embedded Shell Snag game API (/api/rewards/check, /api/rewards/award).
+ * Otter Kart — wallet connect, Drip rewards check, and shell claim.
+ * Server: /api/otter-kart/rewards/* (separate from Shell Rush /api/rewards/*).
  */
 
 const MAX_SHELLS_PER_CLAIM = 50000;
-const WALLET_STORAGE_KEY = "otterShellRushWallet";
+const WALLET_STORAGE_KEY = "otterKartWallet";
+const CHECK_URL = "/api/otter-kart/rewards/check";
+const AWARD_URL = "/api/otter-kart/rewards/award";
 
 /** @type {string | null} */
 let connectedWallet = null;
@@ -72,7 +74,7 @@ async function personalSign(message, address) {
 
 function attestationMessage(wallet, shells, runId, issuedAtSec) {
   return [
-    "Otter Shell Rush — shells collected attestation",
+    "Otter Kart - Shells Collected",
     "v1",
     `wallet:${wallet.toLowerCase()}`,
     `shells:${shells}`,
@@ -83,7 +85,7 @@ function attestationMessage(wallet, shells, runId, issuedAtSec) {
 
 function checkMessage(wallet, issuedAtSec) {
   return [
-    "Otter Shell Rush — rewards status check",
+    "Otter Kart - Rewards Check",
     "v1",
     `wallet:${wallet.toLowerCase()}`,
     `issuedAt:${issuedAtSec}`,
@@ -101,10 +103,6 @@ async function resolveActiveWallet(preferred) {
   return null;
 }
 
-/**
- * Connect wallet and verify Snag Drip rewards enrollment (same as Shell Snag “Check rewards status”).
- * @returns {Promise<{ ok: boolean, text: string, tone: 'ok' | 'warn' | 'bad', wallet?: string }>}
- */
 export async function connectAndCheckRewards(preferredWallet) {
   const eth = getEthereum();
   if (!eth) {
@@ -134,16 +132,6 @@ export async function connectAndCheckRewards(preferredWallet) {
   };
 }
 
-/**
- * @returns {Promise<
- *   | { kind: 'not_configured' }
- *   | { kind: 'no_identity' }
- *   | { kind: 'no_signature' }
- *   | { kind: 'not_found' }
- *   | { kind: 'ok', dripId: string, balance: number | null }
- *   | { kind: 'error', message: string }
- * >}
- */
 export async function checkRewardsStatus(preferredWallet) {
   const walletRaw = typeof preferredWallet === "string" ? preferredWallet.trim() : "";
   if (!walletRaw) return { kind: "no_identity" };
@@ -160,7 +148,7 @@ export async function checkRewardsStatus(preferredWallet) {
   if (!signature) return { kind: "no_signature" };
 
   const body = { wallet, issuedAtSec, signature };
-  const res = await fetch("/api/rewards/check", {
+  const res = await fetch(CHECK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -169,6 +157,9 @@ export async function checkRewardsStatus(preferredWallet) {
 
   if (data?.ok === true && data?.skipped === "not_configured") {
     return { kind: "not_configured" };
+  }
+  if (data?.ok === false && data?.code === "invalid_signature") {
+    return { kind: "error", message: "Invalid or expired signature." };
   }
   if (!res.ok && typeof data?.message === "string") {
     return { kind: "error", message: data.message };
@@ -193,17 +184,16 @@ export async function checkRewardsStatus(preferredWallet) {
   return { kind: "error", message: "Unexpected response from rewards check." };
 }
 
-/** @param {ReturnType<typeof checkRewardsStatus> extends Promise<infer T> ? T : never} result */
 export function formatCheckResult(result) {
   switch (result.kind) {
     case "not_configured":
       return {
-        text: "Rewards server is not configured yet (missing server environment keys).",
+        text: "Otter Kart rewards are not configured on the server yet.",
         tone: "warn",
       };
     case "no_identity":
       return {
-        text: "Connect with your wallet to earn Otter Shell Rush drip points.",
+        text: "Connect with your wallet to earn Otter Kart drip points.",
         tone: "warn",
       };
     case "no_signature":
@@ -213,15 +203,15 @@ export function formatCheckResult(result) {
       };
     case "not_found":
       return {
-        text: "No rewards profile found for this wallet in the Otter Shell Rush program. Join or link this wallet where you manage rewards.",
+        text: "No Otter Kart rewards profile found for this wallet. Join the Otter Army program first.",
         tone: "bad",
       };
     case "ok":
       return {
         text:
           result.balance === null
-            ? "You're linked for Otter Shell Rush rewards. Session shells can be claimed to drip points."
-            : `You're linked for Otter Shell Rush rewards. Current drip points: ${result.balance}.`,
+            ? "You're linked for Otter Kart rewards. Session shells can be claimed to drip points."
+            : `You're linked for Otter Kart rewards. Current drip points: ${result.balance}.`,
         tone: "ok",
       };
     case "error":
@@ -231,12 +221,6 @@ export function formatCheckResult(result) {
   }
 }
 
-/**
- * Claim session shells to Snag Drip (same as Shell Snag end-of-run claim).
- * @param {number} shells
- * @param {string} [runId]
- * @param {number} [score]
- */
 export async function claimSessionShells(shells, runId, score) {
   const wallet = getConnectedWallet() || (await resolveActiveWallet(""));
   if (!wallet) {
@@ -277,7 +261,7 @@ export async function claimSessionShells(shells, runId, score) {
     body.score = Math.max(0, Math.floor(score));
   }
 
-  const res = await fetch("/api/rewards/award", {
+  const res = await fetch(AWARD_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -296,14 +280,21 @@ export async function claimSessionShells(shells, runId, score) {
     return {
       ok: false,
       tone: "warn",
-      text: "Rewards server is not configured yet.",
+      text: "Otter Kart rewards are not configured on the server yet.",
     };
   }
   if (data?.ok === true && data?.skipped === "no_member") {
     return {
       ok: false,
       tone: "bad",
-      text: "This wallet is not enrolled for rewards yet (no member found).",
+      text: "This wallet is not enrolled for Otter Kart rewards yet (no member found).",
+    };
+  }
+  if (data?.ok === false && data?.code === "invalid_signature") {
+    return {
+      ok: false,
+      tone: "bad",
+      text: "Invalid or expired signature.",
     };
   }
   if (data?.ok === true && typeof data.dripId === "string" && typeof data.balance === "number") {
