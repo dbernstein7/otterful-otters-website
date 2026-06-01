@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-mobile-fix"
+                    src="/games/otter-kart/index.html?v=2026-06-02-map-image-boxes"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -146,8 +146,9 @@
         if (!iframe || !shell) return;
 
         function postEmbedViewport() {
-          const w = Math.round(shell.clientWidth || iframe.clientWidth || 0);
-          const h = Math.round(shell.clientHeight || iframe.clientHeight || 0);
+          const rect = shell.getBoundingClientRect();
+          const w = Math.round(rect.width || shell.clientWidth || iframe.clientWidth || 0);
+          const h = Math.round(rect.height || shell.clientHeight || iframe.clientHeight || 0);
           if (w < 8 || h < 8) return;
           try {
             iframe.contentWindow &&

@@ -266,50 +266,12 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   outline-offset: 2px;
 }
 
-/* Map hit regions: % tuned for cover-centered map; JS calibrates to image space then rescales. */
-.map-hotspot--practice {
-  left: calc(10% + 200px);
-  top: calc(20% + 20px);
-  width: max(60px, calc(30% - 300px));
-  height: 13%;
-}
-.map-hotspot--daily {
-  left: calc(57% + 90px);
-  top: calc(16% - 60px);
-  width: max(60px, calc(30% - 200px));
-  height: 11%;
-}
-.map-hotspot--gp {
-  left: calc(36% + 20px);
-  top: calc(48% + 100px);
-  width: max(60px, calc(28% - 200px));
-  height: 11%;
-}
-.map-hotspot--touge {
-  left: calc(64% + 100px);
-  top: calc(46% + 140px);
-  width: max(60px, calc(26% - 200px));
-  height: 12%;
-}
-.map-hotspot--endless {
-  left: calc(12% + 100px);
-  top: calc(62% + 170px);
-  width: max(60px, calc(32% - 300px));
-  height: 13%;
-}
-.map-hotspot--claim {
-  left: calc(78% + 110px);
-  top: calc(74% + 200px);
-  width: max(60px, calc(18% - 200px));
-  height: calc(11% - 20px);
-  border-radius: 14px;
-}
-.map-hotspot--garage {
-  left: 48px;
-  top: 198px;
-  width: 220px;
-  height: 184px;
-  border-radius: 14px;
+/* Map hit regions: positioned in JS from MAP_HOTSPOT_BOXES (image space, all viewports). */
+.map-hotspot[data-map-mode] {
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
 }
 
 .map-claim-bar {
@@ -364,9 +326,9 @@ body.otter-ui-admin-open .map-claim-bar {
 /* Garage tab: full-screen Garage.png background */
 body.otter-ui-menu.otter-ui-garage {
   background: #080c10;
-  /* Keep Garage UI positioning stable even if the background image changes */
-  --garage-options-left: 400px;
-  --garage-options-top: 630px;
+  /* Tuned at 1672×941 reference; % scales on mobile + desktop */
+  --garage-options-left: 23.9%;
+  --garage-options-top: 67%;
 }
 
 body.otter-ui-menu.otter-ui-garage::after {
@@ -389,10 +351,12 @@ body.otter-ui-menu.otter-ui-garage::before {
 /* Garage: minimap overlay (do NOT use ::before; menu vignette overrides it) */
 .garage-minimap {
   position: fixed;
-  right: 342px; /* moved left 320px total */
-  bottom: 188px; /* moved up 170px total */
-  width: 320px;
-  height: 300px;
+  left: 60.4%;
+  bottom: 20%;
+  width: 19.1%;
+  height: 31.9%;
+  max-width: 320px;
+  max-height: 300px;
   z-index: 64;
   pointer-events: none;
   background: url("../Character%20Select/GarageMAP.png?v=2026-05-07-1343");
@@ -445,12 +409,14 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspots {
   outline-offset: 2px;
 }
 
-/* Back-to-map hotspot (tuned to current GarageMAP art) */
+/* Back-to-map hotspot (tuned to GarageMAP art at 1672×941) */
 .garage-hotspot--to-map {
-  right: 342px;
-  bottom: 188px;
-  width: 320px;
-  height: 300px;
+  left: 60.4%;
+  bottom: 20%;
+  width: 19.1%;
+  height: 31.9%;
+  max-width: 320px;
+  max-height: 300px;
 }
 
 /* Put the canvas behind the garage image while in the menu garage tab. */
@@ -465,8 +431,8 @@ body.otter-ui-menu.otter-ui-garage #panel-start {
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  width: 100vw !important;
-  height: 100dvh !important;
+  width: 100% !important;
+  height: 100% !important;
   max-height: none !important;
   border-radius: 0 !important;
   padding: 18px 18px 28px !important;
@@ -503,8 +469,8 @@ body.otter-ui-menu.otter-ui-garage .loadout-layout__left {
 body.otter-ui-menu.otter-ui-garage .loadout-equipped {
   position: fixed;
   left: 50%;
-  top: calc(52% + 100px);
-  transform: translate(calc(-50% - 15px), -50%);
+  top: 58%;
+  transform: translate(-50%, -50%);
   z-index: 40;
   align-items: center !important;
   width: min(600px, 58vw);
@@ -2716,29 +2682,15 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 }
 
-/* ——— Mobile / small iframe: garage + admin track UI (desktop rules use fixed px) ——— */
+/* ——— Small screens: stack garage columns, scale admin panel ——— */
 @media (max-width: 900px), (max-height: 520px) {
-  body.otter-ui-menu.otter-ui-garage {
-    --garage-options-left: 4vw;
-    --garage-options-top: 48vh;
-  }
-
-  body.otter-ui-menu.otter-ui-garage #panel-start {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    padding: 12px 10px 16px !important;
-  }
-
   body.otter-ui-menu.otter-ui-garage .loadout-layout {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
   body.otter-ui-menu.otter-ui-garage .loadout-equipped {
-    top: 46%;
     width: min(88vw, 420px);
-    transform: translate(-50%, -50%);
   }
 
   body.otter-ui-menu.otter-ui-garage .loadout-equipped__preview {
@@ -2747,24 +2699,14 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 
   body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
+    position: relative;
     left: 0;
     top: 0;
-  }
-
-  .garage-minimap,
-  .garage-hotspot--to-map {
-    right: 6%;
-    bottom: 14%;
-    width: 40%;
-    height: 30%;
-    max-width: 260px;
-    max-height: 200px;
   }
 
   .panel.panel--admin {
     width: min(360px, calc(100% - 16px));
     max-height: min(82%, calc(100% - 16px));
-    padding: 14px;
   }
 
   .admin-track-list {
