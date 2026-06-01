@@ -723,6 +723,65 @@ body:not(.otter-ui-menu) .demo-session-badge:not(.hidden) {
   transform-origin: top left;
 }
 
+/* ——— Mobile portrait: rotate hint ——— */
+.touch-orient-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(4, 8, 14, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+}
+
+body.touch-orient-portrait .touch-orient-hint:not(.hidden) {
+  display: flex;
+}
+
+@media (pointer: fine) and (min-width: 901px) {
+  .touch-orient-hint {
+    display: none !important;
+  }
+}
+
+.touch-orient-hint__card {
+  max-width: 320px;
+  padding: 22px 20px;
+  border-radius: 18px;
+  text-align: center;
+  background: linear-gradient(165deg, rgba(18, 32, 48, 0.98), rgba(8, 14, 22, 0.98));
+  border: 2px solid rgba(125, 249, 255, 0.35);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+}
+
+.touch-orient-hint__icon {
+  display: block;
+  font-size: 2.5rem;
+  line-height: 1;
+  margin-bottom: 10px;
+  color: #7df9ff;
+}
+
+.touch-orient-hint__title {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #f3fbff;
+}
+
+.touch-orient-hint__text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: rgba(210, 228, 245, 0.88);
+}
+
 /* ——— Touch driving (phones / tablets) ——— */
 .touch-controls {
   position: fixed;
@@ -806,6 +865,20 @@ body:not(.otter-ui-menu) .touch-controls {
     0 8px 28px rgba(0, 0, 0, 0.45);
 }
 
+.touch-joystick--gas .touch-joystick__base {
+  border-color: rgba(125, 249, 200, 0.5);
+  box-shadow:
+    inset 0 0 24px rgba(40, 160, 110, 0.2),
+    0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.touch-joystick--brake .touch-joystick__base {
+  border-color: rgba(255, 160, 140, 0.45);
+  box-shadow:
+    inset 0 0 24px rgba(160, 50, 50, 0.18),
+    0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
 /* Right column: minimap slot + drive row */
 .touch-controls__right {
   display: flex;
@@ -822,11 +895,10 @@ body:not(.otter-ui-menu) .touch-controls {
   pointer-events: none;
 }
 
-.touch-controls__drive {
+.touch-controls__actions {
   display: flex;
-  flex-direction: row;
+  justify-content: center;
   align-items: flex-end;
-  gap: calc(8px * var(--hud-scale, 1));
   pointer-events: auto;
 }
 
@@ -835,35 +907,26 @@ body:not(.otter-ui-menu) .touch-controls {
   user-select: none;
   -webkit-user-select: none;
   border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: calc(14px * var(--hud-scale, 1));
   background: rgba(10, 18, 28, 0.72);
   color: #f0f9fc;
   font-weight: 900;
-  font-size: clamp(0.65rem, calc(12px * var(--hud-scale, 1)), 0.9rem);
   line-height: 1;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  min-width: max(46px, calc(52px * var(--hud-scale, 1)));
-  height: max(46px, calc(52px * var(--hud-scale, 1)));
-  padding: 0 calc(8px * var(--hud-scale, 1));
-}
-
-.touch-btn--gas {
-  min-width: max(54px, calc(62px * var(--hud-scale, 1))) !important;
-  height: max(54px, calc(62px * var(--hud-scale, 1))) !important;
-  background: rgba(20, 120, 90, 0.78);
-  border-color: rgba(125, 249, 200, 0.45);
-}
-
-.touch-btn--brake {
-  background: rgba(120, 40, 40, 0.78);
-  border-color: rgba(255, 160, 140, 0.4);
 }
 
 .touch-btn--drift {
-  background: rgba(50, 70, 140, 0.78);
-  border-color: rgba(160, 200, 255, 0.4);
+  width: max(54px, calc(62px * var(--hud-scale, 1)));
+  height: max(54px, calc(62px * var(--hud-scale, 1)));
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: clamp(0.62rem, calc(11px * var(--hud-scale, 1)), 0.82rem);
+  letter-spacing: 0.02em;
+  background: rgba(50, 70, 140, 0.82);
+  border-color: rgba(160, 200, 255, 0.45);
 }
 
 .touch-btn:active,

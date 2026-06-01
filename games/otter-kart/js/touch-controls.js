@@ -1,6 +1,13 @@
 /** @typedef {{ x0: number, y0: number, outerD: number, cxScreen: number, cyScreen: number, mapCy: number, outerR: number }} TouchMinimapLayout */
 
 const MINIMAP_RING_MAP_OFFSET_Y = -5;
+/** Stick Y past this fraction of radius → gas (up) or brake (down). */
+const JOYSTICK_PEDAL_DEADZONE = 0.2;
+
+function isMobileTouchUi() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
+}
 
 function isTouchControlsVisible() {
   if (typeof document === "undefined") return false;
@@ -39,6 +46,27 @@ export function getTouchMinimapLayout(canvas) {
   return { x0, y0, outerD, cxScreen, cyScreen, mapCy, outerR };
 }
 
+function initTouchOrientationHint() {
+  const hint = document.getElementById("touch-orient-hint");
+  if (!(hint instanceof HTMLElement)) return;
+
+  const sync = () => {
+    const portrait =
+      window.innerHeight > window.innerWidth + 8;
+    const show = isMobileTouchUi() && portrait;
+    document.body.classList.toggle("touch-orient-portrait", show);
+    hint.classList.toggle("hidden", !show);
+    hint.setAttribute("aria-hidden", show ? "false" : "true");
+  };
+
+  sync();
+  window.addEventListener("resize", sync);
+  window.addEventListener("orientationchange", sync);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", sync);
+  }
+}
+
 /**
  * On-screen drive controls for phones / tablets (no gamepad).
  * @param {{ touch: { gas: boolean, brake: boolean, drift: boolean, steer: number }, canvas?: HTMLCanvasElement }} game
@@ -54,57 +82,31 @@ export function initTouchControls(game) {
     steer: 0,
   };
 
-  const bindHold = (selector, on, off) => {
-    const el = root.querySelector(selector);
-    if (!(el instanceof HTMLElement)) return;
+  const driftBtn = root.querySelector(".touch-btn--drift");
+  if (driftBtn instanceof HTMLElement) {
     const down = (e) => {
       e.preventDefault();
-      on();
+      game.touch.drift = true;
+      driftBtn.classList.add("is-pressed");
     };
     const up = (e) => {
       e.preventDefault();
-      off();
-    };
-    el.addEventListener("pointerdown", down);
-    el.addEventListener("pointerup", up);
-    el.addEventListener("pointercancel", up);
-    el.addEventListener("pointerleave", up);
-    el.addEventListener("contextmenu", (e) => e.preventDefault());
-  };
-
-  bindHold(
-    ".touch-btn--gas",
-    () => {
-      game.touch.gas = true;
-    },
-    () => {
-      game.touch.gas = false;
-    },
-  );
-  bindHold(
-    ".touch-btn--brake",
-    () => {
-      game.touch.brake = true;
-    },
-    () => {
-      game.touch.brake = false;
-    },
-  );
-  bindHold(
-    ".touch-btn--drift",
-    () => {
-      game.touch.drift = true;
-    },
-    () => {
       game.touch.drift = false;
-    },
-  );
+      driftBtn.classList.remove("is-pressed");
+    };
+    driftBtn.addEventListener("pointerdown", down);
+    driftBtn.addEventListener("pointerup", up);
+    driftBtn.addEventListener("pointercancel", up);
+    driftBtn.addEventListener("pointerleave", up);
+    driftBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
 
   initTouchJoystick(game, root);
+  initTouchOrientationHint();
 }
 
 /**
- * @param {{ touch: { steer: number } }} game
+ * @param {{ touch: { gas: boolean, brake: boolean, steer: number } }} game
  * @param {HTMLElement} root
  */
 function initTouchJoystick(game, root) {
@@ -123,8 +125,12 @@ function initTouchJoystick(game, root) {
   const resetStick = () => {
     activeId = null;
     game.touch.steer = 0;
+    game.touch.gas = false;
+    game.touch.brake = false;
     stick.style.transform = "translate(-50%, -50%)";
     zone.classList.remove("touch-joystick--active");
+    zone.classList.remove("touch-joystick--gas");
+    zone.classList.remove("touch-joystick--brake");
   };
 
   const moveStick = (clientX, clientY) => {
@@ -141,7 +147,15 @@ function initTouchJoystick(game, root) {
     }
     stick.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
     game.touch.steer = Math.max(-1, Math.min(1, dx / maxR));
+
+    const ny = dy / maxR;
+    const dz = JOYSTICK_PEDAL_DEADZONE;
+    game.touch.gas = ny < -dz;
+    game.touch.brake = ny > dz;
+
     zone.classList.add("touch-joystick--active");
+    zone.classList.toggle("touch-joystick--gas", game.touch.gas);
+    zone.classList.toggle("touch-joystick--brake", game.touch.brake);
   };
 
   zone.addEventListener("pointerdown", (e) => {

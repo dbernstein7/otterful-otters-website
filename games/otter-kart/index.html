@@ -18,7 +18,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-joystick-minimap" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-mobile-drive-v2" />
     <script>
       (function () {
         function reportGameSize() {
@@ -204,17 +204,32 @@
       <span class="hud-settings__icon" aria-hidden="true">⚙</span>
     </button>
 
+    <div
+      id="touch-orient-hint"
+      class="touch-orient-hint hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="touch-orient-hint-title"
+      aria-hidden="true"
+    >
+      <div class="touch-orient-hint__card">
+        <span class="touch-orient-hint__icon" aria-hidden="true">↻</span>
+        <p id="touch-orient-hint-title" class="touch-orient-hint__title">Rotate your device</p>
+        <p class="touch-orient-hint__text">
+          Turn your phone sideways (landscape) for the best OtterKart experience.
+        </p>
+      </div>
+    </div>
+
     <div id="touch-controls" class="touch-controls" aria-label="Driving controls">
-      <div id="touch-joystick" class="touch-joystick" aria-label="Steer">
+      <div id="touch-joystick" class="touch-joystick" aria-label="Steer, gas, and brake">
         <div class="touch-joystick__base" aria-hidden="true"></div>
         <div class="touch-joystick__stick" aria-hidden="true"></div>
       </div>
       <div class="touch-controls__right">
         <div id="touch-minimap-slot" class="touch-minimap-slot" aria-hidden="true"></div>
-        <div class="touch-controls__drive">
+        <div class="touch-controls__actions">
           <button type="button" class="touch-btn touch-btn--drift" aria-label="Drift">Drift</button>
-          <button type="button" class="touch-btn touch-btn--brake" aria-label="Brake">Brake</button>
-          <button type="button" class="touch-btn touch-btn--gas" aria-label="Gas">Gas</button>
         </div>
       </div>
     </div>
@@ -364,7 +379,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-joystick-minimap"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-mobile-drive-v2"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
