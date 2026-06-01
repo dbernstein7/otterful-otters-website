@@ -266,50 +266,12 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   outline-offset: 2px;
 }
 
-/* Hotspot positions: % tuned for cover-centered map; JS calibrates then rescales on resize. */
-.map-hotspot--practice {
-  left: calc(10% + 200px);
-  top: calc(20% + 20px);
-  width: max(60px, calc(30% - 300px));
-  height: 13%;
-}
-.map-hotspot--daily {
-  left: calc(57% + 90px);
-  top: calc(16% - 60px);
-  width: max(60px, calc(30% - 200px));
-  height: 11%;
-}
-.map-hotspot--gp {
-  left: calc(36% + 20px);
-  top: calc(48% + 100px);
-  width: max(60px, calc(28% - 200px));
-  height: 11%;
-}
-.map-hotspot--touge {
-  left: calc(64% + 100px);
-  top: calc(46% + 140px);
-  width: max(60px, calc(26% - 200px));
-  height: 12%;
-}
-.map-hotspot--endless {
-  left: calc(12% + 100px);
-  top: calc(62% + 170px);
-  width: max(60px, calc(32% - 300px));
-  height: 13%;
-}
-.map-hotspot--claim {
-  left: calc(78% + 110px);
-  top: calc(74% + 200px);
-  width: max(60px, calc(18% - 200px));
-  height: calc(11% - 20px);
-  border-radius: 14px;
-}
-.map-hotspot--garage {
-  left: 48px;
-  top: 198px;
-  width: 220px;
-  height: 184px;
-  border-radius: 14px;
+/* Map hit regions: positioned in JS from image-space boxes (see MAP_HOTSPOT_BOXES in main.js). */
+.map-hotspot[data-map-mode] {
+  left: -9999px;
+  top: -9999px;
+  width: 1px;
+  height: 1px;
 }
 
 .map-claim-bar {
@@ -2716,6 +2678,82 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 }
 
+/* ——— Landscape game viewport: letterbox to 1672×941 on any screen ——— */
+html.otter-viewport-fit,
+html.otter-viewport-fit body {
+  background: #080c10;
+}
+
+html.otter-viewport-fit #game,
+html.otter-viewport-fit .menu-cover,
+html.otter-viewport-fit .start-menu-hotspots,
+html.otter-viewport-fit .map-hotspots,
+html.otter-viewport-fit .garage-hotspots,
+html.otter-viewport-fit #hud,
+html.otter-viewport-fit .countdown,
+html.otter-viewport-fit .modal-backdrop,
+html.otter-viewport-fit body.otter-ui-menu::before,
+html.otter-viewport-fit body.otter-ui-menu.otter-ui-garage::after {
+  left: var(--otter-game-left, 0) !important;
+  top: var(--otter-game-top, 0) !important;
+  width: var(--otter-game-w, 100%) !important;
+  height: var(--otter-game-h, 100%) !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+html.otter-viewport-fit .hud-music,
+html.otter-viewport-fit .music-panel {
+  left: calc(var(--otter-game-left, 0px) + 14px + env(safe-area-inset-left, 0px)) !important;
+}
+
+html.otter-viewport-fit .hud-music {
+  top: calc(
+    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
+      env(safe-area-inset-bottom, 0px)
+  ) !important;
+  bottom: auto !important;
+}
+
+html.otter-viewport-fit .music-panel {
+  top: calc(
+    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
+      env(safe-area-inset-bottom, 0px) - 220px
+  ) !important;
+  bottom: auto !important;
+  width: min(280px, calc(var(--otter-game-w, 100vw) - 28px)) !important;
+}
+
+html.otter-viewport-fit .hud-settings {
+  left: calc(var(--otter-game-left, 0px) + 14px + env(safe-area-inset-left, 0px)) !important;
+  top: calc(
+    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
+      env(safe-area-inset-bottom, 0px)
+  ) !important;
+  bottom: auto !important;
+}
+
+#otter-rotate-hint {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 12, 16, 0.92);
+  color: #e8f4ff;
+  text-align: center;
+  font-weight: 800;
+  font-size: clamp(16px, 4vw, 22px);
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+body.otter-portrait:not(.otter-embed) #otter-rotate-hint {
+  display: flex;
+}
+
 /* ——— Embedded on otterful site (iframe): use iframe bounds, not browser dvh/vw ——— */
 html.otter-embed,
 html.otter-embed body {
@@ -2725,6 +2763,10 @@ html.otter-embed body {
   max-height: none !important;
   overflow: hidden !important;
   position: relative;
+}
+
+html.otter-embed #otter-rotate-hint {
+  display: none !important;
 }
 
 html.otter-embed #game {

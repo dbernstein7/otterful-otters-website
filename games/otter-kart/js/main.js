@@ -24,14 +24,14 @@ import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
   getGameViewportSize,
-  getEmbedViewport,
+  getGameViewportLayout,
   setEmbedViewport,
+  clientToGameCoords,
+  applyGameViewportStyles,
+  installViewportFit,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 
-function embedViewportBeforeSet() {
-  return getEmbedViewport();
-}
 import {
   claimSessionShells,
   connectAndCheckRewards,
@@ -138,7 +138,16 @@ const START_HOTSPOT_BOXES = {
   wallet: { ix: 394, iy: 402, iw: 224, ih: 48 },
 };
 
-let mapCalibrated = false;
+/** Image-space hitboxes for OtterKart-Map.png (1672×941). */
+const MAP_HOTSPOT_BOXES = {
+  garage: { ix: 48, iy: 198, iw: 220, ih: 184 },
+  practice: { ix: 367, iy: 208, iw: 202, ih: 122 },
+  daily: { ix: 1043, iy: 91, iw: 302, ih: 104 },
+  grandprix: { ix: 622, iy: 552, iw: 268, ih: 104 },
+  touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
+  endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
+  claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
+};
 
 function coverTransform(imgW, imgH, vw, vh) {
   const s = Math.max(vw / imgW, vh / imgH);
@@ -163,10 +172,11 @@ function getLayoutViewportSize() {
  * @returns {string | null}
  */
 function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
+  const { x, y } = clientToGameCoords(clientX, clientY);
   const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
-  const ix = (clientX - ox) / s;
-  const iy = (clientY - oy) / s;
+  const ix = (x - ox) / s;
+  const iy = (y - oy) / s;
   for (const [key, box] of Object.entries(boxes)) {
     if (
       ix >= box.ix &&
@@ -190,7 +200,7 @@ function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
  */
 function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
   if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
-  const { vw, vh } = getLayoutViewportSize();
+  const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
   const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
 
   layer.querySelectorAll(`[${attr}]`).forEach((el) => {
@@ -201,8 +211,8 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
     const w = Math.max(12, box.iw * s);
     const h = Math.max(12, box.ih * s);
     el.style.position = "fixed";
-    el.style.left = `${ox + box.ix * s}px`;
-    el.style.top = `${oy + box.iy * s}px`;
+    el.style.left = `${gLeft + ox + box.ix * s}px`;
+    el.style.top = `${gTop + oy + box.iy * s}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.margin = "0";
@@ -226,7 +236,10 @@ function relayoutMenuHotspots() {
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
-    void layoutMapHotspots();
+    const iw = mapImgNatural.w || 1672;
+    const ih = mapImgNatural.h || 941;
+    layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
+    layoutMapClaimBar();
   }
 }
 
@@ -239,34 +252,24 @@ function scheduleHotspotRelayout() {
 }
 
 function installHotspotResizeWatchers() {
-  const onResize = () => scheduleHotspotRelayout();
+  const onResize = () => {
+    applyGameViewportStyles();
+    scheduleHotspotRelayout();
+    try {
+      game.resize();
+    } catch {
+      // ignore
+    }
+  };
+  installViewportFit();
   window.addEventListener("resize", onResize);
   window.visualViewport?.addEventListener("resize", onResize);
   window.visualViewport?.addEventListener("scroll", onResize);
   window.addEventListener("message", (event) => {
     if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
     if (event?.data?.type === "EMBED_VIEWPORT") {
-      const prev = embedViewportBeforeSet();
       setEmbedViewport(event.data.width, event.data.height);
-      if (
-        prev &&
-        (Math.abs(prev.vw - Number(event.data.width)) > 8 ||
-          Math.abs(prev.vh - Number(event.data.height)) > 8)
-      ) {
-        mapCalibrated = false;
-      }
       onResize();
-      try {
-        game.resize();
-      } catch {
-        // ignore
-      }
-      if (
-        document.body?.classList?.contains?.("otter-ui-playtab") &&
-        !document.body?.classList?.contains?.("otter-ui-garage")
-      ) {
-        void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
-      }
     }
   });
   if (typeof ResizeObserver !== "undefined") {
@@ -292,65 +295,6 @@ async function ensureMapImageSize() {
   });
 }
 
-
-async function calibrateMapHotspotsOnce() {
-  if (mapCalibrated) return;
-  if (!(mapHotspots instanceof HTMLElement)) return;
-
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    el.style.removeProperty("left");
-    el.style.removeProperty("top");
-    el.style.removeProperty("width");
-    el.style.removeProperty("height");
-    delete el.dataset.ix;
-    delete el.dataset.iy;
-    delete el.dataset.iw;
-    delete el.dataset.ih;
-  });
-
-  await new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  });
-
-  const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const r = el.getBoundingClientRect();
-    el.dataset.ix = String((r.left - ox) / s);
-    el.dataset.iy = String((r.top - oy) / s);
-    el.dataset.iw = String(r.width / s);
-    el.dataset.ih = String(r.height / s);
-  });
-
-  mapCalibrated = true;
-}
-
-async function layoutMapHotspots() {
-  if (!mapCalibrated) return;
-  if (!(mapHotspots instanceof HTMLElement)) return;
-  const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const ix = Number(el.dataset.ix);
-    const iy = Number(el.dataset.iy);
-    const iwBox = Number(el.dataset.iw);
-    const ihBox = Number(el.dataset.ih);
-    if (!Number.isFinite(ix) || !Number.isFinite(iy)) return;
-    el.style.position = "absolute";
-    el.style.left = `${ox + ix * s}px`;
-    el.style.top = `${oy + iy * s}px`;
-    el.style.width = `${Math.max(12, (iwBox || 0) * s)}px`;
-    el.style.height = `${Math.max(12, (ihBox || 0) * s)}px`;
-  });
-  layoutMapClaimBar();
-}
 
 function syncMenuCover() {
   const cover = document.getElementById("menu-cover");
@@ -412,7 +356,7 @@ function enterMapFromStart(opts = {}) {
   activateMenuTab("play");
   syncDemoSessionBadge();
   syncMenuCover();
-  void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
+  scheduleHotspotRelayout();
 }
 
 let walletToastTimer = 0;
@@ -590,7 +534,6 @@ function activateMenuTab(tab) {
     );
   if (tab === "play") {
     syncMenuCover();
-    void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
     scheduleHotspotRelayout();
     syncDemoSessionBadge();
   } else {
@@ -1282,6 +1225,23 @@ startMenuHotspots?.addEventListener(
     e.preventDefault();
     e.stopPropagation();
     handleStartHotspotAction(action);
+  },
+  { capture: true },
+);
+
+mapHotspots?.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
+    if (document.body?.classList?.contains?.("otter-ui-garage")) return;
+    if (e.button !== 0) return;
+    const iw = mapImgNatural.w || 1672;
+    const ih = mapImgNatural.h || 941;
+    const mode = hitTestCoverHotspots(e.clientX, e.clientY, MAP_HOTSPOT_BOXES, iw, ih);
+    if (!mode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    handleMapHotspotMode(mode);
   },
   { capture: true },
 );
