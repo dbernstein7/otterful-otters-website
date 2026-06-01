@@ -450,39 +450,27 @@ function installHotspotResizeWatchers() {
   }
 }
 
-/** Garage layout fractions (1672×941 art) — loadout left of kart, map on right bench */
-const GARAGE_LAYOUT_DESKTOP = {
-  options: { x: 0.255, y: 0.38 },
-  kart: { x: 0.5, y: 0.535 },
-  kartW: 0.4,
-  optionsW: 0.2,
-  map: { x: 0.752, y: 0.655, w: 0.145, h: 0.215 },
-  randY: 0.91,
-};
+/** Map on right workbench (1672×941) */
+const GARAGE_MAP_BOX = { x: 0.752, y: 0.655, w: 0.145, h: 0.215 };
 
-const GARAGE_LAYOUT_MOBILE = {
-  options: { x: 0.06, y: 0.36 },
-  kart: { x: 0.5, y: 0.5 },
-  kartW: 0.72,
-  optionsW: 0.34,
-  map: { x: 0.68, y: 0.62, w: 0.26, h: 0.28 },
-  randY: 0.93,
-};
+/** Kart / hat / eyes column beside lift (shifted down+right from old left-edge layout) */
+const GARAGE_PICKER_DESKTOP = { x: 0.305, y: 0.42, w: 0.19 };
+const GARAGE_PICKER_MOBILE = { x: 0.08, y: 0.38, w: 0.34 };
 
-function getGarageLayout() {
+function getGaragePickerLayout() {
   const { vw, vh } = getGameViewportSize();
-  return vw <= 900 || vh <= 520 ? GARAGE_LAYOUT_MOBILE : GARAGE_LAYOUT_DESKTOP;
+  return vw <= 900 || vh <= 520 ? GARAGE_PICKER_MOBILE : GARAGE_PICKER_DESKTOP;
 }
 
 /**
- * Garage UI + minimap: same cover rect as Garage.png so everything scales on resize.
+ * Garage: map/minimap track cover resize; picker column moves as one compact stack.
  */
 function layoutGarageLayout() {
   if (!isGarageVisible()) return;
 
   const { vw, vh } = getGameViewportSize();
   const { ox, oy, dw, dh } = coverTransform(GARAGE_REF_W, GARAGE_REF_H, vw, vh);
-  const layout = getGarageLayout();
+  const picker = getGaragePickerLayout();
 
   if (garageHotspots instanceof HTMLElement) {
     garageHotspots.style.position = "fixed";
@@ -494,7 +482,7 @@ function layoutGarageLayout() {
     garageHotspots.style.right = "auto";
     garageHotspots.style.bottom = "auto";
 
-    const map = layout.map;
+    const map = GARAGE_MAP_BOX;
     for (const el of garageHotspots.querySelectorAll(".garage-minimap, .garage-hotspot--to-map")) {
       if (!(el instanceof HTMLElement)) continue;
       el.style.position = "absolute";
@@ -509,51 +497,52 @@ function layoutGarageLayout() {
     }
   }
 
-  const carousel = document.querySelector(
-    ".loadout-layout__left > div[data-loadout-carousel]",
-  );
-  if (carousel instanceof HTMLElement) {
-    carousel.style.position = "fixed";
-    carousel.style.left = `${ox + layout.options.x * dw}px`;
-    carousel.style.top = `${oy + layout.options.y * dh}px`;
-    carousel.style.width = `${Math.min(320, layout.optionsW * dw)}px`;
-    carousel.style.zIndex = "45";
+  const leftCol = document.querySelector(".loadout-layout__left");
+  if (leftCol instanceof HTMLElement) {
+    const colW = Math.min(300, picker.w * dw);
+    leftCol.style.position = "fixed";
+    leftCol.style.left = `${ox + picker.x * dw}px`;
+    leftCol.style.top = `${oy + picker.y * dh}px`;
+    leftCol.style.width = `${colW}px`;
+    leftCol.style.maxWidth = `${colW}px`;
+    leftCol.style.zIndex = "45";
+    leftCol.style.display = "flex";
+    leftCol.style.flexDirection = "column";
+    leftCol.style.alignItems = "stretch";
+    leftCol.style.gap = "10px";
+  }
+
+  for (const row of document.querySelectorAll("[data-loadout-carousel]")) {
+    if (!(row instanceof HTMLElement)) continue;
+    row.style.removeProperty("position");
+    row.style.removeProperty("left");
+    row.style.removeProperty("top");
+    row.style.removeProperty("width");
+    row.style.removeProperty("z-index");
   }
 
   const equipped = document.querySelector("[data-loadout-equipped]");
   if (equipped instanceof HTMLElement) {
-    const kartW = Math.min(600, layout.kartW * dw);
-    equipped.style.position = "fixed";
-    equipped.style.left = `${ox + layout.kart.x * dw}px`;
-    equipped.style.top = `${oy + layout.kart.y * dh}px`;
-    equipped.style.transform = "translate(-50%, -50%)";
-    equipped.style.width = `${kartW}px`;
-    equipped.style.zIndex = "40";
+    equipped.style.removeProperty("left");
+    equipped.style.removeProperty("top");
+    equipped.style.removeProperty("width");
+    equipped.style.removeProperty("max-width");
+    equipped.style.removeProperty("transform");
     const preview = equipped.querySelector(".loadout-equipped__preview");
     if (preview instanceof HTMLElement) {
-      const pm = Math.min(kartW, dh * 0.48);
-      preview.style.maxWidth = `${pm}px`;
-      preview.style.maxHeight = `${pm}px`;
+      preview.style.removeProperty("max-width");
+      preview.style.removeProperty("max-height");
     }
   }
 
   const randWrap = document.querySelector(".loadout-randWrap");
   if (randWrap instanceof HTMLElement) {
-    const rw = Math.min(620, dw * 0.55);
-    randWrap.style.position = "fixed";
-    randWrap.style.left = `${ox + (dw - rw) * 0.5}px`;
-    randWrap.style.top = `${oy + layout.randY * dh}px`;
-    randWrap.style.width = `${rw}px`;
-    randWrap.style.transform = "none";
-    randWrap.style.zIndex = "60";
-  }
-
-  try {
-    const cv = document.querySelector("canvas[data-equipped-preview]");
-    if (cv instanceof HTMLCanvasElement)
-      renderEquippedComposite(cv, loadEffectiveLoadout());
-  } catch {
-    // ignore
+    randWrap.style.removeProperty("position");
+    randWrap.style.removeProperty("left");
+    randWrap.style.removeProperty("top");
+    randWrap.style.removeProperty("width");
+    randWrap.style.removeProperty("transform");
+    randWrap.style.removeProperty("z-index");
   }
 }
 
@@ -571,15 +560,21 @@ function clearGarageLayout() {
       }
     }
   }
-  for (const sel of [
-    ".loadout-layout__left > div[data-loadout-carousel]",
-    "[data-loadout-equipped]",
-    ".loadout-randWrap",
-  ]) {
-    const el = document.querySelector(sel);
-    if (!(el instanceof HTMLElement)) continue;
-    for (const prop of ["position", "left", "top", "width", "height", "transform", "max-width", "max-height", "z-index"]) {
-      el.style.removeProperty(prop);
+  const leftCol = document.querySelector(".loadout-layout__left");
+  if (leftCol instanceof HTMLElement) {
+    for (const prop of [
+      "position",
+      "left",
+      "top",
+      "width",
+      "max-width",
+      "z-index",
+      "display",
+      "flex-direction",
+      "align-items",
+      "gap",
+    ]) {
+      leftCol.style.removeProperty(prop);
     }
   }
 }

@@ -519,9 +519,8 @@ body.otter-ui-menu.otter-ui-garage #panel-start p.loadout-panel__hint {
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-layout {
-  grid-template-columns: minmax(220px, 320px) 1fr;
-  gap: 18px;
-  align-items: start;
+  display: block;
+  width: 100%;
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-layout__right {
@@ -529,17 +528,21 @@ body.otter-ui-menu.otter-ui-garage .loadout-layout__right {
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-layout__left {
-  align-items: flex-start;
-  padding-left: 10px; /* move options right a bit */
+  align-items: stretch;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Kart preview center — position from JS (cover-relative) */
+/* Big kart preview on the lift (unchanged — separate from picker column) */
 body.otter-ui-menu.otter-ui-garage .loadout-equipped {
   position: fixed;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
   z-index: 40;
   align-items: center !important;
+  width: min(600px, 58vw);
   pointer-events: none;
-  transform: translate(-50%, -50%);
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-equipped__strip {
@@ -568,11 +571,24 @@ body.otter-ui-menu.otter-ui-garage .loadout-carousel__name {
   width: 100%;
 }
 
-/* Kart / hat / eyes — beside kart (JS on resize) */
 body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
-  position: fixed;
-  z-index: 45;
+  position: relative;
+  width: 100%;
   margin: 0;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas,
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="kart"],
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="hat"],
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="eye"] {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: 72px;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-carousel__center {
+  min-height: 64px;
 }
 
 /* Garage: add soft shadow "plate" under each option row */
@@ -612,11 +628,18 @@ body.otter-ui-menu.otter-ui-garage .loadout-carousel__name {
   opacity: 0.9;
 }
 
-/* Randomize below kart platform (JS on resize) */
 body.otter-ui-menu.otter-ui-garage .loadout-randWrap {
-  position: fixed;
-  z-index: 60;
-  margin: 0;
+  position: relative;
+  width: 100%;
+  margin: 8px 0 0;
+  transform: none;
+  left: auto;
+  bottom: auto;
+}
+
+body.otter-ui-menu.otter-ui-garage .loadout-rand {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-rand {
