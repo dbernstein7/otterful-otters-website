@@ -2557,3 +2557,62 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
     font-size: 10px;
   }
 }
+
+/* ——— Embedded on otterful site (iframe): use iframe bounds, not browser dvh/vw ——— */
+html.otter-embed,
+html.otter-embed body {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  overflow: hidden !important;
+}
+
+html.otter-embed #game {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-garage #panel-start {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+}
+
+html.otter-embed .panel {
+  max-height: calc(100% - 18px) !important;
+}
+
+html.otter-embed body.otter-ui-menu #panel-start {
+  max-height: calc(100% - 18px) !important;
+}
+
+html.otter-embed .panel.panel--wide.panel--modal {
+  width: min(940px, calc(100% - 24px)) !important;
+}
+
+html.otter-embed .panel {
+  width: min(420px, calc(100% - 28px)) !important;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-garage .loadout-equipped {
+  width: min(600px, 58%) !important;
+}
+
+html.otter-embed .panel.panel--results:not(.hidden) {
+  width: min(640px, calc(100% - 20px), calc((100% - 12px) * 1414 / 975)) !important;
+  max-height: calc(100% - 12px) !important;
+}
+
+html.otter-embed .panel.panel--admin {
+  width: min(360px, calc(100% - 24px)) !important;
+  max-height: calc(100% - 24px) !important;
+}
+
+html.otter-embed .admin-track-list {
+  max-height: min(52%, 360px) !important;
+}
+
+html.otter-embed .panel.panel--wide:has(#tab-pane-character:not([hidden])) {
+  max-height: calc(100% - 10px) !important;
+}

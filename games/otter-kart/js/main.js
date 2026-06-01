@@ -22,6 +22,7 @@ import {
 } from "./storage.js";
 import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
+import { getGameViewportSize, setEmbedViewport } from "./viewport.js";
 import {
   claimSessionShells,
   connectAndCheckRewards,
@@ -148,12 +149,9 @@ function coverTransform(imgW, imgH, vw, vh) {
   return { s, ox, oy, dw, dh };
 }
 
-/** Layout viewport = iframe / window client area (matches background-size: cover). */
+/** Layout viewport = iframe shell or window (matches background-size: cover). */
 function getLayoutViewportSize() {
-  const de = document.documentElement;
-  const vw = de?.clientWidth || window.innerWidth || 1;
-  const vh = de?.clientHeight || window.innerHeight || 1;
-  return { vw: Math.max(1, vw), vh: Math.max(1, vh) };
+  return getGameViewportSize();
 }
 
 /**
@@ -249,6 +247,15 @@ function installHotspotResizeWatchers() {
   window.visualViewport?.addEventListener("scroll", onResize);
   window.addEventListener("message", (event) => {
     if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
+    if (event?.data?.type === "EMBED_VIEWPORT") {
+      setEmbedViewport(event.data.width, event.data.height);
+      onResize();
+      try {
+        game.resize();
+      } catch {
+        // ignore
+      }
+    }
   });
   if (typeof ResizeObserver !== "undefined") {
     const ro = new ResizeObserver(onResize);

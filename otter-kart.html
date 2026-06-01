@@ -74,6 +74,7 @@
         <div class="page-embed-layout">
             <div class="page-embed-main">
                 <div class="page-embed">
+                    <div id="otterKartEmbedShell" class="otter-kart-embed-shell">
                     <iframe
                         id="otterKartFrame"
                         class="page-embed-frame page-embed-frame--otter-kart"
@@ -84,6 +85,7 @@
                         allow="clipboard-read; clipboard-write; fullscreen"
                         tabindex="0"
                     ></iframe>
+                    </div>
                     <div class="page-embed-note">
                         If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
                         <strong>Wallet:</strong> use the <strong>Wallet connect</strong> hotspot on the start screen to link Snag Drip rewards (same as Shell Snag).
@@ -145,38 +147,39 @@
     <script>
       (function () {
         const iframe = document.getElementById('otterKartFrame');
-        if (!iframe) return;
+        const shell = document.getElementById('otterKartEmbedShell');
+        if (!iframe || !shell) return;
 
-        function embedHeightPx() {
-          const min = 640;
-          const max = Math.max(min, window.innerHeight - 220);
-          return Math.max(min, max);
-        }
-
-        function applyEmbedHeight() {
-          iframe.style.height = embedHeightPx() + 'px';
-        }
-
-        function pingEmbedLayout() {
+        function postEmbedViewport() {
+          const w = Math.round(shell.clientWidth || iframe.clientWidth || 0);
+          const h = Math.round(shell.clientHeight || iframe.clientHeight || 0);
+          if (w < 8 || h < 8) return;
+          try {
+            iframe.contentWindow &&
+              iframe.contentWindow.postMessage(
+                { type: 'EMBED_VIEWPORT', width: w, height: h },
+                '*',
+              );
+          } catch {}
           try {
             iframe.contentWindow &&
               iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
           } catch {}
         }
 
-        applyEmbedHeight();
-        window.addEventListener('resize', () => {
-          applyEmbedHeight();
-          pingEmbedLayout();
-        });
+        if (typeof ResizeObserver !== 'undefined') {
+          const ro = new ResizeObserver(postEmbedViewport);
+          ro.observe(shell);
+        }
+
+        window.addEventListener('resize', postEmbedViewport);
+        window.visualViewport?.addEventListener('resize', postEmbedViewport);
+
         iframe.addEventListener('load', () => {
-          applyEmbedHeight();
-          pingEmbedLayout();
-          setTimeout(pingEmbedLayout, 50);
-          setTimeout(pingEmbedLayout, 150);
-          setTimeout(pingEmbedLayout, 400);
-          setTimeout(pingEmbedLayout, 800);
+          postEmbedViewport();
+          [0, 50, 150, 400, 800, 1200].forEach((ms) => setTimeout(postEmbedViewport, ms));
         });
+
         iframe.addEventListener('pointerenter', () => {
           try {
             iframe.focus({ preventScroll: true });
@@ -187,6 +190,8 @@
             iframe.focus({ preventScroll: true });
           } catch {}
         });
+
+        postEmbedViewport();
       })();
     </script>
     <script type="module">

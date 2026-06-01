@@ -1340,10 +1340,28 @@ body::before {
     pointer-events: auto;
 }
 
-/* OtterKart fills the iframe viewport; keep a tall stable frame for menu hotspots */
-.page-embed-frame--otter-kart {
-    min-height: max(640px, calc(100vh - 220px));
-    height: max(640px, calc(100vh - 220px));
+/* OtterKart: lock embed to menu/map art aspect so cover + hotspots match standalone */
+.otter-kart-embed-shell {
+    position: relative;
+    width: 100%;
+    margin: 0 auto;
+    aspect-ratio: 1672 / 941;
+    max-height: min(calc(100svh - 200px), calc(100% * 941 / 1672));
+    min-height: min(52vw, 320px);
+    max-width: 100%;
+}
+
+.page-embed-layout .otter-kart-embed-shell {
+    max-height: min(calc(100svh - 220px), 78svh);
+}
+
+.otter-kart-embed-shell .page-embed-frame--otter-kart {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
 }
 
 /* Top Holders Leaderboard */
@@ -4237,6 +4255,11 @@ body.wallet-modal-open {
     .page-embed-frame {
         height: calc(100vh - 230px);
         border-radius: 18px;
+    }
+
+    .otter-kart-embed-shell {
+        max-height: min(calc(100svh - 240px), 72svh);
+        min-height: 240px;
     }
 
     .builder-layout {

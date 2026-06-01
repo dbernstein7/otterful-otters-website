@@ -6,6 +6,7 @@ import {
   TARGET_FPS,
   raceZoomForViewport,
 } from "./config.js";
+import { getGameViewportSize } from "./viewport.js";
 import {
   surfaceAt,
   resolveWallCollision,
@@ -2618,8 +2619,7 @@ export class Game {
 
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const { vw: w, vh: h } = getGameViewportSize();
     this.canvas.width = Math.floor(w * dpr);
     this.canvas.height = Math.floor(h * dpr);
     this.canvas.style.width = `${w}px`;
@@ -4691,11 +4691,8 @@ export class Game {
   }
 
   resizeCheck() {
-    if (
-      Math.abs(this.viewW - window.innerWidth) > 4 ||
-      Math.abs(this.viewH - window.innerHeight) > 4
-    )
-      this.resize();
+    const { vw, vh } = getGameViewportSize();
+    if (Math.abs(this.viewW - vw) > 4 || Math.abs(this.viewH - vh) > 4) this.resize();
   }
 }
 
