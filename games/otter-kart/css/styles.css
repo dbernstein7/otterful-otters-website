@@ -304,6 +304,8 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspot:focus {
   height: 1px;
 }
 
+/* Map hotspots: positions from JS only (MAP_HOTSPOT_BOXES + coverTransform). */
+
 .map-claim-bar {
   position: fixed;
   z-index: 61;

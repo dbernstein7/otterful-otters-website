@@ -14,14 +14,7 @@ export function setEmbedViewport(width, height) {
   const w = Math.round(Number(width));
   const h = Math.round(Number(height));
   if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
-  if (isEmbedded() && isDesktopEmbedLayout()) {
-    embedViewport = {
-      vw: Math.max(1, Math.round(document.documentElement.clientWidth || w)),
-      vh: Math.max(1, Math.round(document.documentElement.clientHeight || h)),
-    };
-  } else {
-    embedViewport = { vw: w, vh: h };
-  }
+  embedViewport = { vw: w, vh: h };
   applyEmbedViewportToDocument();
   applyHudViewportVars();
 }

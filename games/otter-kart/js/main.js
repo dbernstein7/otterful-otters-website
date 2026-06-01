@@ -197,41 +197,17 @@ function getMenuCoverImageEl() {
 }
 
 /**
- * Visible pixels of a cover-fit image (matches browser object-fit: cover).
- * @returns {{ left: number, top: number, width: number, height: number, scale: number } | null}
+ * Cover paint rect — same math as layoutMenuCoverImage (object-fit: cover).
+ * @returns {{ left: number, top: number, width: number, height: number, scale: number }}
  */
-function getCoverImagePaintRect(imgEl, imgW, imgH) {
-  const r = imgEl.getBoundingClientRect();
-  if (r.width < 2 || r.height < 2 || !imgW || !imgH) return null;
-  const boxAspect = r.width / r.height;
-  const imgAspect = imgW / imgH;
-  let pw;
-  let ph;
-  let px;
-  let py;
-  if (boxAspect >= imgAspect) {
-    ph = r.height;
-    pw = ph * imgAspect;
-    px = r.left + (r.width - pw) * 0.5;
-    py = r.top;
-  } else {
-    pw = r.width;
-    ph = pw / imgAspect;
-    px = r.left;
-    py = r.top + (r.height - ph) * 0.5;
-  }
-  return { left: px, top: py, width: pw, height: ph, scale: pw / imgW };
-}
-
-function resolveCoverPaint(imgW, imgH) {
-  const img = getMenuCoverImageEl();
-  if (img?.complete) {
-    const paint = getCoverImagePaintRect(img, imgW, imgH);
-    if (paint) return paint;
-  }
+function coverPaintFromViewport(imgW, imgH) {
   const { vw, vh } = getGameViewportSize();
   const { s, ox, oy, dw, dh } = coverTransform(imgW, imgH, vw, vh);
   return { left: ox, top: oy, width: dw, height: dh, scale: s };
+}
+
+function resolveCoverPaint(imgW, imgH) {
+  return coverPaintFromViewport(imgW, imgH);
 }
 
 /**
@@ -241,6 +217,12 @@ function resolveCoverPaint(imgW, imgH) {
 function boxForMapHotspotEl(el, fallback) {
   const key = el.getAttribute("data-map-mode");
   return key ? fallback[key] : null;
+}
+
+async function waitForMenuCoverFrame() {
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
 }
 
 /**
@@ -352,14 +334,14 @@ function scheduleHotspotRelayout() {
   });
 }
 
-/** Coalesce resize storms (embed viewport ping-pong, canvas layout). */
+/** Hotspots relayout immediately; debounce only canvas resize. */
 function scheduleResizeRelayout() {
+  if (isStandaloneGame()) syncStandaloneShellViewport();
+  else applyHudViewportVars();
+  scheduleHotspotRelayout();
   window.clearTimeout(resizeRelayoutTimer);
   resizeRelayoutTimer = window.setTimeout(() => {
     resizeRelayoutTimer = 0;
-    if (isStandaloneGame()) syncStandaloneShellViewport();
-    else applyHudViewportVars();
-    scheduleHotspotRelayout();
     try {
       game.resize();
     } catch {
@@ -375,14 +357,9 @@ function installHotspotResizeWatchers() {
   window.addEventListener("message", (event) => {
     if (event?.data?.type === "REQUEST_GAME_SIZE") scheduleResizeRelayout();
     if (event?.data?.type === "EMBED_VIEWPORT") {
-      const prev = getEmbedViewport();
       const nw = Number(event.data.width);
       const nh = Number(event.data.height);
-      const sizeChanged =
-        !prev ||
-        Math.abs(prev.vw - nw) >= 2 ||
-        Math.abs(prev.vh - nh) >= 2;
-      if (sizeChanged) setEmbedViewport(nw, nh);
+      setEmbedViewport(nw, nh);
       scheduleResizeRelayout();
     }
   });
@@ -432,21 +409,14 @@ function getGaragePickerLayout() {
  * @returns {{ ox: number, oy: number, dw: number, dh: number, scale: number }}
  */
 function getGarageCoverPaint() {
-  const iw = GARAGE_REF_W;
-  const ih = GARAGE_REF_H;
-  if (isMobileEmbedGarageCover()) {
-    const paint = resolveCoverPaint(iw, ih);
-    return {
-      ox: paint.left,
-      oy: paint.top,
-      dw: paint.width,
-      dh: paint.height,
-      scale: paint.scale,
-    };
-  }
-  const { vw, vh } = getGameViewportSize();
-  const { s, ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
-  return { ox, oy, dw, dh, scale: s };
+  const paint = coverPaintFromViewport(GARAGE_REF_W, GARAGE_REF_H);
+  return {
+    ox: paint.left,
+    oy: paint.top,
+    dw: paint.width,
+    dh: paint.height,
+    scale: paint.scale,
+  };
 }
 
 /**
@@ -733,26 +703,7 @@ function layoutGarageCoverImage() {
   img.style.objectPosition = "center";
 }
 
-/**
- * Map hotspots from the painted cover image (standalone + iframe after calibration).
- * Standalone calls this synchronously on every window resize.
- */
-function layoutMapHotspotsPaintSync() {
-  if (!(mapHotspots instanceof HTMLElement)) return;
-  const iw = mapImgNatural.w || 1672;
-  const ih = mapImgNatural.h || 941;
-  const img = getMenuCoverImageEl();
-  if (!img) return;
-  if (!img.complete) {
-    img.addEventListener("load", () => layoutMapHotspotsPaintSync(), { once: true });
-    return;
-  }
-  const paint = getCoverImagePaintRect(img, iw, ih);
-  if (!paint) return;
-  layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
-  layoutMapClaimBar();
-}
-
+/** Map hotspots — MAP_HOTSPOT_BOXES + same cover paint as menu-cover image. */
 async function layoutMapHotspotsNow() {
   if (!(mapHotspots instanceof HTMLElement)) return;
   await ensureMapImageSize();
@@ -760,19 +711,11 @@ async function layoutMapHotspotsNow() {
   if (img && !img.complete) {
     await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
   }
-  layoutMapHotspotsPaintSync();
-}
-
-/** Sync iframe shell size before map/start hotspot math (embed only). */
-function ensureEmbedViewportFresh() {
-  if (!isEmbedded()) return;
-  const cw = Math.round(document.documentElement.clientWidth || 0);
-  const ch = Math.round(document.documentElement.clientHeight || 0);
-  if (cw < 8 || ch < 8) return;
-  const prev = getEmbedViewport();
-  if (!prev || Math.abs(prev.vw - cw) > 1 || Math.abs(prev.vh - ch) > 1) {
-    setEmbedViewport(cw, ch);
-  }
+  await waitForMenuCoverFrame();
+  const iw = mapImgNatural.w || 1672;
+  const ih = mapImgNatural.h || 941;
+  layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
+  layoutMapClaimBar();
 }
 
 function syncMenuCover() {
@@ -860,21 +803,7 @@ function enterMapFromStart(opts = {}) {
   activateMenuTab("play");
   syncDemoSessionBadge();
   syncMenuCover();
-  ensureEmbedViewportFresh();
-  if (isEmbedded()) {
-    try {
-      window.parent.postMessage({ type: "REQUEST_EMBED_VIEWPORT" }, "*");
-    } catch {
-      // ignore
-    }
-  }
   scheduleHotspotRelayout();
-  for (const ms of [50, 150, 400]) {
-    window.setTimeout(() => {
-      ensureEmbedViewportFresh();
-      scheduleHotspotRelayout();
-    }, ms);
-  }
 }
 
 let walletToastTimer = 0;

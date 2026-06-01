@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-hotspot-fix"
+                    src="/games/otter-kart/index.html?v=2026-06-02-hotspot-cover"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -139,7 +139,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-hotspot-fix';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-hotspot-cover';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -167,12 +167,7 @@
         let postViewportTimer = 0;
 
         window.addEventListener('message', function (event) {
-          if (!event.data) return;
-          if (event.data.type === 'REQUEST_EMBED_VIEWPORT') {
-            schedulePostEmbedViewport();
-            return;
-          }
-          if (event.data.type !== 'GAME_SIZE_RESPONSE') return;
+          if (!event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
           const shellW = Math.round(shell.getBoundingClientRect().width || 0);
           if (shellW >= 560) return;
           const rw = Math.round(Number(event.data.width));
