@@ -27,7 +27,7 @@ import {
   connectAndCheckRewards,
   getConnectedWallet,
   shortWallet,
-} from "../shell-rush-rewards.mjs";
+} from "../../shell-rush-rewards.mjs";
 
 const canvas = document.getElementById("game");
 const countdownEl = document.getElementById("countdown");
@@ -133,7 +133,7 @@ const MAP_HOTSPOT_BOXES = {
   garage: { ix: 48, iy: 198, iw: 220, ih: 184 },
   practice: { ix: 367, iy: 208, iw: 202, ih: 122 },
   daily: { ix: 1043, iy: 91, iw: 302, ih: 104 },
-  gp: { ix: 622, iy: 552, iw: 268, ih: 104 },
+  grandprix: { ix: 622, iy: 552, iw: 268, ih: 104 },
   touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
   endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
   claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
@@ -1121,7 +1121,55 @@ scheduleHotspotRelayout();
 window.setTimeout(scheduleHotspotRelayout, 50);
 window.setTimeout(scheduleHotspotRelayout, 250);
 
-/** Cover hit-test: works even when iframe size changes (clicks map to image coords). */
+function handleStartHotspotAction(action) {
+  if (!document.body?.classList?.contains?.("otter-ui-start")) return;
+  if (action === "start") enterMapFromStart({ demo: false });
+  else if (action === "demo") enterMapFromStart({ demo: true });
+  else if (action === "wallet") void handleWalletConnectHotspot();
+}
+
+function handleMapHotspotMode(mode) {
+  if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
+  if (document.body?.classList?.contains?.("otter-ui-garage")) return;
+  if (document.body?.classList?.contains?.("otter-ui-admin-open")) return;
+  if (mode === "garage") {
+    activateMenuTab("character");
+    return;
+  }
+  if (mode === "claim") {
+    void handleClaimShells();
+    return;
+  }
+  if (mode === "touge") game.trackId = "neo-touge";
+  if (mode === "endless") game.trackId = "neo-touge";
+  startRaceMode(/** @type {any} */ (mode));
+}
+
+/** Direct button clicks (primary) + cover hit-test on layer (fallback). */
+function bindMenuHotspotClicks() {
+  startMenuHotspots?.querySelectorAll("[data-start-action]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const action = el.getAttribute("data-start-action");
+      if (action) handleStartHotspotAction(action);
+    });
+  });
+
+  mapHotspots?.querySelectorAll("[data-map-mode]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const mode = el.getAttribute("data-map-mode");
+      if (mode) handleMapHotspotMode(mode);
+    });
+  });
+}
+
+bindMenuHotspotClicks();
+
 startMenuHotspots?.addEventListener(
   "pointerdown",
   (e) => {
@@ -1133,9 +1181,7 @@ startMenuHotspots?.addEventListener(
     if (!action) return;
     e.preventDefault();
     e.stopPropagation();
-    if (action === "start") enterMapFromStart({ demo: false });
-    else if (action === "demo") enterMapFromStart({ demo: true });
-    else if (action === "wallet") void handleWalletConnectHotspot();
+    handleStartHotspotAction(action);
   },
   { capture: true },
 );
@@ -1153,17 +1199,7 @@ mapHotspots?.addEventListener(
     if (!mode) return;
     e.preventDefault();
     e.stopPropagation();
-    if (mode === "garage") {
-      activateMenuTab("character");
-      return;
-    }
-    if (mode === "claim") {
-      void handleClaimShells();
-      return;
-    }
-    if (mode === "touge") game.trackId = "neo-touge";
-    if (mode === "endless") game.trackId = "neo-touge";
-    startRaceMode(/** @type {any} */ (mode));
+    handleMapHotspotMode(mode);
   },
   { capture: true },
 );
@@ -1313,3 +1349,5 @@ if (panelEnd && modalBackdrop) {
   });
   syncBackdrop();
 }
+
+window.__otterKartBooted = true;

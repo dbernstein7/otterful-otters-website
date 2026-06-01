@@ -93,6 +93,10 @@ body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
   background: transparent;
   cursor: pointer;
   border-radius: 10px;
+  min-width: 48px;
+  min-height: 32px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .start-hotspot:hover,

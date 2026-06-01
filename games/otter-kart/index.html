@@ -7,17 +7,17 @@
     <meta http-equiv="Cache-Control" content="no-store" />
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-01-base-fix-v1" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-01-hotspot-boot-v2" />
     <script>
       (function () {
         function reportGameSize() {
           const height = Math.max(
-            document.body.scrollHeight,
-            document.documentElement.scrollHeight,
+            document.documentElement.clientHeight,
+            window.innerHeight || 0,
           );
           const width = Math.max(
-            document.body.scrollWidth,
-            document.documentElement.scrollWidth,
+            document.documentElement.clientWidth,
+            window.innerWidth || 0,
           );
           window.parent.postMessage(
             { type: "GAME_SIZE_RESPONSE", height: height, width: width },
@@ -303,7 +303,21 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-01-base-fix-v1"></script>
+    <script type="module" src="js/main.js?v=2026-06-01-hotspot-boot-v2"></script>
+    <script>
+      window.addEventListener("load", function () {
+        window.setTimeout(function () {
+          if (window.__otterKartBooted) return;
+          var box = document.createElement("div");
+          box.setAttribute("role", "alert");
+          box.style.cssText =
+            "position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:12px 14px;border-radius:12px;background:rgba(120,18,18,0.94);color:#fff;font:600 14px/1.4 system-ui,sans-serif;border:1px solid rgba(255,255,255,0.2)";
+          box.textContent =
+            "OtterKart failed to load (check your connection, then hard-refresh with Ctrl+F5).";
+          document.body.appendChild(box);
+        }, 2500);
+      });
+    </script>
   </body>
 </html>
 
