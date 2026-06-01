@@ -139,6 +139,8 @@ let startImgNatural = { w: 0, h: 0 };
 let hotspotLayoutRaf = 0;
 /** @type {null | (() => void)} Redraw garage carousel canvases after layout resize. */
 let repaintGarageCarousels = null;
+let lastGarageLayoutKey = "";
+let resizeRelayoutTimer = 0;
 /** Desktop iframe: map hotspots calibrated from CSS once, then image-space relayout. */
 let mapEmbedCssCalibrated = false;
 
@@ -411,40 +413,51 @@ function scheduleHotspotRelayout() {
   });
 }
 
-function installHotspotResizeWatchers() {
-  const onResize = () => {
-    if (isStandaloneGame()) {
-      syncStandaloneShellViewport();
-    } else {
-      applyHudViewportVars();
-    }
+/** Coalesce resize storms (embed viewport ping-pong, canvas layout). */
+function scheduleResizeRelayout() {
+  window.clearTimeout(resizeRelayoutTimer);
+  resizeRelayoutTimer = window.setTimeout(() => {
+    resizeRelayoutTimer = 0;
+    if (isStandaloneGame()) syncStandaloneShellViewport();
+    else applyHudViewportVars();
     scheduleHotspotRelayout();
     try {
       game.resize();
     } catch {
       // ignore
     }
-  };
-  window.addEventListener("resize", onResize);
-  window.visualViewport?.addEventListener("resize", onResize);
-  window.visualViewport?.addEventListener("scroll", onResize);
+  }, 100);
+}
+
+function installHotspotResizeWatchers() {
+  window.addEventListener("resize", scheduleResizeRelayout);
+  window.visualViewport?.addEventListener("resize", scheduleResizeRelayout);
+  window.visualViewport?.addEventListener("scroll", scheduleResizeRelayout);
   window.addEventListener("message", (event) => {
-    if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
+    if (event?.data?.type === "REQUEST_GAME_SIZE") scheduleResizeRelayout();
     if (event?.data?.type === "EMBED_VIEWPORT") {
       const prev = getEmbedViewport();
-      setEmbedViewport(event.data.width, event.data.height);
+      const nw = Number(event.data.width);
+      const nh = Number(event.data.height);
       if (
         prev &&
-        (Math.abs(prev.vw - Number(event.data.width)) > 8 ||
-          Math.abs(prev.vh - Number(event.data.height)) > 8)
+        Math.abs(prev.vw - nw) < 2 &&
+        Math.abs(prev.vh - nh) < 2
+      ) {
+        return;
+      }
+      setEmbedViewport(nw, nh);
+      if (
+        prev &&
+        (Math.abs(prev.vw - nw) > 8 || Math.abs(prev.vh - nh) > 8)
       ) {
         mapEmbedCssCalibrated = false;
       }
-      onResize();
+      scheduleResizeRelayout();
     }
   });
   if (typeof ResizeObserver !== "undefined") {
-    const ro = new ResizeObserver(onResize);
+    const ro = new ResizeObserver(scheduleResizeRelayout);
     ro.observe(document.documentElement);
     if (document.body) ro.observe(document.body);
     const menuCover = document.getElementById("menu-cover");
@@ -549,9 +562,10 @@ function layoutGarageLayout() {
     }
   }
 
+  let colW = 0;
   const leftCol = document.querySelector(".loadout-layout__left");
   if (leftCol instanceof HTMLElement) {
-    const colW = Math.min((picker.maxW ?? 200) * cs, picker.w * dw);
+    colW = Math.min((picker.maxW ?? 200) * cs, picker.w * dw);
     const shiftL = (picker.offsetLeft ?? 0) * cs;
     const shiftT = (picker.offsetTop ?? 0) * cs;
     leftCol.style.position = "fixed";
@@ -595,10 +609,6 @@ function layoutGarageLayout() {
         preview.style.maxWidth = `${previewSpan}px`;
         preview.style.maxHeight = `${previewSpan}px`;
       }
-      const previewCv = equipped.querySelector("canvas[data-equipped-preview]");
-      if (previewCv instanceof HTMLCanvasElement) {
-        renderEquippedComposite(previewCv, loadEffectiveLoadout());
-      }
     } else {
       equipped.style.removeProperty("left");
       equipped.style.removeProperty("top");
@@ -623,12 +633,20 @@ function layoutGarageLayout() {
     randWrap.style.removeProperty("z-index");
   }
 
-  if (typeof repaintGarageCarousels === "function") {
-    requestAnimationFrame(() => repaintGarageCarousels());
+  const layoutKey = `${Math.round(ox)}:${Math.round(oy)}:${Math.round(dw)}:${Math.round(dh)}:${Math.round(colW)}`;
+  if (
+    layoutKey !== lastGarageLayoutKey &&
+    typeof repaintGarageCarousels === "function"
+  ) {
+    lastGarageLayoutKey = layoutKey;
+    if (isMobileEmbedGarageCover()) {
+      requestAnimationFrame(() => repaintGarageCarousels());
+    }
   }
 }
 
 function clearGarageLayout() {
+  lastGarageLayoutKey = "";
   document.documentElement.classList.remove("otter-garage-cover-img");
   const equipped = document.querySelector("[data-loadout-equipped]");
   if (equipped instanceof HTMLElement) {

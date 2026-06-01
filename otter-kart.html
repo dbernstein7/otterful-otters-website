@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-garage-mobile"
+                    src="/games/otter-kart/index.html?v=2026-06-02-garage-perf"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -139,7 +139,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-garage-mobile';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-garage-perf';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -161,20 +161,32 @@
         const shell = document.getElementById('otterKartEmbedShell');
         if (!iframe || !shell) return;
 
+        /** Mobile iframe only — avoids EMBED_VIEWPORT ↔ GAME_SIZE_RESPONSE loops on desktop. */
         let iframeReportedSize = null;
+        let lastPostedViewport = null;
+        let postViewportTimer = 0;
 
         window.addEventListener('message', function (event) {
           if (!event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
+          const shellW = Math.round(shell.getBoundingClientRect().width || 0);
+          if (shellW >= 560) return;
           const rw = Math.round(Number(event.data.width));
           const rh = Math.round(Number(event.data.height));
-          if (rw >= 8 && rh >= 8) iframeReportedSize = { w: rw, h: rh };
-          postEmbedViewport();
+          if (rw < 8 || rh < 8) return;
+          iframeReportedSize = { w: rw, h: rh };
+          schedulePostEmbedViewport();
         });
+
+        function schedulePostEmbedViewport() {
+          window.clearTimeout(postViewportTimer);
+          postViewportTimer = window.setTimeout(postEmbedViewport, 80);
+        }
 
         function postEmbedViewport() {
           const rect = shell.getBoundingClientRect();
           let w = Math.round(rect.width || shell.clientWidth || iframe.clientWidth || 0);
           let h = Math.round(rect.height || shell.clientHeight || iframe.clientHeight || 0);
+          const shellW = w;
           try {
             const doc = iframe.contentDocument?.documentElement;
             const cw = doc?.clientWidth ?? 0;
@@ -193,6 +205,14 @@
             }
           }
           if (w < 8 || h < 8) return;
+          if (
+            lastPostedViewport &&
+            Math.abs(lastPostedViewport.w - w) < 2 &&
+            Math.abs(lastPostedViewport.h - h) < 2
+          ) {
+            return;
+          }
+          lastPostedViewport = { w, h };
           try {
             iframe.contentWindow &&
               iframe.contentWindow.postMessage(
@@ -200,23 +220,27 @@
                 '*',
               );
           } catch {}
-          try {
-            iframe.contentWindow &&
-              iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
-          } catch {}
+          if (shellW < 560) {
+            try {
+              iframe.contentWindow &&
+                iframe.contentWindow.postMessage({ type: 'REQUEST_GAME_SIZE' }, '*');
+            } catch {}
+          }
         }
 
         if (typeof ResizeObserver !== 'undefined') {
-          const ro = new ResizeObserver(postEmbedViewport);
+          const ro = new ResizeObserver(schedulePostEmbedViewport);
           ro.observe(shell);
         }
 
-        window.addEventListener('resize', postEmbedViewport);
-        window.visualViewport?.addEventListener('resize', postEmbedViewport);
+        window.addEventListener('resize', schedulePostEmbedViewport);
+        window.visualViewport?.addEventListener('resize', schedulePostEmbedViewport);
 
         iframe.addEventListener('load', () => {
-          postEmbedViewport();
-          [0, 50, 150, 400, 800, 1200].forEach((ms) => setTimeout(postEmbedViewport, ms));
+          schedulePostEmbedViewport();
+          [0, 50, 150, 400, 800, 1200].forEach((ms) =>
+            setTimeout(schedulePostEmbedViewport, ms),
+          );
         });
 
         iframe.addEventListener('pointerenter', () => {
@@ -230,7 +254,7 @@
           } catch {}
         });
 
-        postEmbedViewport();
+        schedulePostEmbedViewport();
       })();
     </script>
 </body>
