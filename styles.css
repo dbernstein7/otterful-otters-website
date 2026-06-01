@@ -1329,6 +1329,10 @@ body::before {
     text-decoration: none;
 }
 
+.page-embed-note--centered {
+    justify-content: center;
+}
+
 .page-embed-frame {
     width: 100%;
     height: min(1200px, calc(100vh - 250px));
@@ -1351,31 +1355,8 @@ body::before {
     min-height: 200px;
 }
 
-/* Desktop embed: fit by height so shell keeps 1672×941 (no top/bottom crop; hotspots stay aligned) */
-@media (min-width: 901px) {
-    .embed-page .otter-kart-embed-shell {
-        --otter-kart-embed-max-h: calc(100svh - 168px);
-        width: min(100%, calc(var(--otter-kart-embed-max-h) * 1672 / 941));
-        max-height: var(--otter-kart-embed-max-h);
-        min-height: 320px;
-    }
-
-    .embed-page .container:has(.otter-kart-embed-shell) {
-        padding-top: 108px;
-        padding-bottom: 32px;
-    }
-}
-
 .page-embed-layout .otter-kart-embed-shell {
     max-height: min(calc(100svh - 260px), 80svh);
-}
-
-@media (min-width: 901px) {
-    .page-embed-layout .otter-kart-embed-shell {
-        --otter-kart-embed-max-h: min(calc(100svh - 188px), 88svh);
-        width: min(100%, calc(var(--otter-kart-embed-max-h) * 1672 / 941));
-        max-height: var(--otter-kart-embed-max-h);
-    }
 }
 
 .otter-kart-embed-shell .page-embed-frame--otter-kart {
@@ -4270,9 +4251,13 @@ body.wallet-modal-open {
         min-height: 100vh;
     }
 
-    .page-embed-note {
+    .page-embed-note:not(.page-embed-note--centered) {
         flex-direction: column;
         align-items: flex-start;
+    }
+
+    .page-embed-note--centered {
+        align-items: center;
     }
 
     .page-embed-frame {
