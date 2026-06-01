@@ -173,13 +173,13 @@ const START_HOTSPOT_BOXES = {
 
 /** Image-space hitboxes for OtterKart-Map.png (1672×941) — same on every viewport size. */
 const MAP_HOTSPOT_BOXES = {
-  garage: { ix: 48, iy: 198, iw: 220, ih: 184 },
-  practice: { ix: 367, iy: 208, iw: 202, ih: 122 },
-  daily: { ix: 1043, iy: 91, iw: 302, ih: 104 },
-  grandprix: { ix: 622, iy: 552, iw: 268, ih: 104 },
-  touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
-  endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
-  claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
+  garage: { ix: 28, iy: 198, iw: 220, ih: 184 },
+  practice: { ix: 347, iy: 208, iw: 202, ih: 122 },
+  daily: { ix: 1043, iy: 131, iw: 302, ih: 104 },
+  grandprix: { ix: 652, iy: 532, iw: 268, ih: 104 },
+  touge: { ix: 1170, iy: 533, iw: 235, ih: 113 },
+  endless: { ix: 311, iy: 703, iw: 235, ih: 122 },
+  claim: { ix: 1414, iy: 816, iw: 101, ih: 84 },
 };
 
 function coverTransform(imgW, imgH, vw, vh) {
