@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
     <title>OtterKart · Arcade Sprint</title>
     <meta http-equiv="Cache-Control" content="no-store" />
-    <link rel="stylesheet" href="./css/styles.css?v=2026-06-01-cover-hotspots-v2" />
+    <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
+    <base href="/games/otter-kart/" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-01-base-fix-v1" />
     <script>
       (function () {
         function reportGameSize() {
@@ -103,7 +105,7 @@
     <div id="hud-randomizer" class="hud-randomizer hidden" aria-label="Item randomizer">
       <img
         class="hud-randomizer__frame"
-        src="./Track%20Assets/Randomizer.png?v=2026-05-28-boost-balance-v14"
+        src="Track%20Assets/Randomizer.png?v=2026-05-28-boost-balance-v14"
         alt=""
         decoding="async"
       />
@@ -160,7 +162,7 @@
       <div id="settings-panel" class="settings-panel">
         <img
           class="settings-panel__art"
-          src="./Track%20Assets/Settings.png?v=2026-05-28-settings-asset-v21"
+          src="Track%20Assets/Settings.png?v=2026-05-28-settings-asset-v21"
           alt="Settings — keyboard and controller controls"
           width="1000"
           height="550"
@@ -301,7 +303,7 @@
       </div>
     </div>
 
-    <script type="module" src="./js/main.js?v=2026-06-01-cover-hotspots-v2"></script>
+    <script type="module" src="js/main.js?v=2026-06-01-base-fix-v1"></script>
   </body>
 </html>
 

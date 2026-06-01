@@ -51,6 +51,10 @@
       "dest": "/api/mml?id=$1"
     },
     {
+      "src": "/games/otter-kart$",
+      "dest": "/games/otter-kart/index.html"
+    },
+    {
       "src": "/branding/(.*)$",
       "dest": "/games/shell-snag/branding/$1"
     },
