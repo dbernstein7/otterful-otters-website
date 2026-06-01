@@ -14,7 +14,14 @@ export function setEmbedViewport(width, height) {
   const w = Math.round(Number(width));
   const h = Math.round(Number(height));
   if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
-  embedViewport = { vw: w, vh: h };
+  if (isEmbedded() && isDesktopEmbedLayout()) {
+    embedViewport = {
+      vw: Math.max(1, Math.round(document.documentElement.clientWidth || w)),
+      vh: Math.max(1, Math.round(document.documentElement.clientHeight || h)),
+    };
+  } else {
+    embedViewport = { vw: w, vh: h };
+  }
   applyEmbedViewportToDocument();
   applyHudViewportVars();
 }
@@ -44,20 +51,6 @@ export function isDesktopEmbedLayout() {
   const cw = document.documentElement.clientWidth || 0;
   const ch = document.documentElement.clientHeight || 0;
   return Math.min(cw, ch) >= 560;
-}
-
-/**
- * Viewport for menu/map cover + hotspots — must match painted menu-cover pixels.
- * Desktop embed uses iframe clientWidth/Height, not parent postMessage alone.
- */
-export function getMenuLayoutViewportSize() {
-  if (isDesktopEmbedLayout()) {
-    return {
-      vw: Math.max(1, Math.round(document.documentElement.clientWidth || 1)),
-      vh: Math.max(1, Math.round(document.documentElement.clientHeight || 1)),
-    };
-  }
-  return getGameViewportSize();
 }
 
 /** Lock iframe document to the shell pixel size so cover art = hotspot math. */

@@ -266,12 +266,67 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   outline-offset: 2px;
 }
 
-/* Map hit regions: positioned in JS from MAP_HOTSPOT_BOXES (image space, all viewports). */
+/* Map hit regions: JS layout; offscreen until placed (standalone / mobile). */
 .map-hotspot[data-map-mode] {
   left: -9999px;
   top: -9999px;
   width: 1px;
   height: 1px;
+}
+
+/*
+ * Desktop site embed (otter-kart.html): CSS seed positions for one-time calibration.
+ * Local full-page file uses MAP_HOTSPOT_BOXES + painted image rect only.
+ */
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--practice {
+  left: calc(10% + 200px);
+  top: calc(20% + 20px);
+  width: max(60px, calc(30% - 300px));
+  height: 13%;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--daily {
+  left: calc(57% + 90px);
+  top: calc(16% - 60px);
+  width: max(60px, calc(30% - 200px));
+  height: 11%;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--gp {
+  left: calc(36% + 20px);
+  top: calc(48% + 100px);
+  width: max(60px, calc(28% - 200px));
+  height: 11%;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--touge {
+  left: calc(64% + 100px);
+  top: calc(46% + 140px);
+  width: max(60px, calc(26% - 200px));
+  height: 12%;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--endless {
+  left: calc(12% + 100px);
+  top: calc(62% + 170px);
+  width: max(60px, calc(32% - 300px));
+  height: 13%;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--claim {
+  left: calc(78% + 110px);
+  top: calc(74% + 200px);
+  width: max(60px, calc(18% - 200px));
+  height: calc(11% - 20px);
+  border-radius: 14px;
+}
+
+html.otter-embed body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot--garage {
+  left: 48px;
+  top: 198px;
+  width: 220px;
+  height: 184px;
+  border-radius: 14px;
 }
 
 .map-claim-bar {

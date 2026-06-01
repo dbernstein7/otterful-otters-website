@@ -24,9 +24,10 @@ import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
   applyHudViewportVars,
+  getEmbedViewport,
   getGameViewportSize,
-  getMenuLayoutViewportSize,
   isDesktopEmbedLayout,
+  isEmbedded,
   setEmbedViewport,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
@@ -130,6 +131,8 @@ const START_IMG_URL = "./OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15";
 let mapImgNatural = { w: 0, h: 0 };
 let startImgNatural = { w: 0, h: 0 };
 let hotspotLayoutRaf = 0;
+/** Desktop site embed: map hotspots calibrated from CSS once per size. */
+let mapEmbedCssCalibrated = false;
 
 /** Image-space hitboxes for OtterKart-Start-Menu.png (1024×572). */
 const START_HOTSPOT_BOXES = {
@@ -158,9 +161,117 @@ function coverTransform(imgW, imgH, vw, vh) {
   return { s, ox, oy, dw, dh };
 }
 
-/** Layout viewport = matches menu-cover painting (critical for desktop iframe). */
-function getLayoutViewportSize() {
-  return getMenuLayoutViewportSize();
+function isDesktopEmbedMapLayout() {
+  return isEmbedded() && isDesktopEmbedLayout();
+}
+
+function getMenuCoverImageEl() {
+  const img = document.getElementById("menu-cover-img");
+  return img instanceof HTMLImageElement ? img : null;
+}
+
+/**
+ * Visible pixels of a cover-fit image (matches browser object-fit: cover).
+ * @returns {{ left: number, top: number, width: number, height: number, scale: number } | null}
+ */
+function getCoverImagePaintRect(imgEl, imgW, imgH) {
+  const r = imgEl.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2 || !imgW || !imgH) return null;
+  const boxAspect = r.width / r.height;
+  const imgAspect = imgW / imgH;
+  let pw;
+  let ph;
+  let px;
+  let py;
+  if (boxAspect >= imgAspect) {
+    ph = r.height;
+    pw = ph * imgAspect;
+    px = r.left + (r.width - pw) * 0.5;
+    py = r.top;
+  } else {
+    pw = r.width;
+    ph = pw / imgAspect;
+    px = r.left;
+    py = r.top + (r.height - ph) * 0.5;
+  }
+  return { left: px, top: py, width: pw, height: ph, scale: pw / imgW };
+}
+
+function resolveCoverPaint(imgW, imgH) {
+  const img = getMenuCoverImageEl();
+  if (img?.complete) {
+    const paint = getCoverImagePaintRect(img, imgW, imgH);
+    if (paint) return paint;
+  }
+  const { vw, vh } = getGameViewportSize();
+  const { s, ox, oy, dw, dh } = coverTransform(imgW, imgH, vw, vh);
+  return { left: ox, top: oy, width: dw, height: dh, scale: s };
+}
+
+/**
+ * @param {HTMLElement} el
+ * @param {Record<string, { ix: number, iy: number, iw: number, ih: number }>} fallback
+ */
+function boxForMapHotspotEl(el, fallback) {
+  const key = el.getAttribute("data-map-mode");
+  const ix = Number(el.dataset.ix);
+  const iy = Number(el.dataset.iy);
+  const iw = Number(el.dataset.iw);
+  const ih = Number(el.dataset.ih);
+  if (Number.isFinite(ix) && Number.isFinite(iy) && Number.isFinite(iw) && Number.isFinite(ih)) {
+    return { ix, iy, iw, ih };
+  }
+  return key ? fallback[key] : null;
+}
+
+function clearMapHotspotInlineStyles() {
+  mapHotspots?.querySelectorAll?.("[data-map-mode]")?.forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.style.removeProperty("left");
+    el.style.removeProperty("top");
+    el.style.removeProperty("width");
+    el.style.removeProperty("height");
+    el.style.removeProperty("position");
+  });
+}
+
+async function waitForMenuCoverFrame() {
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+/** Desktop iframe: read CSS-tuned hotspot positions into image-space dataset. */
+async function calibrateDesktopEmbedMapFromCss() {
+  if (mapEmbedCssCalibrated || !isDesktopEmbedMapLayout()) return;
+  if (!(mapHotspots instanceof HTMLElement)) return;
+  if (isEmbedded() && !getEmbedViewport()) return;
+
+  clearMapHotspotInlineStyles();
+  await ensureMapImageSize();
+  const iw = mapImgNatural.w || 1672;
+  const ih = mapImgNatural.h || 941;
+  const img = getMenuCoverImageEl();
+  if (!img) return;
+  if (!img.complete) {
+    await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
+  }
+  await waitForMenuCoverFrame();
+
+  const paint = getCoverImagePaintRect(img, iw, ih);
+  if (!paint) return;
+
+  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    el.dataset.ix = String((r.left - paint.left) / paint.scale);
+    el.dataset.iy = String((r.top - paint.top) / paint.scale);
+    el.dataset.iw = String(r.width / paint.scale);
+    el.dataset.ih = String(r.height / paint.scale);
+  });
+
+  mapEmbedCssCalibrated = true;
 }
 
 /**
@@ -171,11 +282,29 @@ function getLayoutViewportSize() {
  * @param {number} imgH
  * @returns {string | null}
  */
-function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
-  const ix = (clientX - ox) / s;
-  const iy = (clientY - oy) / s;
+function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH, attr) {
+  const paint = resolveCoverPaint(imgW, imgH);
+  const ix = (clientX - paint.left) / paint.scale;
+  const iy = (clientY - paint.top) / paint.scale;
+
+  if (attr === "data-map-mode" && mapHotspots) {
+    for (const el of mapHotspots.querySelectorAll("[data-map-mode]")) {
+      if (!(el instanceof HTMLElement)) continue;
+      const key = el.getAttribute("data-map-mode");
+      const box = boxForMapHotspotEl(el, boxes);
+      if (!key || !box) continue;
+      if (
+        ix >= box.ix &&
+        ix <= box.ix + box.iw &&
+        iy >= box.iy &&
+        iy <= box.iy + box.ih
+      ) {
+        return key;
+      }
+    }
+    return null;
+  }
+
   for (const [key, box] of Object.entries(boxes)) {
     if (
       ix >= box.ix &&
@@ -199,19 +328,19 @@ function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
  */
 function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
   if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
+  const paint = resolveCoverPaint(imgW, imgH);
 
   layer.querySelectorAll(`[${attr}]`).forEach((el) => {
     if (!(el instanceof HTMLElement)) return;
     const key = el.getAttribute(attr);
-    const box = key ? boxes[key] : null;
+    const box =
+      attr === "data-map-mode" ? boxForMapHotspotEl(el, boxes) : key ? boxes[key] : null;
     if (!box) return;
-    const w = Math.max(12, box.iw * s);
-    const h = Math.max(12, box.ih * s);
+    const w = Math.max(12, box.iw * paint.scale);
+    const h = Math.max(12, box.ih * paint.scale);
     el.style.position = "fixed";
-    el.style.left = `${ox + box.ix * s}px`;
-    el.style.top = `${oy + box.iy * s}px`;
+    el.style.left = `${paint.left + box.ix * paint.scale}px`;
+    el.style.top = `${paint.top + box.iy * paint.scale}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.margin = "0";
@@ -220,12 +349,10 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
 
 function relayoutMenuHotspots() {
   syncMenuCover();
-  const desktopEmbed = isDesktopEmbedLayout();
+  resetMenuCoverToFullFrame();
   if (document.body?.classList?.contains?.("otter-ui-start")) {
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
-    if (desktopEmbed) layoutMenuCoverToCoverTransform(iw, ih);
-    else resetMenuCoverToFullFrame();
     layoutCoverHotspots(
       startMenuHotspots,
       START_HOTSPOT_BOXES,
@@ -237,13 +364,7 @@ function relayoutMenuHotspots() {
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
-    const iw = mapImgNatural.w || 1672;
-    const ih = mapImgNatural.h || 941;
-    if (desktopEmbed) layoutMenuCoverToCoverTransform(iw, ih);
-    else resetMenuCoverToFullFrame();
-    layoutMapHotspots();
-  } else {
-    resetMenuCoverToFullFrame();
+    void layoutMapHotspots();
   }
 }
 
@@ -271,7 +392,15 @@ function installHotspotResizeWatchers() {
   window.addEventListener("message", (event) => {
     if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
     if (event?.data?.type === "EMBED_VIEWPORT") {
+      const prev = getEmbedViewport();
       setEmbedViewport(event.data.width, event.data.height);
+      if (
+        prev &&
+        (Math.abs(prev.vw - Number(event.data.width)) > 8 ||
+          Math.abs(prev.vh - Number(event.data.height)) > 8)
+      ) {
+        mapEmbedCssCalibrated = false;
+      }
       onResize();
     }
   });
@@ -279,6 +408,8 @@ function installHotspotResizeWatchers() {
     const ro = new ResizeObserver(onResize);
     ro.observe(document.documentElement);
     if (document.body) ro.observe(document.body);
+    const coverImg = getMenuCoverImageEl();
+    if (coverImg) ro.observe(coverImg);
   }
 }
 
@@ -298,35 +429,6 @@ async function ensureMapImageSize() {
   });
 }
 
-/** Desktop iframe: pin cover box to the same coverTransform as hotspots. */
-function layoutMenuCoverToCoverTransform(imgW, imgH) {
-  const cover = document.getElementById("menu-cover");
-  const img = document.getElementById("menu-cover-img");
-  if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
-  if (!imgW || !imgH) return;
-
-  const { vw, vh } = getLayoutViewportSize();
-  const { ox, oy, dw, dh } = coverTransform(imgW, imgH, vw, vh);
-
-  cover.style.position = "fixed";
-  cover.style.left = `${ox}px`;
-  cover.style.top = `${oy}px`;
-  cover.style.width = `${dw}px`;
-  cover.style.height = `${dh}px`;
-  cover.style.right = "auto";
-  cover.style.bottom = "auto";
-  cover.style.overflow = "hidden";
-  cover.style.pointerEvents = "none";
-
-  img.style.position = "absolute";
-  img.style.left = "0";
-  img.style.top = "0";
-  img.style.width = "100%";
-  img.style.height = "100%";
-  img.style.objectFit = "cover";
-  img.style.objectPosition = "center";
-}
-
 /** Start screen: full-frame cover via CSS — clear any map-only inline layout. */
 function resetMenuCoverToFullFrame() {
   const cover = document.getElementById("menu-cover");
@@ -344,10 +446,18 @@ function resetMenuCoverToFullFrame() {
   }
 }
 
-function layoutMapHotspots() {
+async function layoutMapHotspots() {
   if (!(mapHotspots instanceof HTMLElement)) return;
+  await ensureMapImageSize();
   const iw = mapImgNatural.w || 1672;
   const ih = mapImgNatural.h || 941;
+  const img = getMenuCoverImageEl();
+  if (img && !img.complete) {
+    await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
+  }
+  if (isDesktopEmbedMapLayout()) {
+    await calibrateDesktopEmbedMapFromCss();
+  }
   layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
   layoutMapClaimBar();
 }
@@ -1280,7 +1390,14 @@ startMenuHotspots?.addEventListener(
     if (e.button !== 0) return;
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
-    const action = hitTestCoverHotspots(e.clientX, e.clientY, START_HOTSPOT_BOXES, iw, ih);
+    const action = hitTestCoverHotspots(
+      e.clientX,
+      e.clientY,
+      START_HOTSPOT_BOXES,
+      iw,
+      ih,
+      "data-start-action",
+    );
     if (!action) return;
     e.preventDefault();
     e.stopPropagation();
@@ -1292,7 +1409,7 @@ startMenuHotspots?.addEventListener(
 function hitTestMapHotspotMode(clientX, clientY) {
   const iw = mapImgNatural.w || 1672;
   const ih = mapImgNatural.h || 941;
-  return hitTestCoverHotspots(clientX, clientY, MAP_HOTSPOT_BOXES, iw, ih);
+  return hitTestCoverHotspots(clientX, clientY, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
 }
 
 function handleMapHotspotPointer(clientX, clientY) {
