@@ -141,8 +141,6 @@ let hotspotLayoutRaf = 0;
 let repaintGarageCarousels = null;
 let lastGarageLayoutKey = "";
 let resizeRelayoutTimer = 0;
-/** Desktop iframe: map hotspots calibrated from CSS once, then image-space relayout. */
-let mapEmbedCssCalibrated = false;
 
 function isMapHomeVisible() {
   return (
@@ -191,13 +189,6 @@ function coverTransform(imgW, imgH, vw, vh) {
   const ox = (vw - dw) * 0.5; // centered
   const oy = (vh - dh) * 0.5;
   return { s, ox, oy, dw, dh };
-}
-
-/** Desktop map (iframe CSS calibration path only). */
-function isDesktopMapHotspotCssPath() {
-  const vw = document.documentElement.clientWidth || window.innerWidth || 0;
-  const vh = document.documentElement.clientHeight || window.innerHeight || 0;
-  return Math.min(vw, vh) >= 560;
 }
 
 function getMenuCoverImageEl() {
@@ -249,66 +240,7 @@ function resolveCoverPaint(imgW, imgH) {
  */
 function boxForMapHotspotEl(el, fallback) {
   const key = el.getAttribute("data-map-mode");
-  if (isEmbedded() && mapEmbedCssCalibrated && isDesktopMapHotspotCssPath()) {
-    const ix = Number(el.dataset.ix);
-    const iy = Number(el.dataset.iy);
-    const iw = Number(el.dataset.iw);
-    const ih = Number(el.dataset.ih);
-    if (Number.isFinite(ix) && Number.isFinite(iy) && Number.isFinite(iw) && Number.isFinite(ih)) {
-      return { ix, iy, iw, ih };
-    }
-  }
   return key ? fallback[key] : null;
-}
-
-function clearMapHotspotInlineStyles() {
-  mapHotspots?.querySelectorAll?.("[data-map-mode]")?.forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    el.style.removeProperty("left");
-    el.style.removeProperty("top");
-    el.style.removeProperty("width");
-    el.style.removeProperty("height");
-    el.style.removeProperty("position");
-  });
-}
-
-async function waitForMenuCoverFrame() {
-  await new Promise((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(resolve));
-  });
-}
-
-/** Desktop iframe only: read CSS-tuned positions into image-space. */
-async function calibrateMapHotspotsFromCss() {
-  if (!isEmbedded() || mapEmbedCssCalibrated || !isDesktopMapHotspotCssPath()) return;
-  if (!(mapHotspots instanceof HTMLElement)) return;
-  if (!getEmbedViewport()) return;
-
-  clearMapHotspotInlineStyles();
-  await ensureMapImageSize();
-  const iw = mapImgNatural.w || 1672;
-  const ih = mapImgNatural.h || 941;
-  const img = getMenuCoverImageEl();
-  if (!img) return;
-  if (!img.complete) {
-    await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
-  }
-  await waitForMenuCoverFrame();
-
-  const paint = getCoverImagePaintRect(img, iw, ih);
-  if (!paint) return;
-
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const r = el.getBoundingClientRect();
-    if (r.width < 2 || r.height < 2) return;
-    el.dataset.ix = String((r.left - paint.left) / paint.scale);
-    el.dataset.iy = String((r.top - paint.top) / paint.scale);
-    el.dataset.iw = String(r.width / paint.scale);
-    el.dataset.ih = String(r.height / paint.scale);
-  });
-
-  mapEmbedCssCalibrated = true;
 }
 
 /**
@@ -446,20 +378,11 @@ function installHotspotResizeWatchers() {
       const prev = getEmbedViewport();
       const nw = Number(event.data.width);
       const nh = Number(event.data.height);
-      if (
-        prev &&
-        Math.abs(prev.vw - nw) < 2 &&
-        Math.abs(prev.vh - nh) < 2
-      ) {
-        return;
-      }
-      setEmbedViewport(nw, nh);
-      if (
-        prev &&
-        (Math.abs(prev.vw - nw) > 8 || Math.abs(prev.vh - nh) > 8)
-      ) {
-        mapEmbedCssCalibrated = false;
-      }
+      const sizeChanged =
+        !prev ||
+        Math.abs(prev.vw - nw) >= 2 ||
+        Math.abs(prev.vh - nh) >= 2;
+      if (sizeChanged) setEmbedViewport(nw, nh);
       scheduleResizeRelayout();
     }
   });
@@ -837,10 +760,19 @@ async function layoutMapHotspotsNow() {
   if (img && !img.complete) {
     await new Promise((resolve) => img.addEventListener("load", resolve, { once: true }));
   }
-  if (isEmbedded() && isDesktopMapHotspotCssPath() && !mapEmbedCssCalibrated) {
-    await calibrateMapHotspotsFromCss();
-  }
   layoutMapHotspotsPaintSync();
+}
+
+/** Sync iframe viewport to real client size (embed desktop after start→map). */
+function ensureEmbedViewportFresh() {
+  if (!isEmbedded()) return;
+  const cw = Math.round(document.documentElement.clientWidth || 0);
+  const ch = Math.round(document.documentElement.clientHeight || 0);
+  if (cw < 8 || ch < 8) return;
+  const prev = getEmbedViewport();
+  if (!prev || Math.abs(prev.vw - cw) > 1 || Math.abs(prev.vh - ch) > 1) {
+    setEmbedViewport(cw, ch);
+  }
 }
 
 function syncMenuCover() {
@@ -928,7 +860,21 @@ function enterMapFromStart(opts = {}) {
   activateMenuTab("play");
   syncDemoSessionBadge();
   syncMenuCover();
+  ensureEmbedViewportFresh();
+  if (isEmbedded()) {
+    try {
+      window.parent.postMessage({ type: "REQUEST_EMBED_VIEWPORT" }, "*");
+    } catch {
+      // ignore
+    }
+  }
   scheduleHotspotRelayout();
+  for (const ms of [50, 150, 400]) {
+    window.setTimeout(() => {
+      ensureEmbedViewportFresh();
+      scheduleHotspotRelayout();
+    }, ms);
+  }
 }
 
 let walletToastTimer = 0;

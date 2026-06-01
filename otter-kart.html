@@ -167,7 +167,12 @@
         let postViewportTimer = 0;
 
         window.addEventListener('message', function (event) {
-          if (!event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
+          if (!event.data) return;
+          if (event.data.type === 'REQUEST_EMBED_VIEWPORT') {
+            schedulePostEmbedViewport();
+            return;
+          }
+          if (event.data.type !== 'GAME_SIZE_RESPONSE') return;
           const shellW = Math.round(shell.getBoundingClientRect().width || 0);
           if (shellW >= 560) return;
           const rw = Math.round(Number(event.data.width));
