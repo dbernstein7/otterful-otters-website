@@ -129,16 +129,7 @@ const START_HOTSPOT_BOXES = {
   wallet: { ix: 394, iy: 402, iw: 224, ih: 48 },
 };
 
-/** Image-space hitboxes for OtterKart-Map.png (1672×941) — aligned to cover background. */
-const MAP_HOTSPOT_BOXES = {
-  garage: { ix: 48, iy: 198, iw: 220, ih: 184 },
-  practice: { ix: 367, iy: 208, iw: 202, ih: 122 },
-  daily: { ix: 1043, iy: 91, iw: 302, ih: 104 },
-  grandprix: { ix: 622, iy: 552, iw: 268, ih: 104 },
-  touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
-  endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
-  claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
-};
+let mapCalibrated = false;
 
 function coverTransform(imgW, imgH, vw, vh) {
   const s = Math.max(vw / imgW, vh / imgH);
@@ -210,6 +201,7 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
 }
 
 function relayoutMenuHotspots() {
+  syncMenuCover();
   if (document.body?.classList?.contains?.("otter-ui-start")) {
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
@@ -225,10 +217,7 @@ function relayoutMenuHotspots() {
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
-    const iw = mapImgNatural.w || 1672;
-    const ih = mapImgNatural.h || 941;
-    layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
-    layoutMapClaimBar();
+    void layoutMapHotspots();
   }
 }
 
@@ -281,6 +270,92 @@ async function ensureMapImageSize() {
 }
 
 
+async function calibrateMapHotspotsOnce() {
+  if (mapCalibrated) return;
+  if (!(mapHotspots instanceof HTMLElement)) return;
+
+  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    el.style.removeProperty("left");
+    el.style.removeProperty("top");
+    el.style.removeProperty("width");
+    el.style.removeProperty("height");
+    delete el.dataset.ix;
+    delete el.dataset.iy;
+    delete el.dataset.iw;
+    delete el.dataset.ih;
+  });
+
+  await new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+
+  const { w: iw, h: ih } = await ensureMapImageSize();
+  const { vw, vh } = getLayoutViewportSize();
+  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
+
+  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    const r = el.getBoundingClientRect();
+    el.dataset.ix = String((r.left - ox) / s);
+    el.dataset.iy = String((r.top - oy) / s);
+    el.dataset.iw = String(r.width / s);
+    el.dataset.ih = String(r.height / s);
+  });
+
+  mapCalibrated = true;
+}
+
+async function layoutMapHotspots() {
+  if (!mapCalibrated) return;
+  if (!(mapHotspots instanceof HTMLElement)) return;
+  const { w: iw, h: ih } = await ensureMapImageSize();
+  const { vw, vh } = getLayoutViewportSize();
+  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
+
+  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    const ix = Number(el.dataset.ix);
+    const iy = Number(el.dataset.iy);
+    const iwBox = Number(el.dataset.iw);
+    const ihBox = Number(el.dataset.ih);
+    if (!Number.isFinite(ix) || !Number.isFinite(iy)) return;
+    el.style.position = "absolute";
+    el.style.left = `${ox + ix * s}px`;
+    el.style.top = `${oy + iy * s}px`;
+    el.style.width = `${Math.max(12, (iwBox || 0) * s)}px`;
+    el.style.height = `${Math.max(12, (ihBox || 0) * s)}px`;
+  });
+  layoutMapClaimBar();
+}
+
+function syncMenuCover() {
+  const cover = document.getElementById("menu-cover");
+  const img = document.getElementById("menu-cover-img");
+  if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
+
+  const onStart = document.body?.classList?.contains?.("otter-ui-start");
+  const onMap =
+    document.body?.classList?.contains?.("otter-ui-playtab") &&
+    !document.body?.classList?.contains?.("otter-ui-garage");
+
+  if (onStart) {
+    cover.hidden = false;
+    cover.classList.add("is-visible");
+    cover.setAttribute("aria-hidden", "false");
+    if (!img.src.includes("OtterKart-Start-Menu")) img.src = START_IMG_URL;
+  } else if (onMap) {
+    cover.hidden = false;
+    cover.classList.add("is-visible");
+    cover.setAttribute("aria-hidden", "false");
+    if (!img.src.includes("OtterKart-Map")) img.src = MAP_IMG_URL;
+  } else {
+    cover.hidden = true;
+    cover.classList.remove("is-visible");
+    cover.setAttribute("aria-hidden", "true");
+  }
+}
+
 async function ensureStartImageSize() {
   if (startImgNatural.w > 0 && startImgNatural.h > 0) return startImgNatural;
   return await new Promise((resolve) => {
@@ -295,29 +370,6 @@ async function ensureStartImageSize() {
     };
     im.src = START_IMG_URL;
   });
-}
-
-function layoutMapClaimBarFromCover() {
-  if (!(mapClaimBar instanceof HTMLElement)) return;
-  const claim = MAP_HOTSPOT_BOXES.claim;
-  if (!claim) return;
-  const iw = mapImgNatural.w || 1672;
-  const ih = mapImgNatural.h || 941;
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-  const left = ox + claim.ix * s;
-  const top = oy + claim.iy * s;
-  const w = claim.iw * s;
-  const h = claim.ih * s;
-  const bw = mapClaimBar.offsetWidth || 88;
-  const bh = mapClaimBar.offsetHeight || 40;
-  const gap = 232;
-  let barLeft = left - bw - gap;
-  let barTop = top + (h - bh) * 0.5;
-  barLeft = Math.max(8, barLeft);
-  barTop = Math.max(8, Math.min(barTop, vh - bh - 8));
-  mapClaimBar.style.left = `${barLeft}px`;
-  mapClaimBar.style.top = `${barTop}px`;
 }
 
 function syncDemoSessionBadge() {
@@ -336,7 +388,8 @@ function enterMapFromStart(opts = {}) {
   startMenuHotspots?.setAttribute?.("aria-hidden", "true");
   activateMenuTab("play");
   syncDemoSessionBadge();
-  scheduleHotspotRelayout();
+  syncMenuCover();
+  void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
 }
 
 let walletToastTimer = 0;
@@ -413,9 +466,23 @@ function layoutMapClaimBar() {
     return;
   }
 
+  const claim = mapHotspots?.querySelector?.(".map-hotspot--claim");
+  if (!(claim instanceof HTMLElement)) return;
+
   mapClaimBar.style.removeProperty("display");
   mapClaimBar.style.visibility = "hidden";
-  layoutMapClaimBarFromCover();
+
+  const cr = claim.getBoundingClientRect();
+  const bw = mapClaimBar.offsetWidth || 88;
+  const bh = mapClaimBar.offsetHeight || 40;
+  const gap = 232;
+  const { vh } = getLayoutViewportSize();
+  let left = cr.left - bw - gap;
+  let top = cr.top + (cr.height - bh) * 0.5;
+  left = Math.max(8, left);
+  top = Math.max(8, Math.min(top, vh - bh - 8));
+  mapClaimBar.style.left = `${left}px`;
+  mapClaimBar.style.top = `${top}px`;
   mapClaimBar.style.removeProperty("visibility");
   mapClaimBar.setAttribute("aria-hidden", "false");
 }
@@ -499,9 +566,12 @@ function activateMenuTab(tab) {
       tab === "character" ? "false" : "true",
     );
   if (tab === "play") {
+    syncMenuCover();
+    void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
     scheduleHotspotRelayout();
     syncDemoSessionBadge();
   } else {
+    syncMenuCover();
     hideMapClaimBar();
     demoSessionBadge?.classList?.add?.("hidden");
   }
@@ -1189,24 +1259,6 @@ startMenuHotspots?.addEventListener(
     e.preventDefault();
     e.stopPropagation();
     handleStartHotspotAction(action);
-  },
-  { capture: true },
-);
-
-mapHotspots?.addEventListener(
-  "pointerdown",
-  (e) => {
-    if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
-    if (document.body?.classList?.contains?.("otter-ui-garage")) return;
-    if (document.body?.classList?.contains?.("otter-ui-admin-open")) return;
-    if (e.button !== 0) return;
-    const iw = mapImgNatural.w || 1672;
-    const ih = mapImgNatural.h || 941;
-    const mode = hitTestCoverHotspots(e.clientX, e.clientY, MAP_HOTSPOT_BOXES, iw, ih);
-    if (!mode) return;
-    e.preventDefault();
-    e.stopPropagation();
-    handleMapHotspotMode(mode);
   },
   { capture: true },
 );

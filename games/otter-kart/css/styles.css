@@ -34,16 +34,32 @@ body.otter-ui-menu {
     #080c10;
 }
 
-/* Start screen (before map) */
-body.otter-ui-menu.otter-ui-start::after {
-  content: "";
+/* Menu backdrop: real <img> so cover matches hotspot math in iframe + resize */
+.menu-cover {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: url("../OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15");
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
+  display: none;
+}
+
+.menu-cover.is-visible {
+  display: block;
+}
+
+.menu-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Legacy pseudo fallback (hidden while .menu-cover is active) */
+body.otter-ui-menu.otter-ui-start::after,
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage)::after {
+  content: none;
+  display: none;
 }
 
 body.otter-ui-menu #game {
@@ -156,19 +172,6 @@ body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
   display: none;
 }
 
-/* Play tab: full-screen map background behind menu */
-body.otter-ui-menu.otter-ui-playtab::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background: url("../OtterKart-Map.png?v=2026-05-07-1236");
-  background-size: cover;
-  background-position: center;
-  filter: none;
-}
-
 body.otter-ui-menu.otter-ui-playtab #game {
   z-index: -1;
 }
@@ -235,11 +238,7 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
 }
 
 .map-hotspot {
-  position: fixed;
-  left: 0;
-  top: 0;
-  min-width: 12px;
-  min-height: 12px;
+  position: absolute;
   pointer-events: auto;
   background: none !important;
   background-color: transparent !important;
@@ -252,6 +251,7 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   appearance: none;
   -webkit-appearance: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .map-hotspot:hover,
@@ -266,8 +266,49 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   outline-offset: 2px;
 }
 
-/* Map hotspot screen positions come from JS (cover-transform, image-space boxes). */
+/* Hotspot positions: % tuned for cover-centered map; JS calibrates then rescales on resize. */
+.map-hotspot--practice {
+  left: calc(10% + 200px);
+  top: calc(20% + 20px);
+  width: max(60px, calc(30% - 300px));
+  height: 13%;
+}
+.map-hotspot--daily {
+  left: calc(57% + 90px);
+  top: calc(16% - 60px);
+  width: max(60px, calc(30% - 200px));
+  height: 11%;
+}
+.map-hotspot--gp {
+  left: calc(36% + 20px);
+  top: calc(48% + 100px);
+  width: max(60px, calc(28% - 200px));
+  height: 11%;
+}
+.map-hotspot--touge {
+  left: calc(64% + 100px);
+  top: calc(46% + 140px);
+  width: max(60px, calc(26% - 200px));
+  height: 12%;
+}
+.map-hotspot--endless {
+  left: calc(12% + 100px);
+  top: calc(62% + 170px);
+  width: max(60px, calc(32% - 300px));
+  height: 13%;
+}
 .map-hotspot--claim {
+  left: calc(78% + 110px);
+  top: calc(74% + 200px);
+  width: max(60px, calc(18% - 200px));
+  height: calc(11% - 20px);
+  border-radius: 14px;
+}
+.map-hotspot--garage {
+  left: 48px;
+  top: 198px;
+  width: 220px;
+  height: 184px;
   border-radius: 14px;
 }
 
@@ -318,10 +359,6 @@ body.otter-ui-admin-open .map-claim-bar {
   color: #7df9ff;
   letter-spacing: 0.02em;
   text-shadow: 0 0 18px rgba(125, 249, 255, 0.2);
-}
-
-.map-hotspot--garage {
-  border-radius: 14px;
 }
 
 /* Garage tab: full-screen Garage.png background */

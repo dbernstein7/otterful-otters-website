@@ -18,7 +18,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-01-embed-scale-v3" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-01-map-calibrate-v4" />
     <script>
       (function () {
         function reportGameSize() {
@@ -57,6 +57,9 @@
     </script>
   </head>
   <body class="otter-ui-menu otter-ui-start">
+    <div id="menu-cover" class="menu-cover is-visible" aria-hidden="false">
+      <img id="menu-cover-img" src="OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15" alt="" decoding="async" />
+    </div>
     <canvas id="game" aria-label="OtterKart racing game"></canvas>
 
     <button type="button" id="btn-admin-open" class="menu-admin-open" aria-haspopup="dialog" aria-controls="panel-admin" aria-expanded="false" aria-label="Admin: pick a Grand Prix track">
@@ -316,7 +319,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-01-embed-scale-v3"></script>
+    <script type="module" src="js/main.js?v=2026-06-01-map-calibrate-v4"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
