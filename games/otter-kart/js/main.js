@@ -25,6 +25,8 @@ import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
   applyHudViewportVars,
   getGameViewportSize,
+  getMenuLayoutViewportSize,
+  isDesktopEmbedLayout,
   setEmbedViewport,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
@@ -156,9 +158,9 @@ function coverTransform(imgW, imgH, vw, vh) {
   return { s, ox, oy, dw, dh };
 }
 
-/** Layout viewport = iframe shell or window (matches background-size: cover). */
+/** Layout viewport = matches menu-cover painting (critical for desktop iframe). */
 function getLayoutViewportSize() {
-  return getGameViewportSize();
+  return getMenuLayoutViewportSize();
 }
 
 /**
@@ -218,10 +220,12 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
 
 function relayoutMenuHotspots() {
   syncMenuCover();
+  const desktopEmbed = isDesktopEmbedLayout();
   if (document.body?.classList?.contains?.("otter-ui-start")) {
-    resetMenuCoverToFullFrame();
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
+    if (desktopEmbed) layoutMenuCoverToCoverTransform(iw, ih);
+    else resetMenuCoverToFullFrame();
     layoutCoverHotspots(
       startMenuHotspots,
       START_HOTSPOT_BOXES,
@@ -233,7 +237,10 @@ function relayoutMenuHotspots() {
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
-    resetMenuCoverToFullFrame();
+    const iw = mapImgNatural.w || 1672;
+    const ih = mapImgNatural.h || 941;
+    if (desktopEmbed) layoutMenuCoverToCoverTransform(iw, ih);
+    else resetMenuCoverToFullFrame();
     layoutMapHotspots();
   } else {
     resetMenuCoverToFullFrame();
@@ -289,6 +296,35 @@ async function ensureMapImageSize() {
     };
     im.src = MAP_IMG_URL;
   });
+}
+
+/** Desktop iframe: pin cover box to the same coverTransform as hotspots. */
+function layoutMenuCoverToCoverTransform(imgW, imgH) {
+  const cover = document.getElementById("menu-cover");
+  const img = document.getElementById("menu-cover-img");
+  if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
+  if (!imgW || !imgH) return;
+
+  const { vw, vh } = getLayoutViewportSize();
+  const { ox, oy, dw, dh } = coverTransform(imgW, imgH, vw, vh);
+
+  cover.style.position = "fixed";
+  cover.style.left = `${ox}px`;
+  cover.style.top = `${oy}px`;
+  cover.style.width = `${dw}px`;
+  cover.style.height = `${dh}px`;
+  cover.style.right = "auto";
+  cover.style.bottom = "auto";
+  cover.style.overflow = "hidden";
+  cover.style.pointerEvents = "none";
+
+  img.style.position = "absolute";
+  img.style.left = "0";
+  img.style.top = "0";
+  img.style.width = "100%";
+  img.style.height = "100%";
+  img.style.objectFit = "cover";
+  img.style.objectPosition = "center";
 }
 
 /** Start screen: full-frame cover via CSS — clear any map-only inline layout. */

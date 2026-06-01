@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-mobile-cam-only"
+                    src="/games/otter-kart/index.html?v=2026-06-02-embed-map-hotspots"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -147,8 +147,17 @@
 
         function postEmbedViewport() {
           const rect = shell.getBoundingClientRect();
-          const w = Math.round(rect.width || shell.clientWidth || iframe.clientWidth || 0);
-          const h = Math.round(rect.height || shell.clientHeight || iframe.clientHeight || 0);
+          let w = Math.round(rect.width || shell.clientWidth || iframe.clientWidth || 0);
+          let h = Math.round(rect.height || shell.clientHeight || iframe.clientHeight || 0);
+          try {
+            const doc = iframe.contentDocument?.documentElement;
+            const cw = doc?.clientWidth ?? 0;
+            const ch = doc?.clientHeight ?? 0;
+            if (cw >= 560 && ch >= 320) {
+              w = Math.round(cw);
+              h = Math.round(ch);
+            }
+          } catch {}
           if (w < 8 || h < 8) return;
           try {
             iframe.contentWindow &&

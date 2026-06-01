@@ -38,9 +38,32 @@ export function isEmbedded() {
   }
 }
 
+/** Desktop iframe: use real client size + CSS fill (parent rect often differs by a few px). */
+export function isDesktopEmbedLayout() {
+  if (!isEmbedded()) return false;
+  const cw = document.documentElement.clientWidth || 0;
+  const ch = document.documentElement.clientHeight || 0;
+  return Math.min(cw, ch) >= 560;
+}
+
+/**
+ * Viewport for menu/map cover + hotspots — must match painted menu-cover pixels.
+ * Desktop embed uses iframe clientWidth/Height, not parent postMessage alone.
+ */
+export function getMenuLayoutViewportSize() {
+  if (isDesktopEmbedLayout()) {
+    return {
+      vw: Math.max(1, Math.round(document.documentElement.clientWidth || 1)),
+      vh: Math.max(1, Math.round(document.documentElement.clientHeight || 1)),
+    };
+  }
+  return getGameViewportSize();
+}
+
 /** Lock iframe document to the shell pixel size so cover art = hotspot math. */
 function applyEmbedViewportToDocument() {
   if (!embedViewport || !isEmbedded()) return;
+  if (isDesktopEmbedLayout()) return;
   const { vw, vh } = embedViewport;
   const w = `${vw}px`;
   const h = `${vh}px`;
