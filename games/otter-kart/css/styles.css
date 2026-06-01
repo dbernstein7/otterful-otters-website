@@ -49,13 +49,20 @@ body.otter-ui-menu {
 }
 
 .menu-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Map only: main.js positions the img with cover math to match calibrated hotspots */
+body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .menu-cover img {
   position: absolute;
   top: 0;
   left: 0;
   max-width: none;
   max-height: none;
   object-fit: none;
-  pointer-events: none;
 }
 
 /* Legacy pseudo fallback (hidden while .menu-cover is active) */

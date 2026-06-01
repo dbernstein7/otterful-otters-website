@@ -195,6 +195,7 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
   if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
   const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
   const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
+  const isStart = attr === "data-start-action";
 
   layer.querySelectorAll(`[${attr}]`).forEach((el) => {
     if (!(el instanceof HTMLElement)) return;
@@ -203,9 +204,11 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
     if (!box) return;
     const w = Math.max(12, box.iw * s);
     const h = Math.max(12, box.ih * s);
+    const padLeft = isStart ? 0 : gLeft;
+    const padTop = isStart ? 0 : gTop;
     el.style.position = "fixed";
-    el.style.left = `${gLeft + ox + box.ix * s}px`;
-    el.style.top = `${gTop + oy + box.iy * s}px`;
+    el.style.left = `${padLeft + ox + box.ix * s}px`;
+    el.style.top = `${padTop + oy + box.iy * s}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.margin = "0";
@@ -214,8 +217,8 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
 
 function relayoutMenuHotspots() {
   syncMenuCover();
-  layoutMenuCoverImage();
   if (document.body?.classList?.contains?.("otter-ui-start")) {
+    resetMenuCoverToFullFrame();
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
     layoutCoverHotspots(
@@ -225,12 +228,14 @@ function relayoutMenuHotspots() {
       ih,
       "data-start-action",
     );
-  }
-  if (
+  } else if (
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
+    layoutMapCoverImage();
     void layoutMapHotspots();
+  } else {
+    resetMenuCoverToFullFrame();
   }
 }
 
@@ -294,32 +299,40 @@ async function ensureMapImageSize() {
   });
 }
 
-/** Position menu/map <img> with the same cover math as hotspots (not CSS object-fit). */
-function layoutMenuCoverImage() {
+/** Start screen: full-frame cover via CSS — clear any map-only inline layout. */
+function resetMenuCoverToFullFrame() {
+  const cover = document.getElementById("menu-cover");
+  const img = document.getElementById("menu-cover-img");
+  if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
+  for (const el of [cover, img]) {
+    el.style.removeProperty("position");
+    el.style.removeProperty("left");
+    el.style.removeProperty("top");
+    el.style.removeProperty("width");
+    el.style.removeProperty("height");
+    el.style.removeProperty("right");
+    el.style.removeProperty("bottom");
+    el.style.removeProperty("overflow");
+  }
+}
+
+/** Map only: position cover img with same cover math as calibrated hotspots. */
+function layoutMapCoverImage() {
   const cover = document.getElementById("menu-cover");
   const img = document.getElementById("menu-cover-img");
   if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
   if (cover.hidden || !cover.classList.contains("is-visible")) return;
-
-  const onStart = document.body?.classList?.contains?.("otter-ui-start");
-  const onMap =
-    document.body?.classList?.contains?.("otter-ui-playtab") &&
-    !document.body?.classList?.contains?.("otter-ui-garage");
-
-  let iw;
-  let ih;
-  if (onStart) {
-    iw = startImgNatural.w || 1024;
-    ih = startImgNatural.h || 572;
-  } else if (onMap) {
-    iw = mapImgNatural.w || 1672;
-    ih = mapImgNatural.h || 941;
-  } else {
+  if (
+    !document.body?.classList?.contains?.("otter-ui-playtab") ||
+    document.body?.classList?.contains?.("otter-ui-garage")
+  ) {
     return;
   }
 
+  const iw = mapImgNatural.w || 1672;
+  const ih = mapImgNatural.h || 941;
   const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
-  const { s, ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
+  const { ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
 
   cover.style.position = "fixed";
   cover.style.left = `${gLeft}px`;
