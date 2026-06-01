@@ -66,6 +66,8 @@ export function initOtterKartMusic() {
   const titleEl = panel.querySelector(".music-panel__title");
   const metaEl = panel.querySelector(".music-panel__meta");
   const playBtn = panel.querySelector("[data-music-play]");
+  const prevBtn = panel.querySelector("[data-music-prev]");
+  const nextBtn = panel.querySelector("[data-music-next]");
   const muteBtn = panel.querySelector("[data-music-mute]");
   const closeBtn = panel.querySelector("[data-music-close]");
   const volInput = panel.querySelector("[data-music-volume]");
@@ -96,9 +98,12 @@ export function initOtterKartMusic() {
     }
   }
 
-  /** Point audio at the current track (always assign src). */
+  /** Point audio at the current track (always assign src + reload). */
   function bindCurrentTrack() {
-    audio.src = resolveTrackUrl(TRACKS[trackIndex].file);
+    const url = resolveTrackUrl(TRACKS[trackIndex].file);
+    audio.pause();
+    audio.src = url;
+    audio.load();
     applyVolume();
   }
 
@@ -188,21 +193,28 @@ export function initOtterKartMusic() {
     if (!paused && !muted) void playMusic();
   });
 
-  /** Panel-level capture handler so ‹ › always receive clicks (iframe / touch). */
-  panel.addEventListener(
-    "click",
-    (e) => {
-      const target = e.target;
-      if (!(target instanceof Element)) return;
-      const prev = target.closest("[data-music-prev]");
-      const next = target.closest("[data-music-next]");
-      if (!prev && !next) return;
-      e.preventDefault();
-      e.stopPropagation();
-      skipTrack(prev ? -1 : 1, true);
-    },
-    true,
-  );
+  let lastSkipAt = 0;
+  let lastSkipDelta = 0;
+
+  function handleSkipClick(e, delta) {
+    e.preventDefault();
+    e.stopPropagation();
+    const now = Date.now();
+    if (now - lastSkipAt < 450 && lastSkipDelta === delta) return;
+    lastSkipAt = now;
+    lastSkipDelta = delta;
+    skipTrack(delta, true);
+  }
+
+  /** Capture-phase handlers so ‹ › work in iframe embeds and on touch. */
+  for (const [el, delta] of [
+    [prevBtn, -1],
+    [nextBtn, 1],
+  ]) {
+    if (!(el instanceof HTMLButtonElement)) continue;
+    el.addEventListener("pointerdown", (e) => handleSkipClick(e, delta), true);
+    el.addEventListener("click", (e) => handleSkipClick(e, delta), true);
+  }
 
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "KeyM" && ev.key?.toLowerCase() !== "m") return;

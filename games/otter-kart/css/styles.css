@@ -1185,6 +1185,11 @@ body.otter-ui-menu .panel-settings {
   left: calc(14px + env(safe-area-inset-left, 0px));
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   width: min(280px, calc(100vw - 28px));
+  max-height: min(320px, calc(var(--otter-vh, 100dvh) - 72px));
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid rgba(125, 249, 255, 0.35);
