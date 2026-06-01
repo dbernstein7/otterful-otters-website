@@ -450,19 +450,23 @@ function installHotspotResizeWatchers() {
   }
 }
 
-/** Map on right workbench (1672×941); offsetY px raises map on screen */
-const GARAGE_MAP_BOX = { x: 0.752, y: 0.655, w: 0.145, h: 0.215, offsetY: -20 };
+/** Map on workbench (1672×941); offsets in ref pixels, scaled on resize */
+const GARAGE_MAP_BOX = { x: 0.752, y: 0.655, w: 0.145, h: 0.215, offsetX: -30, offsetY: -50 };
 
-/** Kart / hat / eyes column; offsetLeft/offsetTop in px */
+/** Kart / hat / eyes column; offsets in ref pixels, scaled on resize */
 const GARAGE_PICKER_DESKTOP = {
   x: 0.26,
   y: 0.42,
   w: 0.145,
   maxW: 200,
-  offsetLeft: 120,
-  offsetTop: 20,
+  offsetLeft: 150,
+  offsetTop: 50,
 };
 const GARAGE_PICKER_MOBILE = { x: 0.05, y: 0.38, w: 0.3, maxW: 240, offsetLeft: 0, offsetTop: 0 };
+
+function garageCoverScale(dw) {
+  return dw / GARAGE_REF_W;
+}
 
 function getGaragePickerLayout() {
   const { vw, vh } = getGameViewportSize();
@@ -478,6 +482,7 @@ function layoutGarageLayout() {
   const { vw, vh } = getGameViewportSize();
   const { ox, oy, dw, dh } = coverTransform(GARAGE_REF_W, GARAGE_REF_H, vw, vh);
   const picker = getGaragePickerLayout();
+  const cs = garageCoverScale(dw);
 
   if (garageHotspots instanceof HTMLElement) {
     garageHotspots.style.position = "fixed";
@@ -490,13 +495,19 @@ function layoutGarageLayout() {
     garageHotspots.style.bottom = "auto";
 
     const map = GARAGE_MAP_BOX;
-    const mapLift = map.offsetY ?? 0;
+    const mapShiftX = (map.offsetX ?? 0) * cs;
+    const mapShiftY = (map.offsetY ?? 0) * cs;
     for (const el of garageHotspots.querySelectorAll(".garage-minimap, .garage-hotspot--to-map")) {
       if (!(el instanceof HTMLElement)) continue;
       el.style.position = "absolute";
-      el.style.left = `${map.x * 100}%`;
+      el.style.left =
+        mapShiftX !== 0
+          ? `calc(${map.x * 100}% + ${mapShiftX}px)`
+          : `${map.x * 100}%`;
       el.style.top =
-        mapLift !== 0 ? `calc(${map.y * 100}% + ${mapLift}px)` : `${map.y * 100}%`;
+        mapShiftY !== 0
+          ? `calc(${map.y * 100}% + ${mapShiftY}px)`
+          : `${map.y * 100}%`;
       el.style.width = `${map.w * 100}%`;
       el.style.height = `${map.h * 100}%`;
       el.style.right = "auto";
@@ -508,9 +519,9 @@ function layoutGarageLayout() {
 
   const leftCol = document.querySelector(".loadout-layout__left");
   if (leftCol instanceof HTMLElement) {
-    const colW = Math.min(picker.maxW ?? 200, picker.w * dw);
-    const shiftL = picker.offsetLeft ?? 0;
-    const shiftT = picker.offsetTop ?? 0;
+    const colW = Math.min((picker.maxW ?? 200) * cs, picker.w * dw);
+    const shiftL = (picker.offsetLeft ?? 0) * cs;
+    const shiftT = (picker.offsetTop ?? 0) * cs;
     leftCol.style.position = "fixed";
     leftCol.style.left = `${ox + picker.x * dw - shiftL}px`;
     leftCol.style.top = `${oy + picker.y * dh + shiftT}px`;
