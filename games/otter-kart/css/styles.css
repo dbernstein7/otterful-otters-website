@@ -2678,10 +2678,18 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 }
 
-/* ——— Landscape game viewport: letterbox to 1672×941 on any screen ——— */
-html.otter-viewport-fit,
-html.otter-viewport-fit body {
+/* ——— Standalone portrait phone only: letterbox to 1672×941 (embed/desktop use full frame) ——— */
+html.otter-viewport-fit:not(.otter-embed),
+html.otter-viewport-fit:not(.otter-embed) body {
   background: #080c10;
+}
+
+html.otter-embed.otter-viewport-fit #game,
+html.otter-embed.otter-viewport-fit .menu-cover {
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 html.otter-viewport-fit #game,

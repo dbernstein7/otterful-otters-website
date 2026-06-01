@@ -74,11 +74,32 @@ export function getAvailableViewportSize() {
 }
 
 /**
- * Largest 1672×941 rect centered inside the available viewport (letterboxing).
+ * Letterbox only on standalone portrait phones — embed + desktop fill the full frame.
+ */
+export function shouldUseLetterbox() {
+  if (isEmbedded()) return false;
+  const { vw: availW, vh: availH } = getAvailableViewportSize();
+  return availH > availW && availW < 900;
+}
+
+/**
+ * Game layout rect: full iframe/window, or letterboxed on portrait mobile only.
  * @returns {{ vw: number, vh: number, left: number, top: number, availW: number, availH: number }}
  */
 export function getGameViewportLayout() {
   const { vw: availW, vh: availH } = getAvailableViewportSize();
+
+  if (!shouldUseLetterbox()) {
+    return {
+      vw: availW,
+      vh: availH,
+      left: 0,
+      top: 0,
+      availW,
+      availH,
+    };
+  }
+
   let gameW;
   let gameH;
   if (availW / availH > GAME_ASPECT) {
@@ -100,27 +121,41 @@ export function getGameViewportLayout() {
   };
 }
 
-/** Canvas / cover / hotspot layout size (fitted landscape). */
+/** Canvas / cover / hotspot layout size. */
 export function getGameViewportSize() {
   const { vw, vh } = getGameViewportLayout();
   return { vw, vh };
 }
 
-/** Map screen coords → coords inside the fitted game rect. */
+/** Map screen coords → coords inside the game rect. */
 export function clientToGameCoords(clientX, clientY) {
   const { left, top } = getGameViewportLayout();
   return { x: clientX - left, y: clientY - top };
 }
 
 export function isPortraitViewport() {
+  if (isEmbedded()) return false;
   const { availW, availH } = getGameViewportLayout();
   return availH > availW;
 }
 
-/** Push CSS variables + class so fixed layers clip to the game rect. */
+/** CSS letterbox vars — only on standalone portrait mobile. */
 export function applyGameViewportStyles() {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
+
+  if (!shouldUseLetterbox()) {
+    root.classList.remove("otter-viewport-fit");
+    root.style.removeProperty("--otter-game-w");
+    root.style.removeProperty("--otter-game-h");
+    root.style.removeProperty("--otter-game-left");
+    root.style.removeProperty("--otter-game-top");
+    root.style.removeProperty("--otter-avail-w");
+    root.style.removeProperty("--otter-avail-h");
+    document.body?.classList.toggle("otter-portrait", isPortraitViewport());
+    return;
+  }
+
   const { vw, vh, left, top, availW, availH } = getGameViewportLayout();
   root.style.setProperty("--otter-game-w", `${vw}px`);
   root.style.setProperty("--otter-game-h", `${vh}px`);
@@ -129,7 +164,7 @@ export function applyGameViewportStyles() {
   root.style.setProperty("--otter-avail-w", `${availW}px`);
   root.style.setProperty("--otter-avail-h", `${availH}px`);
   root.classList.add("otter-viewport-fit");
-  document.body?.classList.toggle("otter-portrait", isPortraitViewport());
+  document.body?.classList.toggle("otter-portrait", true);
 }
 
 let viewportFitInstalled = false;
