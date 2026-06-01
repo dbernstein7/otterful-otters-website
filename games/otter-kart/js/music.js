@@ -43,20 +43,26 @@ export function initOtterKartMusic() {
   const panel = document.getElementById("music-panel");
   if (!(btn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
 
+  let audio = document.getElementById("otter-music-player");
+  if (!(audio instanceof HTMLAudioElement)) {
+    audio = document.createElement("audio");
+    audio.id = "otter-music-player";
+    audio.preload = "auto";
+    audio.setAttribute("playsinline", "");
+    audio.style.display = "none";
+    document.body.appendChild(audio);
+  }
+  audio.loop = false;
+
   const prefs = loadPrefs() || {};
   let trackIndex = Number.isFinite(prefs.trackIndex)
     ? Math.min(Math.max(0, prefs.trackIndex), TRACKS.length - 1)
     : 0;
   let volume = Number.isFinite(prefs.volume) ? Math.min(1, Math.max(0, prefs.volume)) : 0.45;
   let muted = !!prefs.muted;
-  let paused = prefs.paused === true;
+  let paused = prefs.paused !== false;
   let panelOpen = !!prefs.panelOpen;
-  let unlocked = false;
-  let switching = false;
-
-  const audio = new Audio();
-  audio.loop = false;
-  audio.preload = "auto";
+  let loadGen = 0;
 
   const titleEl = panel.querySelector(".music-panel__title");
   const metaEl = panel.querySelector(".music-panel__meta");
@@ -75,11 +81,12 @@ export function initOtterKartMusic() {
     audio.volume = muted ? 0 : volume;
   }
 
-  function syncLabels() {
+  function syncLabels(statusText) {
     const t = TRACKS[trackIndex];
     if (titleEl) titleEl.textContent = t.label;
     if (metaEl) {
-      metaEl.textContent = `Track ${trackIndex + 1} / ${TRACKS.length}`;
+      metaEl.textContent =
+        statusText ?? `Track ${trackIndex + 1} / ${TRACKS.length}`;
     }
     if (playBtn instanceof HTMLButtonElement) {
       playBtn.textContent = paused ? "▶ Play" : "❚❚ Pause";
@@ -92,65 +99,86 @@ export function initOtterKartMusic() {
     }
   }
 
-  function markUnlocked() {
-    unlocked = true;
-  }
-
-  /** @returns {Promise<void>} */
-  function playCurrent() {
-    markUnlocked();
-    if (paused || muted) return Promise.resolve();
-    applyVolume();
-    return audio.play().catch(() => {});
-  }
-
   /** @param {boolean} andPlay */
   function loadTrack(andPlay) {
+    const gen = ++loadGen;
     audio.pause();
     const url = resolveTrackUrl(TRACKS[trackIndex].file);
+    applyVolume();
+    syncLabels();
+    persist();
+
     return new Promise((resolve) => {
-      const finish = () => {
-        applyVolume();
-        syncLabels();
+      let settled = false;
+      const finish = (statusText) => {
+        if (settled || gen !== loadGen) return;
+        settled = true;
+        syncLabels(statusText);
         persist();
         resolve();
       };
-      const onReady = () => {
-        if (andPlay && unlocked && !paused && !muted) {
-          playCurrent().finally(finish);
-        } else {
+
+      const startPlayback = () => {
+        if (settled || gen !== loadGen) return;
+        if (!andPlay || paused || muted) {
           finish();
+          return;
         }
+        applyVolume();
+        audio
+          .play()
+          .then(() => finish())
+          .catch(() => finish("Tap Play to start audio"));
       };
+
       const onError = () => {
         console.warn("[OtterKart music] failed to load", TRACKS[trackIndex].file);
-        finish();
+        finish("Track failed to load");
       };
 
-      if (audio.src === url && audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
-        onReady();
-        return;
+      audio.removeEventListener("canplay", startPlayback);
+      audio.removeEventListener("error", onError);
+      audio.addEventListener("canplay", startPlayback, { once: true });
+      audio.addEventListener("error", onError, { once: true });
+
+      if (audio.src !== url) audio.src = url;
+      audio.load();
+
+      if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        startPlayback();
       }
 
-      audio.addEventListener("canplay", onReady, { once: true });
-      audio.addEventListener("error", onError, { once: true });
-      audio.src = url;
-      audio.load();
+      window.setTimeout(() => finish(), 12000);
     });
   }
 
   /** @param {number} delta */
   async function changeTrack(delta) {
-    if (switching) return;
-    switching = true;
-    markUnlocked();
     trackIndex = (trackIndex + delta + TRACKS.length) % TRACKS.length;
     paused = false;
+    syncLabels();
+    await loadTrack(true);
+  }
+
+  async function playMusic() {
+    paused = false;
+    if (!audio.src) await loadTrack(false);
+    applyVolume();
+    syncLabels();
+    persist();
     try {
-      await loadTrack(true);
-    } finally {
-      switching = false;
+      await audio.play();
+      syncLabels();
+    } catch {
+      syncLabels("Tap Play to start audio");
     }
+  }
+
+  function pauseMusic() {
+    paused = true;
+    audio.pause();
+    syncLabels();
+    persist();
   }
 
   function setPanelOpen(open) {
@@ -162,73 +190,55 @@ export function initOtterKartMusic() {
   }
 
   audio.addEventListener("ended", () => {
-    if (paused || switching) return;
+    if (paused) return;
     void changeTrack(1);
   });
 
-  function bindControl(el, handler) {
-    if (!(el instanceof HTMLElement)) return;
-    const run = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      markUnlocked();
-      void handler(e);
-    };
-    el.addEventListener("click", run);
-  }
-
-  bindControl(btn, () => {
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
     setPanelOpen(!panelOpen);
-    if (!panelOpen) return;
-    if (!paused && !muted) void loadTrack(true);
   });
 
-  bindControl(closeBtn, () => {
+  closeBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
     setPanelOpen(false);
   });
 
-  bindControl(prevBtn, () => {
+  prevBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
     void changeTrack(-1);
   });
 
-  bindControl(nextBtn, () => {
+  nextBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
     void changeTrack(1);
   });
 
-  bindControl(playBtn, async () => {
-    paused = !paused;
-    if (paused) {
-      audio.pause();
-    } else {
-      if (!audio.src) await loadTrack(false);
-      await playCurrent();
-    }
-    syncLabels();
-    persist();
+  playBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (paused) void playMusic();
+    else pauseMusic();
   });
 
-  bindControl(muteBtn, async () => {
+  muteBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
     muted = !muted;
     applyVolume();
-    if (!muted && !paused) await playCurrent();
     syncLabels();
     persist();
+    if (!muted && !paused) void playMusic();
   });
 
   volInput?.addEventListener("input", (e) => {
     e.stopPropagation();
     if (!(volInput instanceof HTMLInputElement)) return;
-    markUnlocked();
     volume = Number(volInput.value);
     if (volume > 0 && muted) muted = false;
     applyVolume();
-    if (!paused && !muted) void playCurrent();
     syncLabels();
     persist();
+    if (!paused && !muted) void playMusic();
   });
-
-  panel.addEventListener("click", (e) => e.stopPropagation());
-  panel.addEventListener("pointerdown", (e) => e.stopPropagation());
 
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "KeyM" && ev.key?.toLowerCase() !== "m") return;
@@ -241,10 +251,7 @@ export function initOtterKartMusic() {
       return;
     }
     ev.preventDefault();
-    markUnlocked();
     setPanelOpen(!panelOpen);
-    if (!panelOpen || paused || muted) return;
-    void loadTrack(true);
   });
 
   setPanelOpen(panelOpen);
