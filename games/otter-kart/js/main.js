@@ -763,7 +763,7 @@ async function layoutMapHotspotsNow() {
   layoutMapHotspotsPaintSync();
 }
 
-/** Sync iframe viewport to real client size (embed desktop after start→map). */
+/** Sync iframe shell size before map/start hotspot math (embed only). */
 function ensureEmbedViewportFresh() {
   if (!isEmbedded()) return;
   const cw = Math.round(document.documentElement.clientWidth || 0);
