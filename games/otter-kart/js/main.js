@@ -130,10 +130,11 @@ try {
 // (Also used for hotspot calibration sizing.)
 const MAP_IMG_URL = "./OtterKart-Map.png?v=2026-05-07-1236";
 const START_IMG_URL = "./OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15";
-const GARAGE_IMG_URL = "./Character%20Select/Garage.png?v=2026-06-02-garage";
+/** Garage art reference (Garage.png / GarageMAP), same aspect as map */
+const GARAGE_REF_W = 1672;
+const GARAGE_REF_H = 941;
 let mapImgNatural = { w: 0, h: 0 };
 let startImgNatural = { w: 0, h: 0 };
-let garageImgNatural = { w: 0, h: 0 };
 let hotspotLayoutRaf = 0;
 /** Desktop iframe: map hotspots calibrated from CSS once, then image-space relayout. */
 let mapEmbedCssCalibrated = false;
@@ -153,11 +154,6 @@ function isGarageVisible() {
   );
 }
 
-function isGarageMobileLayout() {
-  const { vw, vh } = getGameViewportSize();
-  return vw <= 900 || vh <= 520;
-}
-
 /** Image-space hitboxes for OtterKart-Start-Menu.png (1024×572). */
 const START_HOTSPOT_BOXES = {
   start: { ix: 358, iy: 208, iw: 306, ih: 92 },
@@ -174,11 +170,6 @@ const MAP_HOTSPOT_BOXES = {
   touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
   endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
   claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
-};
-
-/** Image-space (1672×941) — back-to-map + minimap on GarageMAP art */
-const GARAGE_HOTSPOT_BOXES = {
-  "to-map": { ix: 1010, iy: 453, iw: 319, ih: 300 },
 };
 
 function coverTransform(imgW, imgH, vw, vh) {
@@ -360,24 +351,6 @@ function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH, attr) {
  * @param {number} imgH
  * @param {string} attr e.g. data-start-action | data-map-mode
  */
-/**
- * @param {HTMLElement} el
- * @param {{ ix: number, iy: number, iw: number, ih: number }} box
- * @param {{ left: number, top: number, scale: number }} paint
- */
-function placeCoverBox(el, box, paint) {
-  const w = Math.max(12, box.iw * paint.scale);
-  const h = Math.max(12, box.ih * paint.scale);
-  el.style.position = "fixed";
-  el.style.left = `${paint.left + box.ix * paint.scale}px`;
-  el.style.top = `${paint.top + box.iy * paint.scale}px`;
-  el.style.width = `${w}px`;
-  el.style.height = `${h}px`;
-  el.style.right = "auto";
-  el.style.bottom = "auto";
-  el.style.margin = "0";
-}
-
 function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
   if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
   const paint = resolveCoverPaint(imgW, imgH);
@@ -416,10 +389,11 @@ function relayoutMenuHotspots() {
     layoutMenuCoverImage();
     void layoutMapHotspotsNow();
   } else if (isGarageVisible()) {
-    void ensureGarageImageSize().then(() => layoutGarageScreen());
+    resetMenuCoverToFullFrame();
+    layoutGarageHotspotLayer();
   } else {
     resetMenuCoverToFullFrame();
-    clearGarageUiLayout();
+    clearGarageHotspotLayer();
   }
 }
 
@@ -476,130 +450,33 @@ function installHotspotResizeWatchers() {
   }
 }
 
-async function ensureGarageImageSize() {
-  if (garageImgNatural.w > 0 && garageImgNatural.h > 0) return garageImgNatural;
-  return await new Promise((resolve) => {
-    const im = new Image();
-    im.onload = () => {
-      garageImgNatural = { w: im.naturalWidth || 1672, h: im.naturalHeight || 941 };
-      resolve(garageImgNatural);
-    };
-    im.onerror = () => {
-      garageImgNatural = { w: 1672, h: 941 };
-      resolve(garageImgNatural);
-    };
-    im.src = GARAGE_IMG_URL;
-  });
+/**
+ * Size .garage-hotspots to the painted Garage.png cover rect so local % positions
+ * (minimap, back-to-map) scale/move with resize — loadout UI stays on original CSS.
+ */
+function layoutGarageHotspotLayer() {
+  if (!isGarageVisible() || !(garageHotspots instanceof HTMLElement)) return;
+  const { vw, vh } = getGameViewportSize();
+  const { ox, oy, dw, dh } = coverTransform(GARAGE_REF_W, GARAGE_REF_H, vw, vh);
+  garageHotspots.style.position = "fixed";
+  garageHotspots.style.inset = "auto";
+  garageHotspots.style.left = `${ox}px`;
+  garageHotspots.style.top = `${oy}px`;
+  garageHotspots.style.width = `${dw}px`;
+  garageHotspots.style.height = `${dh}px`;
+  garageHotspots.style.right = "auto";
+  garageHotspots.style.bottom = "auto";
 }
 
-function clearGarageUiLayout() {
-  document.body?.classList?.remove?.("otter-garage-cover-on");
-  const equipped = document.querySelector(".loadout-equipped");
-  const carousel = document.querySelector(
-    ".loadout-layout__left > div[data-loadout-carousel]",
-  );
-  const randWrap = document.querySelector(".loadout-randWrap");
-  const minimap = document.querySelector(".garage-minimap");
-  const toMap = document.querySelector(".garage-hotspot--to-map");
-  for (const el of [equipped, carousel, randWrap, minimap, toMap]) {
-    if (!(el instanceof HTMLElement)) continue;
-    for (const prop of [
-      "position",
-      "left",
-      "top",
-      "width",
-      "height",
-      "right",
-      "bottom",
-      "transform",
-      "max-width",
-      "max-height",
-    ]) {
-      el.style.removeProperty(prop);
-    }
-  }
-}
-
-/** Garage: cover art + minimap + hotspots + loadout UI track resize (all viewports). */
-function layoutGarageScreen() {
-  if (!isGarageVisible()) return;
-
-  const cover = document.getElementById("menu-cover");
-  const img = getMenuCoverImageEl();
-  if (!(cover instanceof HTMLElement) || !img) return;
-
-  layoutMenuCoverImage();
-  document.body?.classList?.add?.("otter-garage-cover-on");
-
-  const iw = garageImgNatural.w || 1672;
-  const ih = garageImgNatural.h || 941;
-  const paint = resolveCoverPaint(iw, ih);
-  if (!paint) return;
-
-  const minimap = garageHotspots?.querySelector?.(".garage-minimap");
-  if (minimap instanceof HTMLElement) {
-    placeCoverBox(minimap, GARAGE_HOTSPOT_BOXES["to-map"], paint);
-  }
-
-  if (garageHotspots instanceof HTMLElement) {
-    layoutCoverHotspots(garageHotspots, GARAGE_HOTSPOT_BOXES, iw, ih, "data-garage-action");
-  }
-
-  const mobile = isGarageMobileLayout();
-  const optIx = mobile ? iw * 0.04 : iw * 0.239;
-  const optIy = mobile ? ih * 0.52 : ih * 0.67;
-  const eqIx = iw * 0.5;
-  const eqIy = mobile ? ih * 0.48 : ih * 0.58;
-
-  const carousel = document.querySelector(
-    ".loadout-layout__left > div[data-loadout-carousel]",
-  );
-  if (carousel instanceof HTMLElement) {
-    carousel.style.position = "fixed";
-    carousel.style.left = `${paint.left + optIx * paint.scale}px`;
-    carousel.style.top = `${paint.top + optIy * paint.scale}px`;
-    carousel.style.zIndex = "45";
-    carousel.style.width = mobile
-      ? `${Math.min(320, paint.width * 0.42)}px`
-      : `${Math.min(360, paint.width * 0.28)}px`;
-  }
-
-  const equipped = document.querySelector(".loadout-equipped");
-  if (equipped instanceof HTMLElement) {
-    const eqW = Math.min(600, iw * paint.scale * (mobile ? 0.88 : 0.58));
-    const previewMax = Math.min(eqW, ih * paint.scale * (mobile ? 0.42 : 0.58));
-    equipped.style.position = "fixed";
-    equipped.style.left = `${paint.left + eqIx * paint.scale}px`;
-    equipped.style.top = `${paint.top + eqIy * paint.scale}px`;
-    equipped.style.transform = "translate(-50%, -50%)";
-    equipped.style.width = `${eqW}px`;
-    equipped.style.zIndex = "40";
-    const preview = equipped.querySelector(".loadout-equipped__preview");
-    if (preview instanceof HTMLElement) {
-      preview.style.maxWidth = `${previewMax}px`;
-      preview.style.maxHeight = `${previewMax}px`;
-    }
-  }
-
-  const randWrap = document.querySelector(".loadout-randWrap");
-  if (randWrap instanceof HTMLElement) {
-    const rw = Math.min(620, paint.width * 0.92);
-    randWrap.style.position = "fixed";
-    randWrap.style.left = `${paint.left + (paint.width - rw) * 0.5}px`;
-    randWrap.style.top = `${paint.top + paint.height - (mobile ? 52 : 64)}px`;
-    randWrap.style.bottom = "auto";
-    randWrap.style.transform = "none";
-    randWrap.style.width = `${rw}px`;
-    randWrap.style.zIndex = "60";
-  }
-
-  try {
-    const mount = document.getElementById("loadout-mount");
-    const cv = mount?.querySelector?.("canvas[data-equipped-preview]");
-    if (cv instanceof HTMLCanvasElement) renderEquippedComposite(cv, loadEffectiveLoadout());
-  } catch {
-    // ignore
-  }
+function clearGarageHotspotLayer() {
+  if (!(garageHotspots instanceof HTMLElement)) return;
+  garageHotspots.style.removeProperty("left");
+  garageHotspots.style.removeProperty("top");
+  garageHotspots.style.removeProperty("width");
+  garageHotspots.style.removeProperty("height");
+  garageHotspots.style.removeProperty("right");
+  garageHotspots.style.removeProperty("bottom");
+  garageHotspots.style.inset = "0";
 }
 
 async function ensureMapImageSize() {
@@ -650,17 +527,13 @@ function layoutMenuCoverImage() {
 
   const onStart = document.body?.classList?.contains?.("otter-ui-start");
   const onMap = isMapHomeVisible();
-  const onGarage = isGarageVisible();
-  if (!onStart && !onMap && !onGarage) return;
+  if (!onStart && !onMap) return;
 
   let iw;
   let ih;
   if (onStart) {
     iw = startImgNatural.w || 1024;
     ih = startImgNatural.h || 572;
-  } else if (onGarage) {
-    iw = garageImgNatural.w || 1672;
-    ih = garageImgNatural.h || 941;
   } else {
     iw = mapImgNatural.w || 1672;
     ih = mapImgNatural.h || 941;
@@ -747,21 +620,10 @@ function syncMenuCover() {
     if (!img.complete) {
       img.addEventListener("load", () => scheduleHotspotRelayout(), { once: true });
     }
-  } else if (document.body?.classList?.contains?.("otter-ui-garage")) {
-    cover.hidden = false;
-    cover.classList.add("is-visible");
-    cover.setAttribute("aria-hidden", "false");
-    if (!img.src.includes("Garage")) {
-      img.src = GARAGE_IMG_URL;
-    }
-    if (!img.complete) {
-      img.addEventListener("load", () => scheduleHotspotRelayout(), { once: true });
-    }
   } else {
     cover.hidden = true;
     cover.classList.remove("is-visible");
     cover.setAttribute("aria-hidden", "true");
-    document.body?.classList?.remove?.("otter-garage-cover-on");
   }
 }
 
@@ -1078,11 +940,7 @@ function equippedPreviewCssSize() {
   const { vw, vh } = getGameViewportSize();
   const garage = document?.body?.classList?.contains?.("otter-ui-garage");
   if (garage) {
-    const giw = garageImgNatural.w || 1672;
-    const gih = garageImgNatural.h || 941;
-    const paint = resolveCoverPaint(giw, gih);
-    const span = paint ? giw * paint.scale * 0.42 : Math.min(vw, vh) * 0.42;
-    return Math.round(Math.max(180, Math.min(520, span)));
+    return Math.round(Math.max(220, Math.min(520, Math.min(vh * 0.58, vw * 0.42))));
   }
   /** Extra vertical budget for headings, tabs, chip rows (~3 sections). */
   const reserveFrac = vh <= 460 ? 0.705 : vh <= 560 ? 0.645 : 0.585;
@@ -1608,7 +1466,6 @@ installHotspotResizeWatchers();
 if (isStandaloneGame()) syncStandaloneShellViewport();
 void ensureStartImageSize().then(() => scheduleHotspotRelayout());
 void ensureMapImageSize().then(() => scheduleHotspotRelayout());
-void ensureGarageImageSize().then(() => scheduleHotspotRelayout());
 scheduleHotspotRelayout();
 window.setTimeout(scheduleHotspotRelayout, 50);
 window.setTimeout(scheduleHotspotRelayout, 250);

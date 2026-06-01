@@ -425,24 +425,21 @@ body.otter-ui-menu.otter-ui-garage::after {
   filter: none;
 }
 
-/* Garage art via menu-cover + JS cover layout (same as map/start) */
-body.otter-ui-menu.otter-ui-garage.otter-garage-cover-on::after {
-  display: none !important;
-}
-
 /* Garage: do not apply the menu vignette/dimmer */
 body.otter-ui-menu.otter-ui-garage::before {
   opacity: 0 !important;
 }
 
-/* Garage: minimap overlay (do NOT use ::before; menu vignette overrides it) */
+/* Garage: minimap overlay — % inside .garage-hotspots (sized to cover paint on resize) */
 .garage-minimap {
-  position: fixed;
-  left: -9999px;
-  top: -9999px;
-  width: 1px;
-  height: 1px;
-  z-index: 64;
+  position: absolute;
+  left: 60.4%;
+  bottom: 20%;
+  width: 19.1%;
+  height: 31.9%;
+  max-width: 320px;
+  max-height: 300px;
+  z-index: 1;
   pointer-events: none;
   background: url("../Character%20Select/GarageMAP.png?v=2026-05-07-1343");
   background-size: contain;
@@ -494,12 +491,14 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspots {
   outline-offset: 2px;
 }
 
-/* Back-to-map hotspot — JS layout from image space; offscreen until placed */
-.garage-hotspot[data-garage-action] {
-  left: -9999px;
-  top: -9999px;
-  width: 1px;
-  height: 1px;
+/* Back-to-map hotspot (tuned to GarageMAP art at 1672×941) */
+.garage-hotspot--to-map {
+  left: 60.4%;
+  bottom: 20%;
+  width: 19.1%;
+  height: 31.9%;
+  max-width: 320px;
+  max-height: 300px;
 }
 
 /* Put the canvas behind the garage image while in the menu garage tab. */
@@ -548,13 +547,16 @@ body.otter-ui-menu.otter-ui-garage .loadout-layout__left {
   padding-left: 10px; /* move options right a bit */
 }
 
-/* Center kart preview — position set in JS from cover paint */
+/* Center the big kart preview in Garage */
 body.otter-ui-menu.otter-ui-garage .loadout-equipped {
   position: fixed;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
   z-index: 40;
   align-items: center !important;
+  width: min(600px, 58vw);
   pointer-events: none;
-  transform: translate(-50%, -50%);
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-equipped__strip {
@@ -567,8 +569,8 @@ body.otter-ui-menu.otter-ui-garage .loadout-equipped__title {
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-equipped__preview {
-  max-width: 100% !important;
-  max-height: 100% !important;
+  max-width: min(600px, 58vw) !important;
+  max-height: min(600px, 58vw) !important;
   border-radius: 0 !important;
 }
 
@@ -583,11 +585,11 @@ body.otter-ui-menu.otter-ui-garage .loadout-carousel__name {
   width: 100%;
 }
 
-/* Garage: options block — fixed position from JS cover layout */
+/* Garage: shift options block (kart/hat/eyes) */
 body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
-  position: fixed;
-  z-index: 45;
-  margin: 0;
+  position: relative;
+  left: var(--garage-options-left);
+  top: var(--garage-options-top);
 }
 
 /* Garage: add soft shadow "plate" under each option row */
@@ -3054,7 +3056,9 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 
   body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
-    position: fixed;
+    position: relative;
+    left: 0;
+    top: 0;
   }
 
   .panel.panel--admin {
