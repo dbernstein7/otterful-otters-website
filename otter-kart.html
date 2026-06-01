@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-02-garage-canvas-fix"
+                    src="/games/otter-kart/index.html?v=2026-06-02-garage-mobile"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -139,7 +139,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-garage-canvas-fix';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-02-garage-mobile';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -161,6 +161,16 @@
         const shell = document.getElementById('otterKartEmbedShell');
         if (!iframe || !shell) return;
 
+        let iframeReportedSize = null;
+
+        window.addEventListener('message', function (event) {
+          if (!event.data || event.data.type !== 'GAME_SIZE_RESPONSE') return;
+          const rw = Math.round(Number(event.data.width));
+          const rh = Math.round(Number(event.data.height));
+          if (rw >= 8 && rh >= 8) iframeReportedSize = { w: rw, h: rh };
+          postEmbedViewport();
+        });
+
         function postEmbedViewport() {
           const rect = shell.getBoundingClientRect();
           let w = Math.round(rect.width || shell.clientWidth || iframe.clientWidth || 0);
@@ -172,8 +182,16 @@
             if (cw >= 560 && ch >= 320) {
               w = Math.round(cw);
               h = Math.round(ch);
+            } else if (iframeReportedSize) {
+              w = iframeReportedSize.w;
+              h = iframeReportedSize.h;
             }
-          } catch {}
+          } catch {
+            if (iframeReportedSize) {
+              w = iframeReportedSize.w;
+              h = iframeReportedSize.h;
+            }
+          }
           if (w < 8 || h < 8) return;
           try {
             iframe.contentWindow &&

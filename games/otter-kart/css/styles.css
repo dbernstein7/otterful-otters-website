@@ -422,6 +422,15 @@ body.otter-ui-menu.otter-ui-garage::after {
   filter: none;
 }
 
+/* Mobile embed: garage art via menu-cover (JS cover math); hide CSS duplicate */
+html.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage::after {
+  opacity: 0 !important;
+}
+
+html.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage #menu-cover {
+  z-index: 0;
+}
+
 /* Garage: do not apply the menu vignette/dimmer */
 body.otter-ui-menu.otter-ui-garage::before {
   opacity: 0 !important;
@@ -3113,6 +3122,46 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   .map-hotspot {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+/* Mobile embed garage: scale UI to iframe (--otter-vw/vh), not browser vw */
+@media (max-width: 900px), (max-height: 520px) {
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-equipped {
+    width: auto !important;
+    max-width: none !important;
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-nav {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 20px !important;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-carousel {
+    grid-template-columns: 34px 1fr 34px !important;
+    gap: 2px !important;
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas,
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="eye"] {
+    height: clamp(32px, calc(var(--hud-scale, 0.35) * 120px), 44px) !important;
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel]::after {
+    width: min(calc(var(--otter-vw, 100vw) * 0.42), 200px);
+    height: 14px;
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-row__label {
+    font-size: clamp(12px, calc(var(--hud-scale, 0.35) * 42px), 16px);
+  }
+
+  html.otter-embed.otter-garage-cover-img body.otter-ui-menu.otter-ui-garage .loadout-rand {
+    padding: 10px 12px !important;
+    font-size: clamp(12px, calc(var(--hud-scale, 0.35) * 38px), 15px) !important;
   }
 }
 

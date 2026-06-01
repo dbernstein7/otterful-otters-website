@@ -130,6 +130,7 @@ try {
 // (Also used for hotspot calibration sizing.)
 const MAP_IMG_URL = "./OtterKart-Map.png?v=2026-05-07-1236";
 const START_IMG_URL = "./OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15";
+const GARAGE_IMG_URL = "./Character%20Select/Garage.png?v=2026-06-02-garage-mobile";
 /** Garage art reference (Garage.png / GarageMAP), same aspect as map */
 const GARAGE_REF_W = 1672;
 const GARAGE_REF_H = 941;
@@ -391,7 +392,8 @@ function relayoutMenuHotspots() {
     layoutMenuCoverImage();
     void layoutMapHotspotsNow();
   } else if (isGarageVisible()) {
-    resetMenuCoverToFullFrame();
+    if (isMobileEmbedGarageCover()) layoutGarageCoverImage();
+    else resetMenuCoverToFullFrame();
     layoutGarageLayout();
   } else {
     resetMenuCoverToFullFrame();
@@ -470,9 +472,38 @@ function garageCoverScale(dw) {
   return dw / GARAGE_REF_W;
 }
 
+/** Mobile iframe: paint garage via menu-cover (same pipeline as map). */
+function isMobileEmbedGarageCover() {
+  if (!isEmbedded() || isDesktopEmbedLayout()) return false;
+  return isGarageVisible();
+}
+
 function getGaragePickerLayout() {
   const { vw, vh } = getGameViewportSize();
+  if (isMobileEmbedGarageCover()) return GARAGE_PICKER_DESKTOP;
   return vw <= 900 || vh <= 520 ? GARAGE_PICKER_MOBILE : GARAGE_PICKER_DESKTOP;
+}
+
+/**
+ * Cover paint rect for garage UI (menu-cover img on mobile embed, else coverTransform).
+ * @returns {{ ox: number, oy: number, dw: number, dh: number, scale: number }}
+ */
+function getGarageCoverPaint() {
+  const iw = GARAGE_REF_W;
+  const ih = GARAGE_REF_H;
+  if (isMobileEmbedGarageCover()) {
+    const paint = resolveCoverPaint(iw, ih);
+    return {
+      ox: paint.left,
+      oy: paint.top,
+      dw: paint.width,
+      dh: paint.height,
+      scale: paint.scale,
+    };
+  }
+  const { vw, vh } = getGameViewportSize();
+  const { s, ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
+  return { ox, oy, dw, dh, scale: s };
 }
 
 /**
@@ -481,8 +512,7 @@ function getGaragePickerLayout() {
 function layoutGarageLayout() {
   if (!isGarageVisible()) return;
 
-  const { vw, vh } = getGameViewportSize();
-  const { ox, oy, dw, dh } = coverTransform(GARAGE_REF_W, GARAGE_REF_H, vw, vh);
+  const { ox, oy, dw, dh } = getGarageCoverPaint();
   const picker = getGaragePickerLayout();
   const cs = garageCoverScale(dw);
 
@@ -548,15 +578,38 @@ function layoutGarageLayout() {
 
   const equipped = document.querySelector("[data-loadout-equipped]");
   if (equipped instanceof HTMLElement) {
-    equipped.style.removeProperty("left");
-    equipped.style.removeProperty("top");
-    equipped.style.removeProperty("width");
-    equipped.style.removeProperty("max-width");
-    equipped.style.removeProperty("transform");
-    const preview = equipped.querySelector(".loadout-equipped__preview");
-    if (preview instanceof HTMLElement) {
-      preview.style.removeProperty("max-width");
-      preview.style.removeProperty("max-height");
+    if (isMobileEmbedGarageCover()) {
+      const liftX = 0.5;
+      const liftY = 0.58;
+      const previewSpan = Math.round(
+        Math.min(dw * 0.44, dh * 0.52, 320 * Math.max(0.55, cs)),
+      );
+      equipped.style.position = "fixed";
+      equipped.style.left = `${ox + liftX * dw}px`;
+      equipped.style.top = `${oy + liftY * dh}px`;
+      equipped.style.transform = "translate(-50%, -50%)";
+      equipped.style.width = `${previewSpan}px`;
+      equipped.style.maxWidth = `${previewSpan}px`;
+      const preview = equipped.querySelector(".loadout-equipped__preview");
+      if (preview instanceof HTMLElement) {
+        preview.style.maxWidth = `${previewSpan}px`;
+        preview.style.maxHeight = `${previewSpan}px`;
+      }
+      const previewCv = equipped.querySelector("canvas[data-equipped-preview]");
+      if (previewCv instanceof HTMLCanvasElement) {
+        renderEquippedComposite(previewCv, loadEffectiveLoadout());
+      }
+    } else {
+      equipped.style.removeProperty("left");
+      equipped.style.removeProperty("top");
+      equipped.style.removeProperty("width");
+      equipped.style.removeProperty("max-width");
+      equipped.style.removeProperty("transform");
+      const preview = equipped.querySelector(".loadout-equipped__preview");
+      if (preview instanceof HTMLElement) {
+        preview.style.removeProperty("max-width");
+        preview.style.removeProperty("max-height");
+      }
     }
   }
 
@@ -576,6 +629,18 @@ function layoutGarageLayout() {
 }
 
 function clearGarageLayout() {
+  document.documentElement.classList.remove("otter-garage-cover-img");
+  const equipped = document.querySelector("[data-loadout-equipped]");
+  if (equipped instanceof HTMLElement) {
+    for (const prop of ["left", "top", "width", "max-width", "transform", "position"]) {
+      equipped.style.removeProperty(prop);
+    }
+    const preview = equipped.querySelector(".loadout-equipped__preview");
+    if (preview instanceof HTMLElement) {
+      preview.style.removeProperty("max-width");
+      preview.style.removeProperty("max-height");
+    }
+  }
   if (garageHotspots instanceof HTMLElement) {
     garageHotspots.style.removeProperty("left");
     garageHotspots.style.removeProperty("top");
@@ -691,6 +756,35 @@ function layoutMenuCoverImage() {
   img.style.objectPosition = "center";
 }
 
+/** Mobile embed garage: same cover math as map so art + hotspots stay aligned. */
+function layoutGarageCoverImage() {
+  const cover = document.getElementById("menu-cover");
+  const img = getMenuCoverImageEl();
+  if (!(cover instanceof HTMLElement) || !img) return;
+
+  const { vw, vh } = getGameViewportSize();
+  const { ox, oy, dw, dh } = coverTransform(GARAGE_REF_W, GARAGE_REF_H, vw, vh);
+
+  cover.style.position = "fixed";
+  cover.style.left = "0";
+  cover.style.top = "0";
+  cover.style.width = `${vw}px`;
+  cover.style.height = `${vh}px`;
+  cover.style.right = "auto";
+  cover.style.bottom = "auto";
+  cover.style.overflow = "hidden";
+
+  img.style.position = "absolute";
+  img.style.left = `${ox}px`;
+  img.style.top = `${oy}px`;
+  img.style.width = `${dw}px`;
+  img.style.height = `${dh}px`;
+  img.style.maxWidth = "none";
+  img.style.maxHeight = "none";
+  img.style.objectFit = "fill";
+  img.style.objectPosition = "center";
+}
+
 /**
  * Map hotspots from the painted cover image (standalone + iframe after calibration).
  * Standalone calls this synchronously on every window resize.
@@ -730,9 +824,9 @@ function syncMenuCover() {
   if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
 
   const onStart = document.body?.classList?.contains?.("otter-ui-start");
+  const onGarage = document.body?.classList?.contains?.("otter-ui-garage");
   const onMap =
-    document.body?.classList?.contains?.("otter-ui-playtab") &&
-    !document.body?.classList?.contains?.("otter-ui-garage");
+    document.body?.classList?.contains?.("otter-ui-playtab") && !onGarage;
 
   if (onStart) {
     cover.hidden = false;
@@ -749,11 +843,24 @@ function syncMenuCover() {
     if (!img.complete) {
       img.addEventListener("load", () => scheduleHotspotRelayout(), { once: true });
     }
+  } else if (onGarage && isMobileEmbedGarageCover()) {
+    cover.hidden = false;
+    cover.classList.add("is-visible");
+    cover.setAttribute("aria-hidden", "false");
+    if (!img.src.includes("Garage.png")) img.src = GARAGE_IMG_URL;
+    if (!img.complete) {
+      img.addEventListener("load", () => scheduleHotspotRelayout(), { once: true });
+    }
   } else {
     cover.hidden = true;
     cover.classList.remove("is-visible");
     cover.setAttribute("aria-hidden", "true");
   }
+
+  document.documentElement.classList.toggle(
+    "otter-garage-cover-img",
+    !!(onGarage && isMobileEmbedGarageCover()),
+  );
 }
 
 async function ensureStartImageSize() {
