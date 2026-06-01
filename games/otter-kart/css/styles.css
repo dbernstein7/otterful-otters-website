@@ -2716,6 +2716,67 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 }
 
+/* ——— Mobile / small iframe: garage + admin track UI (desktop rules use fixed px) ——— */
+@media (max-width: 900px), (max-height: 520px) {
+  body.otter-ui-menu.otter-ui-garage {
+    --garage-options-left: 4vw;
+    --garage-options-top: 48vh;
+  }
+
+  body.otter-ui-menu.otter-ui-garage #panel-start {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 12px 10px 16px !important;
+  }
+
+  body.otter-ui-menu.otter-ui-garage .loadout-layout {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  body.otter-ui-menu.otter-ui-garage .loadout-equipped {
+    top: 46%;
+    width: min(88vw, 420px);
+    transform: translate(-50%, -50%);
+  }
+
+  body.otter-ui-menu.otter-ui-garage .loadout-equipped__preview {
+    max-width: min(88vw, 420px) !important;
+    max-height: min(42vh, 320px) !important;
+  }
+
+  body.otter-ui-menu.otter-ui-garage .loadout-layout__left > div[data-loadout-carousel] {
+    left: 0;
+    top: 0;
+  }
+
+  .garage-minimap,
+  .garage-hotspot--to-map {
+    right: 6%;
+    bottom: 14%;
+    width: 40%;
+    height: 30%;
+    max-width: 260px;
+    max-height: 200px;
+  }
+
+  .panel.panel--admin {
+    width: min(360px, calc(100% - 16px));
+    max-height: min(82%, calc(100% - 16px));
+    padding: 14px;
+  }
+
+  .admin-track-list {
+    max-height: min(48vh, 300px);
+  }
+
+  .map-hotspot {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 /* ——— Embedded on otterful site (iframe): use iframe bounds, not browser dvh/vw ——— */
 html.otter-embed,
 html.otter-embed body {

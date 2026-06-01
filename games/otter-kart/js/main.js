@@ -137,6 +137,9 @@ const START_HOTSPOT_BOXES = {
 };
 
 let mapCalibrated = false;
+let mapCalibSize = { vw: 0, vh: 0 };
+let mapCalibRetryCount = 0;
+const MAP_CALIB_RETRY_MAX = 24;
 
 function coverTransform(imgW, imgH, vw, vh) {
   const s = Math.max(vw / imgW, vh / imgH);
@@ -239,8 +242,29 @@ function scheduleHotspotRelayout() {
   });
 }
 
+function markMapNeedsRecalibrate() {
+  mapCalibrated = false;
+  mapCalibRetryCount = 0;
+}
+
+function scheduleMapCalibration() {
+  void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
+}
+
 function installHotspotResizeWatchers() {
   const onResize = () => {
+    const onMap =
+      document.body?.classList?.contains?.("otter-ui-playtab") &&
+      !document.body?.classList?.contains?.("otter-ui-garage");
+    if (onMap) {
+      const { vw, vh } = getLayoutViewportSize();
+      if (
+        mapCalibrated &&
+        (Math.abs(vw - mapCalibSize.vw) > 6 || Math.abs(vh - mapCalibSize.vh) > 6)
+      ) {
+        markMapNeedsRecalibrate();
+      }
+    }
     scheduleHotspotRelayout();
     try {
       game.resize();
@@ -261,7 +285,7 @@ function installHotspotResizeWatchers() {
         (Math.abs(prev.vw - Number(event.data.width)) > 8 ||
           Math.abs(prev.vh - Number(event.data.height)) > 8)
       ) {
-        mapCalibrated = false;
+        markMapNeedsRecalibrate();
       }
       onResize();
     }
@@ -308,7 +332,13 @@ function resetMenuCoverToFullFrame() {
 
 async function calibrateMapHotspotsOnce() {
   if (mapCalibrated) return;
-  if (isEmbedded() && !getEmbedViewport()) return;
+  if (isEmbedded() && !getEmbedViewport()) {
+    if (mapCalibRetryCount < MAP_CALIB_RETRY_MAX) {
+      mapCalibRetryCount += 1;
+      window.setTimeout(scheduleMapCalibration, 100);
+    }
+    return;
+  }
   if (!(mapHotspots instanceof HTMLElement)) return;
 
   mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
@@ -340,7 +370,10 @@ async function calibrateMapHotspotsOnce() {
     el.dataset.ih = String(r.height / s);
   });
 
+  const size = getLayoutViewportSize();
+  mapCalibSize = { vw: size.vw, vh: size.vh };
   mapCalibrated = true;
+  mapCalibRetryCount = 0;
 }
 
 async function layoutMapHotspots() {
@@ -390,7 +423,19 @@ function syncMenuCover() {
     cover.hidden = false;
     cover.classList.add("is-visible");
     cover.setAttribute("aria-hidden", "false");
-    if (!img.src.includes("OtterKart-Map")) img.src = MAP_IMG_URL;
+    if (!img.src.includes("OtterKart-Map")) {
+      img.src = MAP_IMG_URL;
+    }
+    if (!img.complete) {
+      img.addEventListener(
+        "load",
+        () => {
+          markMapNeedsRecalibrate();
+          scheduleHotspotRelayout();
+        },
+        { once: true },
+      );
+    }
   } else {
     cover.hidden = true;
     cover.classList.remove("is-visible");
@@ -431,8 +476,8 @@ function enterMapFromStart(opts = {}) {
   activateMenuTab("play");
   syncDemoSessionBadge();
   syncMenuCover();
-  mapCalibrated = false;
-  void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
+  markMapNeedsRecalibrate();
+  scheduleMapCalibration();
 }
 
 let walletToastTimer = 0;
@@ -609,9 +654,9 @@ function activateMenuTab(tab) {
       tab === "character" ? "false" : "true",
     );
   if (tab === "play") {
-    mapCalibrated = false;
+    markMapNeedsRecalibrate();
     syncMenuCover();
-    void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
+    scheduleMapCalibration();
     scheduleHotspotRelayout();
     syncDemoSessionBadge();
   } else {
@@ -708,8 +753,7 @@ function drawFallbackOtter(ctx, x, y, ang, alphaW) {
  */
 function equippedPreviewCssSize() {
   if (typeof window === "undefined") return 128;
-  const vw = window.innerWidth || 400;
-  const vh = window.innerHeight || 640;
+  const { vw, vh } = getGameViewportSize();
   const garage = document?.body?.classList?.contains?.("otter-ui-garage");
   if (garage) {
     // In Garage, the preview is the centerpiece.
@@ -1308,29 +1352,48 @@ startMenuHotspots?.addEventListener(
 );
 
 function hitTestMapHotspotMode(clientX, clientY) {
-  if (!mapCalibrated) return null;
   const { w: iw, h: ih } = mapImgNatural;
-  if (!iw || !ih) return null;
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-  const ix = (clientX - ox) / s;
-  const iy = (clientY - oy) / s;
+  if (mapCalibrated && iw > 0 && ih > 0) {
+    const { vw, vh } = getLayoutViewportSize();
+    const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
+    const ix = (clientX - ox) / s;
+    const iy = (clientY - oy) / s;
+    for (const el of mapHotspots?.querySelectorAll?.("[data-map-mode]") ?? []) {
+      if (!(el instanceof HTMLElement) || !el.dataset.ix) continue;
+      const ix0 = Number(el.dataset.ix);
+      const iy0 = Number(el.dataset.iy);
+      const iwBox = Number(el.dataset.iw);
+      const ihBox = Number(el.dataset.ih);
+      if (
+        ix >= ix0 &&
+        ix <= ix0 + iwBox &&
+        iy >= iy0 &&
+        iy <= iy0 + ihBox
+      ) {
+        return el.getAttribute("data-map-mode");
+      }
+    }
+  }
   for (const el of mapHotspots?.querySelectorAll?.("[data-map-mode]") ?? []) {
-    if (!(el instanceof HTMLElement) || !el.dataset.ix) continue;
-    const ix0 = Number(el.dataset.ix);
-    const iy0 = Number(el.dataset.iy);
-    const iwBox = Number(el.dataset.iw);
-    const ihBox = Number(el.dataset.ih);
+    if (!(el instanceof HTMLElement)) continue;
+    const r = el.getBoundingClientRect();
     if (
-      ix >= ix0 &&
-      ix <= ix0 + iwBox &&
-      iy >= iy0 &&
-      iy <= iy0 + ihBox
+      clientX >= r.left &&
+      clientX <= r.right &&
+      clientY >= r.top &&
+      clientY <= r.bottom
     ) {
       return el.getAttribute("data-map-mode");
     }
   }
   return null;
+}
+
+function handleMapHotspotPointer(clientX, clientY) {
+  const mode = hitTestMapHotspotMode(clientX, clientY);
+  if (!mode) return false;
+  handleMapHotspotMode(mode);
+  return true;
 }
 
 mapHotspots?.addEventListener(
@@ -1339,13 +1402,25 @@ mapHotspots?.addEventListener(
     if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
     if (document.body?.classList?.contains?.("otter-ui-garage")) return;
     if (e.button !== 0) return;
-    const mode = hitTestMapHotspotMode(e.clientX, e.clientY);
-    if (!mode) return;
+    if (!handleMapHotspotPointer(e.clientX, e.clientY)) return;
     e.preventDefault();
     e.stopPropagation();
-    handleMapHotspotMode(mode);
   },
   { capture: true },
+);
+
+mapHotspots?.addEventListener(
+  "touchend",
+  (e) => {
+    if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
+    if (document.body?.classList?.contains?.("otter-ui-garage")) return;
+    const t = e.changedTouches?.[0];
+    if (!t) return;
+    if (!handleMapHotspotPointer(t.clientX, t.clientY)) return;
+    e.preventDefault();
+    e.stopPropagation();
+  },
+  { capture: true, passive: false },
 );
 
 btnClaim?.addEventListener("click", () => {
