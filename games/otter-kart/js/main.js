@@ -819,7 +819,11 @@ function showStartWalletToast(text, persist) {
   }
 }
 
+let walletConnectBusy = false;
+
 async function handleWalletConnectHotspot() {
+  if (walletConnectBusy) return;
+  walletConnectBusy = true;
   showStartWalletToast("Connecting wallet…", true);
   try {
     const result = await connectAndCheckRewards(getConnectedWallet());
@@ -828,6 +832,8 @@ async function handleWalletConnectHotspot() {
     showStartWalletToast(`${prefix}${result.text}`, result.tone === "ok");
   } catch {
     showStartWalletToast("Wallet check failed. Try again.", false);
+  } finally {
+    walletConnectBusy = false;
   }
 }
 
@@ -1672,6 +1678,8 @@ startMenuHotspots?.addEventListener(
   (e) => {
     if (!document.body?.classList?.contains?.("otter-ui-start")) return;
     if (e.button !== 0) return;
+    const target = e.target;
+    if (target instanceof Element && target.closest("[data-start-action]")) return;
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
     const action = hitTestCoverHotspots(

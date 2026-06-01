@@ -123,7 +123,7 @@ export async function connectAndCheckRewards(preferredWallet) {
     };
   }
 
-  const check = await checkRewardsStatus(wallet);
+  const check = await checkRewardsStatus(wallet, { skipAccountRequest: true });
   const msg = formatCheckResult(check);
   return {
     ok: check.kind === "ok",
@@ -133,14 +133,17 @@ export async function connectAndCheckRewards(preferredWallet) {
   };
 }
 
-export async function checkRewardsStatus(preferredWallet) {
+export async function checkRewardsStatus(preferredWallet, opts = {}) {
+  const skipAccountRequest = !!opts.skipAccountRequest;
   const walletRaw = typeof preferredWallet === "string" ? preferredWallet.trim() : "";
   if (!walletRaw) return { kind: "no_identity" };
 
   const issuedAtSec = Math.floor(Date.now() / 1000);
   let wallet = walletRaw;
-  const accounts = await requestWalletAccounts();
-  if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  if (!skipAccountRequest) {
+    const accounts = await requestWalletAccounts();
+    if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  }
 
   if (!wallet || !isEthAddress(wallet)) return { kind: "no_signature" };
 
