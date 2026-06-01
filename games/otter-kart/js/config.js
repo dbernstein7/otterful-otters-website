@@ -79,10 +79,12 @@ function clampCam(x, a, b) {
 export function raceZoomForViewport(viewW, viewH) {
   const minor = Math.min(viewW || 320, viewH || 320);
   /** ~fraction of shorter screen axis taken by kart sprite span */
-  const kartFill = 0.38;
+  const kartFill = 0.44;
   const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
-  /** 0.5 = zoom out 2× vs previous tuning */
-  return clampCam(raw * 0.5, 1.35, 6);
+  /** Higher = camera closer to karts (mobile gets an extra bump). */
+  const mobile = minor < 560;
+  const mul = mobile ? 0.72 : 0.62;
+  return clampCam(raw * mul, 1.45, 7);
 }
 
 export const CAMERA = {

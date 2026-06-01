@@ -901,8 +901,10 @@ body:not(.otter-ui-menu) .touch-controls {
 
 .touch-controls__actions {
   display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: flex-end;
+  gap: calc(10px * var(--hud-scale, 1));
   pointer-events: auto;
 }
 
@@ -920,7 +922,8 @@ body:not(.otter-ui-menu) .touch-controls {
   -webkit-backdrop-filter: blur(6px);
 }
 
-.touch-btn--drift {
+.touch-btn--drift,
+.touch-btn--item {
   width: max(54px, calc(62px * var(--hud-scale, 1)));
   height: max(54px, calc(62px * var(--hud-scale, 1)));
   padding: 0;
@@ -929,8 +932,19 @@ body:not(.otter-ui-menu) .touch-controls {
   place-items: center;
   font-size: clamp(0.62rem, calc(11px * var(--hud-scale, 1)), 0.82rem);
   letter-spacing: 0.02em;
+}
+
+.touch-btn--drift {
   background: rgba(50, 70, 140, 0.82);
   border-color: rgba(160, 200, 255, 0.45);
+}
+
+.touch-btn--item {
+  background: rgba(140, 90, 28, 0.88);
+  border-color: rgba(255, 210, 120, 0.5);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(255, 180, 60, 0.15);
 }
 
 .touch-btn:active,

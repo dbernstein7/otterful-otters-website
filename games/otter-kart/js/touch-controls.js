@@ -82,6 +82,22 @@ export function initTouchControls(game) {
     steer: 0,
   };
 
+  const itemBtn = root.querySelector(".touch-btn--item");
+  if (itemBtn instanceof HTMLElement) {
+    itemBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      triggerTouchUseItem(game);
+      itemBtn.classList.add("is-pressed");
+    });
+    const itemUp = (e) => {
+      e.preventDefault();
+      itemBtn.classList.remove("is-pressed");
+    };
+    itemBtn.addEventListener("pointerup", itemUp);
+    itemBtn.addEventListener("pointercancel", itemUp);
+    itemBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+
   const driftBtn = root.querySelector(".touch-btn--drift");
   if (driftBtn instanceof HTMLElement) {
     const down = (e) => {
@@ -103,6 +119,36 @@ export function initTouchControls(game) {
 
   initTouchJoystick(game, root);
   initTouchOrientationHint();
+}
+
+/**
+ * Use mystery-box / equipped item (Q / gamepad X) or legacy inventory slots.
+ * @param {{ phase: string, started: boolean, kart: { bananasInv?: number, boostsInv?: number, rocksInv?: number }, equippedItem?: string, itemRoulette?: { done?: boolean, item?: string }, useAwardedItem?: () => void, useInventoryKey?: (k: string) => void }} game
+ */
+function triggerTouchUseItem(game) {
+  if (game.phase !== "racing" || !game.started) return;
+
+  const item =
+    game.equippedItem ||
+    (game.itemRoulette?.done ? game.itemRoulette.item : "");
+  if (item) {
+    game.useAwardedItem?.();
+    return;
+  }
+
+  const K = game.kart;
+  if (!K) return;
+  if ((K.bananasInv ?? 0) > 0) {
+    game.useInventoryKey?.("1");
+    return;
+  }
+  if ((K.boostsInv ?? 0) > 0) {
+    game.useInventoryKey?.("2");
+    return;
+  }
+  if ((K.rocksInv ?? 0) > 0) {
+    game.useInventoryKey?.("3");
+  }
 }
 
 /**

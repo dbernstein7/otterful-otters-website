@@ -18,7 +18,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-mobile-drive-v2" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-item-zoom" />
     <script>
       (function () {
         function reportGameSize() {
@@ -229,6 +229,7 @@
       <div class="touch-controls__right">
         <div id="touch-minimap-slot" class="touch-minimap-slot" aria-hidden="true"></div>
         <div class="touch-controls__actions">
+          <button type="button" class="touch-btn touch-btn--item" aria-label="Use item">Use</button>
           <button type="button" class="touch-btn touch-btn--drift" aria-label="Drift">Drift</button>
         </div>
       </div>
@@ -379,7 +380,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-mobile-drive-v2"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-item-zoom"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
