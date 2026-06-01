@@ -136,6 +136,8 @@ const GARAGE_REF_H = 941;
 let mapImgNatural = { w: 0, h: 0 };
 let startImgNatural = { w: 0, h: 0 };
 let hotspotLayoutRaf = 0;
+/** @type {null | (() => void)} Redraw garage carousel canvases after layout resize. */
+let repaintGarageCarousels = null;
 /** Desktop iframe: map hotspots calibrated from CSS once, then image-space relayout. */
 let mapEmbedCssCalibrated = false;
 
@@ -566,6 +568,10 @@ function layoutGarageLayout() {
     randWrap.style.removeProperty("width");
     randWrap.style.removeProperty("transform");
     randWrap.style.removeProperty("z-index");
+  }
+
+  if (typeof repaintGarageCarousels === "function") {
+    requestAnimationFrame(() => repaintGarageCarousels());
   }
 }
 
@@ -1486,6 +1492,7 @@ function mountLoadoutPicker() {
   }
 
   renderAllRows();
+  repaintGarageCarousels = renderAllRows;
 
   left.querySelector("[data-loadout-rand]")?.addEventListener("click", () => {
     randomizeAll();

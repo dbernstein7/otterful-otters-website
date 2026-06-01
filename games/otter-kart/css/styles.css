@@ -581,19 +581,25 @@ body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas,
 body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="kart"],
 body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="hat"],
 body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="eye"] {
+  display: block;
+  margin: 0 auto;
+  box-sizing: border-box;
   max-width: 100% !important;
   width: 100% !important;
-  height: auto !important;
-  max-height: 52px;
+  height: 48px !important;
+  max-height: none !important;
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-carousel__canvas[data-slot="eye"] {
-  max-height: 40px !important;
+  height: 36px !important;
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-carousel__center {
   min-height: 52px;
   padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 body.otter-ui-menu.otter-ui-garage .loadout-nav {
