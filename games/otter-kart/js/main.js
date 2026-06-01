@@ -24,12 +24,8 @@ import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
   getGameViewportSize,
-  getGameViewportLayout,
   getEmbedViewport,
   setEmbedViewport,
-  clientToGameCoords,
-  applyGameViewportStyles,
-  installViewportFit,
   isEmbedded,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
@@ -165,11 +161,10 @@ function getLayoutViewportSize() {
  * @returns {string | null}
  */
 function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
-  const { x, y } = clientToGameCoords(clientX, clientY);
   const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
-  const ix = (x - ox) / s;
-  const iy = (y - oy) / s;
+  const ix = (clientX - ox) / s;
+  const iy = (clientY - oy) / s;
   for (const [key, box] of Object.entries(boxes)) {
     if (
       ix >= box.ix &&
@@ -193,9 +188,8 @@ function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
  */
 function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
   if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
-  const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
+  const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
-  const isStart = attr === "data-start-action";
 
   layer.querySelectorAll(`[${attr}]`).forEach((el) => {
     if (!(el instanceof HTMLElement)) return;
@@ -204,11 +198,9 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
     if (!box) return;
     const w = Math.max(12, box.iw * s);
     const h = Math.max(12, box.ih * s);
-    const padLeft = isStart ? 0 : gLeft;
-    const padTop = isStart ? 0 : gTop;
     el.style.position = "fixed";
-    el.style.left = `${padLeft + ox + box.ix * s}px`;
-    el.style.top = `${padTop + oy + box.iy * s}px`;
+    el.style.left = `${ox + box.ix * s}px`;
+    el.style.top = `${oy + box.iy * s}px`;
     el.style.width = `${w}px`;
     el.style.height = `${h}px`;
     el.style.margin = "0";
@@ -232,7 +224,7 @@ function relayoutMenuHotspots() {
     document.body?.classList?.contains?.("otter-ui-playtab") &&
     !document.body?.classList?.contains?.("otter-ui-garage")
   ) {
-    layoutMapCoverImage();
+    resetMenuCoverToFullFrame();
     void layoutMapHotspots();
   } else {
     resetMenuCoverToFullFrame();
@@ -249,7 +241,6 @@ function scheduleHotspotRelayout() {
 
 function installHotspotResizeWatchers() {
   const onResize = () => {
-    applyGameViewportStyles();
     scheduleHotspotRelayout();
     try {
       game.resize();
@@ -257,7 +248,6 @@ function installHotspotResizeWatchers() {
       // ignore
     }
   };
-  installViewportFit();
   window.addEventListener("resize", onResize);
   window.visualViewport?.addEventListener("resize", onResize);
   window.visualViewport?.addEventListener("scroll", onResize);
@@ -316,39 +306,6 @@ function resetMenuCoverToFullFrame() {
   }
 }
 
-/** Map only: position cover img with same cover math as calibrated hotspots. */
-function layoutMapCoverImage() {
-  const cover = document.getElementById("menu-cover");
-  const img = document.getElementById("menu-cover-img");
-  if (!(cover instanceof HTMLElement) || !(img instanceof HTMLImageElement)) return;
-  if (cover.hidden || !cover.classList.contains("is-visible")) return;
-  if (
-    !document.body?.classList?.contains?.("otter-ui-playtab") ||
-    document.body?.classList?.contains?.("otter-ui-garage")
-  ) {
-    return;
-  }
-
-  const iw = mapImgNatural.w || 1672;
-  const ih = mapImgNatural.h || 941;
-  const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
-  const { ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
-
-  cover.style.position = "fixed";
-  cover.style.left = `${gLeft}px`;
-  cover.style.top = `${gTop}px`;
-  cover.style.width = `${vw}px`;
-  cover.style.height = `${vh}px`;
-  cover.style.right = "auto";
-  cover.style.bottom = "auto";
-  cover.style.overflow = "hidden";
-
-  img.style.width = `${dw}px`;
-  img.style.height = `${dh}px`;
-  img.style.left = `${ox}px`;
-  img.style.top = `${oy}px`;
-}
-
 async function calibrateMapHotspotsOnce() {
   if (mapCalibrated) return;
   if (isEmbedded() && !getEmbedViewport()) return;
@@ -371,14 +328,14 @@ async function calibrateMapHotspotsOnce() {
   });
 
   const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
+  const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
 
   mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
     if (!(el instanceof HTMLElement)) return;
     const r = el.getBoundingClientRect();
-    el.dataset.ix = String((r.left - gLeft - ox) / s);
-    el.dataset.iy = String((r.top - gTop - oy) / s);
+    el.dataset.ix = String((r.left - ox) / s);
+    el.dataset.iy = String((r.top - oy) / s);
     el.dataset.iw = String(r.width / s);
     el.dataset.ih = String(r.height / s);
   });
@@ -394,7 +351,7 @@ async function layoutMapHotspots() {
   if (!(mapHotspots instanceof HTMLElement)) return;
 
   const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh, left: gLeft, top: gTop } = getGameViewportLayout();
+  const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
 
   mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
@@ -405,8 +362,8 @@ async function layoutMapHotspots() {
     const ihBox = Number(el.dataset.ih);
     if (!Number.isFinite(ix) || !Number.isFinite(iy)) return;
     el.style.position = "fixed";
-    el.style.left = `${gLeft + ox + ix * s}px`;
-    el.style.top = `${gTop + oy + iy * s}px`;
+    el.style.left = `${ox + ix * s}px`;
+    el.style.top = `${oy + iy * s}px`;
     el.style.width = `${Math.max(12, (iwBox || 0) * s)}px`;
     el.style.height = `${Math.max(12, (ihBox || 0) * s)}px`;
     el.style.margin = "0";
@@ -1354,11 +1311,10 @@ function hitTestMapHotspotMode(clientX, clientY) {
   if (!mapCalibrated) return null;
   const { w: iw, h: ih } = mapImgNatural;
   if (!iw || !ih) return null;
-  const { x, y } = clientToGameCoords(clientX, clientY);
   const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-  const ix = (x - ox) / s;
-  const iy = (y - oy) / s;
+  const ix = (clientX - ox) / s;
+  const iy = (clientY - oy) / s;
   for (const el of mapHotspots?.querySelectorAll?.("[data-map-mode]") ?? []) {
     if (!(el instanceof HTMLElement) || !el.dataset.ix) continue;
     const ix0 = Number(el.dataset.ix);

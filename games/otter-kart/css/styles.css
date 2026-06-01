@@ -55,16 +55,6 @@ body.otter-ui-menu {
   object-position: center;
 }
 
-/* Map only: main.js positions the img with cover math to match calibrated hotspots */
-body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .menu-cover img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  max-width: none;
-  max-height: none;
-  object-fit: none;
-}
-
 /* Legacy pseudo fallback (hidden while .menu-cover is active) */
 body.otter-ui-menu.otter-ui-start::after,
 body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage)::after {
@@ -2726,90 +2716,6 @@ body.otter-ui-menu.otter-ui-playtab .menu-admin-open {
   }
 }
 
-/* ——— Standalone portrait phone only: letterbox to 1672×941 (embed/desktop use full frame) ——— */
-html.otter-viewport-fit:not(.otter-embed),
-html.otter-viewport-fit:not(.otter-embed) body {
-  background: #080c10;
-}
-
-html.otter-embed.otter-viewport-fit #game,
-html.otter-embed.otter-viewport-fit .menu-cover {
-  left: 0 !important;
-  top: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-html.otter-viewport-fit #game,
-html.otter-viewport-fit .menu-cover,
-html.otter-viewport-fit .start-menu-hotspots,
-html.otter-viewport-fit .map-hotspots,
-html.otter-viewport-fit .garage-hotspots,
-html.otter-viewport-fit #hud,
-html.otter-viewport-fit .countdown,
-html.otter-viewport-fit .modal-backdrop,
-html.otter-viewport-fit body.otter-ui-menu::before,
-html.otter-viewport-fit body.otter-ui-menu.otter-ui-garage::after {
-  left: var(--otter-game-left, 0) !important;
-  top: var(--otter-game-top, 0) !important;
-  width: var(--otter-game-w, 100%) !important;
-  height: var(--otter-game-h, 100%) !important;
-  right: auto !important;
-  bottom: auto !important;
-}
-
-html.otter-viewport-fit .hud-music,
-html.otter-viewport-fit .music-panel {
-  left: calc(var(--otter-game-left, 0px) + 14px + env(safe-area-inset-left, 0px)) !important;
-}
-
-html.otter-viewport-fit .hud-music {
-  top: calc(
-    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
-      env(safe-area-inset-bottom, 0px)
-  ) !important;
-  bottom: auto !important;
-}
-
-html.otter-viewport-fit .music-panel {
-  top: calc(
-    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
-      env(safe-area-inset-bottom, 0px) - 220px
-  ) !important;
-  bottom: auto !important;
-  width: min(280px, calc(var(--otter-game-w, 100vw) - 28px)) !important;
-}
-
-html.otter-viewport-fit .hud-settings {
-  left: calc(var(--otter-game-left, 0px) + 14px + env(safe-area-inset-left, 0px)) !important;
-  top: calc(
-    var(--otter-game-top, 0px) + var(--otter-game-h, 100%) - 56px -
-      env(safe-area-inset-bottom, 0px)
-  ) !important;
-  bottom: auto !important;
-}
-
-#otter-rotate-hint {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  background: rgba(8, 12, 16, 0.92);
-  color: #e8f4ff;
-  text-align: center;
-  font-weight: 800;
-  font-size: clamp(16px, 4vw, 22px);
-  line-height: 1.45;
-  pointer-events: none;
-}
-
-body.otter-portrait:not(.otter-embed) #otter-rotate-hint {
-  display: flex;
-}
-
 /* ——— Embedded on otterful site (iframe): use iframe bounds, not browser dvh/vw ——— */
 html.otter-embed,
 html.otter-embed body {
@@ -2819,10 +2725,6 @@ html.otter-embed body {
   max-height: none !important;
   overflow: hidden !important;
   position: relative;
-}
-
-html.otter-embed #otter-rotate-hint {
-  display: none !important;
 }
 
 html.otter-embed #game {

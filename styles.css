@@ -4262,27 +4262,6 @@ body.wallet-modal-open {
         min-height: 240px;
     }
 
-    /* OtterKart: maximize landscape game area on phones */
-    @media (orientation: landscape) and (max-height: 520px) {
-        .embed-page .container {
-            padding: 56px 10px 10px;
-        }
-
-        .embed-page .header-section {
-            display: none;
-        }
-
-        .otter-kart-embed-shell {
-            max-height: calc(100svh - 72px);
-            min-height: 0;
-            width: 100%;
-        }
-
-        .page-embed-note {
-            display: none;
-        }
-    }
-
     .builder-layout {
         grid-template-columns: 1fr;
     }
