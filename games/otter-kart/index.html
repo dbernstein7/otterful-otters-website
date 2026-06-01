@@ -18,7 +18,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-mobile-hud-touch" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-joystick-minimap" />
     <script>
       (function () {
         function reportGameSize() {
@@ -205,14 +205,17 @@
     </button>
 
     <div id="touch-controls" class="touch-controls" aria-label="Driving controls">
-      <div class="touch-controls__cluster touch-controls__cluster--steer">
-        <button type="button" class="touch-btn touch-btn--left" aria-label="Steer left">◀</button>
-        <button type="button" class="touch-btn touch-btn--right" aria-label="Steer right">▶</button>
+      <div id="touch-joystick" class="touch-joystick" aria-label="Steer">
+        <div class="touch-joystick__base" aria-hidden="true"></div>
+        <div class="touch-joystick__stick" aria-hidden="true"></div>
       </div>
-      <div class="touch-controls__cluster touch-controls__cluster--drive">
-        <button type="button" class="touch-btn touch-btn--drift" aria-label="Drift">Drift</button>
-        <button type="button" class="touch-btn touch-btn--brake" aria-label="Brake">Brake</button>
-        <button type="button" class="touch-btn touch-btn--gas" aria-label="Gas">Gas</button>
+      <div class="touch-controls__right">
+        <div id="touch-minimap-slot" class="touch-minimap-slot" aria-hidden="true"></div>
+        <div class="touch-controls__drive">
+          <button type="button" class="touch-btn touch-btn--drift" aria-label="Drift">Drift</button>
+          <button type="button" class="touch-btn touch-btn--brake" aria-label="Brake">Brake</button>
+          <button type="button" class="touch-btn touch-btn--gas" aria-label="Gas">Gas</button>
+        </div>
       </div>
     </div>
 
@@ -361,7 +364,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-mobile-hud-touch"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-joystick-minimap"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
