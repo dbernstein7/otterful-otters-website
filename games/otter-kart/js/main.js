@@ -364,8 +364,8 @@ function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
 
 function relayoutMenuHotspots() {
   syncMenuCover();
-  resetMenuCoverToFullFrame();
   if (document.body?.classList?.contains?.("otter-ui-start")) {
+    layoutMenuCoverImage();
     const iw = startImgNatural.w || 1024;
     const ih = startImgNatural.h || 572;
     layoutCoverHotspots(
@@ -376,11 +376,10 @@ function relayoutMenuHotspots() {
       "data-start-action",
     );
   } else if (isMapHomeVisible()) {
-    if (isStandaloneGame()) {
-      layoutMapHotspotsPaintSync();
-    } else {
-      void layoutMapHotspotsNow();
-    }
+    layoutMenuCoverImage();
+    void layoutMapHotspotsNow();
+  } else {
+    resetMenuCoverToFullFrame();
   }
 }
 
@@ -400,9 +399,6 @@ function installHotspotResizeWatchers() {
       syncStandaloneShellViewport();
     } else {
       applyHudViewportVars();
-    }
-    if (isStandaloneGame() && isMapHomeVisible()) {
-      layoutMapHotspotsPaintSync();
     }
     scheduleHotspotRelayout();
     try {
@@ -456,7 +452,7 @@ async function ensureMapImageSize() {
   });
 }
 
-/** Start screen: full-frame cover via CSS — clear any map-only inline layout. */
+/** Clear JS menu cover layout (racing / garage). */
 function resetMenuCoverToFullFrame() {
   const cover = document.getElementById("menu-cover");
   const img = document.getElementById("menu-cover-img");
@@ -470,7 +466,57 @@ function resetMenuCoverToFullFrame() {
     el.style.removeProperty("right");
     el.style.removeProperty("bottom");
     el.style.removeProperty("overflow");
+    el.style.removeProperty("max-width");
+    el.style.removeProperty("max-height");
+    el.style.removeProperty("object-fit");
+    el.style.removeProperty("object-position");
   }
+}
+
+/**
+ * Size/position start + map art with the same coverTransform as hotspots (iframe + standalone).
+ */
+function layoutMenuCoverImage() {
+  const cover = document.getElementById("menu-cover");
+  const img = getMenuCoverImageEl();
+  if (!(cover instanceof HTMLElement) || !img) return;
+  if (cover.hidden || !cover.classList.contains("is-visible")) return;
+
+  const onStart = document.body?.classList?.contains?.("otter-ui-start");
+  const onMap = isMapHomeVisible();
+  if (!onStart && !onMap) return;
+
+  let iw;
+  let ih;
+  if (onStart) {
+    iw = startImgNatural.w || 1024;
+    ih = startImgNatural.h || 572;
+  } else {
+    iw = mapImgNatural.w || 1672;
+    ih = mapImgNatural.h || 941;
+  }
+
+  const { vw, vh } = getGameViewportSize();
+  const { s, ox, oy, dw, dh } = coverTransform(iw, ih, vw, vh);
+
+  cover.style.position = "fixed";
+  cover.style.left = "0";
+  cover.style.top = "0";
+  cover.style.width = `${vw}px`;
+  cover.style.height = `${vh}px`;
+  cover.style.right = "auto";
+  cover.style.bottom = "auto";
+  cover.style.overflow = "hidden";
+
+  img.style.position = "absolute";
+  img.style.left = `${ox}px`;
+  img.style.top = `${oy}px`;
+  img.style.width = `${dw}px`;
+  img.style.height = `${dh}px`;
+  img.style.maxWidth = "none";
+  img.style.maxHeight = "none";
+  img.style.objectFit = "fill";
+  img.style.objectPosition = "center";
 }
 
 /**
