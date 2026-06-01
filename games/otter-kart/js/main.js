@@ -159,9 +159,16 @@ function isGarageVisible() {
   );
 }
 
+/**
+ * Start button on front page (OtterKart-Start-Menu.png 1024×572).
+ * Disabled for now — set START_HOTSPOT_START_ENABLED true to restore.
+ */
+const START_HOTSPOT_START = { ix: 358, iy: 208, iw: 306, ih: 92 };
+const START_HOTSPOT_START_ENABLED = false;
+
 /** Image-space hitboxes for OtterKart-Start-Menu.png (1024×572). */
 const START_HOTSPOT_BOXES = {
-  start: { ix: 358, iy: 208, iw: 306, ih: 92 },
+  ...(START_HOTSPOT_START_ENABLED ? { start: START_HOTSPOT_START } : {}),
   demo: { ix: 368, iy: 323, iw: 276, ih: 60 },
   wallet: { ix: 394, iy: 402, iw: 224, ih: 48 },
 };
@@ -1735,7 +1742,10 @@ window.setTimeout(scheduleHotspotRelayout, 250);
 
 function handleStartHotspotAction(action) {
   if (!document.body?.classList?.contains?.("otter-ui-start")) return;
-  if (action === "start") enterMapFromStart({ demo: false });
+  if (action === "start") {
+    if (!START_HOTSPOT_START_ENABLED) return;
+    enterMapFromStart({ demo: false });
+  }
   else if (action === "demo") enterMapFromStart({ demo: true });
   else if (action === "wallet") void handleWalletConnectHotspot();
 }

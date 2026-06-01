@@ -267,6 +267,11 @@ body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
 }
 
 /* Visible hit-area outlines (start + map + garage) */
+body.otter-ui-menu.otter-ui-start .start-hotspot--start[hidden] {
+  display: none !important;
+  pointer-events: none !important;
+}
+
 body.otter-ui-menu.otter-ui-start .start-hotspot,
 body.otter-ui-menu.otter-ui-playtab:not(.otter-ui-garage) .map-hotspot,
 body.otter-ui-menu.otter-ui-garage .garage-hotspot {

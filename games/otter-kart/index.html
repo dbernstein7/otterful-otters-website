@@ -20,7 +20,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-hide-demo-admin" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-no-start-hotspot" />
     <script>
       (function () {
         function reportGameSize() {
@@ -78,7 +78,8 @@
     </div>
 
     <div id="start-menu-hotspots" class="start-menu-hotspots" aria-hidden="false">
-      <button type="button" class="start-hotspot start-hotspot--start" data-start-action="start" data-ix="358" data-iy="208" data-iw="306" data-ih="92" aria-label="Start"></button>
+      <!-- Start hotspot off for now; saved box ix=358 iy=208 iw=306 ih=92 @ 1024×572 — see START_HOTSPOT_START in main.js -->
+      <button type="button" class="start-hotspot start-hotspot--start" data-start-action="start" data-ix="358" data-iy="208" data-iw="306" data-ih="92" aria-label="Start" hidden disabled></button>
       <button type="button" class="start-hotspot start-hotspot--demo" data-start-action="demo" data-ix="368" data-iy="323" data-iw="276" data-ih="60" aria-label="Demo"></button>
       <button type="button" class="start-hotspot start-hotspot--wallet" data-start-action="wallet" data-ix="394" data-iy="402" data-iw="224" data-ih="48" aria-label="Wallet connect"></button>
     </div>
@@ -382,7 +383,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-hide-demo-admin"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-no-start-hotspot"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
