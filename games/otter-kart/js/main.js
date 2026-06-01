@@ -179,7 +179,7 @@ const MAP_HOTSPOT_BOXES = {
   grandprix: { ix: 652, iy: 532, iw: 268, ih: 104 },
   touge: { ix: 1170, iy: 533, iw: 235, ih: 113 },
   endless: { ix: 311, iy: 703, iw: 235, ih: 122 },
-  claim: { ix: 1364, iy: 796, iw: 161, ih: 84 },
+  claim: { ix: 1374, iy: 796, iw: 161, ih: 84 },
 };
 
 function coverTransform(imgW, imgH, vw, vh) {
