@@ -62,13 +62,10 @@ export function initOtterKartMusic() {
   let muted = !!prefs.muted;
   let paused = prefs.paused !== false;
   let panelOpen = !!prefs.panelOpen;
-  let loadGen = 0;
 
   const titleEl = panel.querySelector(".music-panel__title");
   const metaEl = panel.querySelector(".music-panel__meta");
   const playBtn = panel.querySelector("[data-music-play]");
-  const prevBtn = panel.querySelector("[data-music-prev]");
-  const nextBtn = panel.querySelector("[data-music-next]");
   const muteBtn = panel.querySelector("[data-music-mute]");
   const closeBtn = panel.querySelector("[data-music-close]");
   const volInput = panel.querySelector("[data-music-volume]");
@@ -99,73 +96,34 @@ export function initOtterKartMusic() {
     }
   }
 
-  /** @param {boolean} andPlay */
-  function loadTrack(andPlay) {
-    const gen = ++loadGen;
-    audio.pause();
-    const url = resolveTrackUrl(TRACKS[trackIndex].file);
+  /** Point audio at the current track (always assign src). */
+  function bindCurrentTrack() {
+    audio.src = resolveTrackUrl(TRACKS[trackIndex].file);
     applyVolume();
-    syncLabels();
-    persist();
-
-    return new Promise((resolve) => {
-      let settled = false;
-      const finish = (statusText) => {
-        if (settled || gen !== loadGen) return;
-        settled = true;
-        syncLabels(statusText);
-        persist();
-        resolve();
-      };
-
-      const startPlayback = () => {
-        if (settled || gen !== loadGen) return;
-        if (!andPlay || paused || muted) {
-          finish();
-          return;
-        }
-        applyVolume();
-        audio
-          .play()
-          .then(() => finish())
-          .catch(() => finish("Tap Play to start audio"));
-      };
-
-      const onError = () => {
-        console.warn("[OtterKart music] failed to load", TRACKS[trackIndex].file);
-        finish("Track failed to load");
-      };
-
-      audio.removeEventListener("canplay", startPlayback);
-      audio.removeEventListener("error", onError);
-      audio.addEventListener("canplay", startPlayback, { once: true });
-      audio.addEventListener("error", onError, { once: true });
-
-      if (audio.src !== url) audio.src = url;
-      audio.load();
-
-      if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-        startPlayback();
-      }
-
-      window.setTimeout(() => finish(), 12000);
-    });
   }
 
-  /** @param {number} delta */
-  async function changeTrack(delta) {
+  /**
+   * Skip prev/next — runs on user click (gesture) or natural track end.
+   * @param {number} delta
+   * @param {boolean} autoplay
+   */
+  function skipTrack(delta, autoplay) {
     trackIndex = (trackIndex + delta + TRACKS.length) % TRACKS.length;
-    paused = false;
+    if (autoplay) paused = false;
     syncLabels();
-    await loadTrack(true);
+    persist();
+    bindCurrentTrack();
+    if (!autoplay || paused || muted) return;
+    void audio.play().catch(() => {
+      syncLabels("Tap Play to start audio");
+    });
   }
 
   async function playMusic() {
     paused = false;
-    if (!audio.src) await loadTrack(false);
-    applyVolume();
     syncLabels();
     persist();
+    bindCurrentTrack();
     try {
       await audio.play();
       syncLabels();
@@ -191,7 +149,7 @@ export function initOtterKartMusic() {
 
   audio.addEventListener("ended", () => {
     if (paused) return;
-    void changeTrack(1);
+    skipTrack(1, true);
   });
 
   btn.addEventListener("click", (e) => {
@@ -202,16 +160,6 @@ export function initOtterKartMusic() {
   closeBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     setPanelOpen(false);
-  });
-
-  prevBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    void changeTrack(-1);
-  });
-
-  nextBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    void changeTrack(1);
   });
 
   playBtn?.addEventListener("click", (e) => {
@@ -240,6 +188,22 @@ export function initOtterKartMusic() {
     if (!paused && !muted) void playMusic();
   });
 
+  /** Panel-level capture handler so ‹ › always receive clicks (iframe / touch). */
+  panel.addEventListener(
+    "click",
+    (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      const prev = target.closest("[data-music-prev]");
+      const next = target.closest("[data-music-next]");
+      if (!prev && !next) return;
+      e.preventDefault();
+      e.stopPropagation();
+      skipTrack(prev ? -1 : 1, true);
+    },
+    true,
+  );
+
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "KeyM" && ev.key?.toLowerCase() !== "m") return;
     const t = ev.target;
@@ -254,7 +218,9 @@ export function initOtterKartMusic() {
     setPanelOpen(!panelOpen);
   });
 
-  setPanelOpen(panelOpen);
-  void loadTrack(false);
+  if (panelOpen) setPanelOpen(true);
+  else setPanelOpen(false);
+  bindCurrentTrack();
   syncLabels();
+  persist();
 }

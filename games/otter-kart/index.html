@@ -20,7 +20,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-music-fix2" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-02-music-skip" />
     <script>
       (function () {
         function reportGameSize() {
@@ -189,9 +189,9 @@
       <p class="music-panel__title">Pixel Drift I</p>
       <p class="music-panel__meta">Track 1 / 7</p>
       <div class="music-panel__controls">
-        <button type="button" class="music-panel__btn" data-music-prev" aria-label="Previous track">‹</button>
-        <button type="button" class="music-panel__btn" data-music-play" aria-label="Play or pause">▶ Play</button>
-        <button type="button" class="music-panel__btn" data-music-next" aria-label="Next track">›</button>
+        <button type="button" class="music-panel__btn music-panel__btn--skip" data-music-prev aria-label="Previous track">‹</button>
+        <button type="button" class="music-panel__btn music-panel__btn--play" data-music-play aria-label="Play or pause">▶ Play</button>
+        <button type="button" class="music-panel__btn music-panel__btn--skip" data-music-next aria-label="Next track">›</button>
       </div>
       <div class="music-panel__row">
         <button type="button" class="music-panel__btn music-panel__btn--mute" data-music-mute">Mute</button>
@@ -383,7 +383,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-02-music-fix2"></script>
+    <script type="module" src="js/main.js?v=2026-06-02-music-skip"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {

@@ -1214,6 +1214,21 @@ body.otter-ui-menu .panel-settings {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
+  align-items: stretch;
+}
+
+.music-panel__btn--skip {
+  flex: 0 0 52px;
+  min-width: 52px;
+  min-height: 44px;
+  padding: 0;
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.music-panel__btn--play {
+  flex: 1 1 auto;
+  min-height: 44px;
 }
 
 .music-panel__row {
