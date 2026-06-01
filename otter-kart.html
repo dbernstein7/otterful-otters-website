@@ -172,8 +172,10 @@
         iframe.addEventListener('load', () => {
           applyEmbedHeight();
           pingEmbedLayout();
+          setTimeout(pingEmbedLayout, 50);
           setTimeout(pingEmbedLayout, 150);
-          setTimeout(pingEmbedLayout, 500);
+          setTimeout(pingEmbedLayout, 400);
+          setTimeout(pingEmbedLayout, 800);
         });
         iframe.addEventListener('pointerenter', () => {
           try {

@@ -118,15 +118,25 @@ try {
 const MAP_IMG_URL = "./OtterKart-Map.png?v=2026-05-07-1236";
 const START_IMG_URL = "./OtterKart-Start-Menu.png?v=2026-05-28-start-menu-v15";
 let mapImgNatural = { w: 0, h: 0 };
-let mapCalibrated = false;
 let startImgNatural = { w: 0, h: 0 };
-let startCalibrated = false;
+let hotspotLayoutRaf = 0;
 
 /** Image-space hitboxes for OtterKart-Start-Menu.png (1024×572). */
 const START_HOTSPOT_BOXES = {
   start: { ix: 358, iy: 208, iw: 306, ih: 92 },
   demo: { ix: 368, iy: 323, iw: 276, ih: 60 },
   wallet: { ix: 394, iy: 402, iw: 224, ih: 48 },
+};
+
+/** Image-space hitboxes for OtterKart-Map.png (1672×941) — aligned to cover background. */
+const MAP_HOTSPOT_BOXES = {
+  garage: { ix: 48, iy: 198, iw: 220, ih: 184 },
+  practice: { ix: 367, iy: 208, iw: 202, ih: 122 },
+  daily: { ix: 1043, iy: 91, iw: 302, ih: 104 },
+  gp: { ix: 622, iy: 552, iw: 268, ih: 104 },
+  touge: { ix: 1170, iy: 573, iw: 235, ih: 113 },
+  endless: { ix: 301, iy: 753, iw: 235, ih: 122 },
+  claim: { ix: 1414, iy: 896, iw: 101, ih: 84 },
 };
 
 function coverTransform(imgW, imgH, vw, vh) {
@@ -138,16 +148,113 @@ function coverTransform(imgW, imgH, vw, vh) {
   return { s, ox, oy, dw, dh };
 }
 
+/** Layout viewport = iframe / window client area (matches background-size: cover). */
 function getLayoutViewportSize() {
-  // Prefer layout viewport dimensions (matches fixed-position backgrounds better than innerWidth/innerHeight).
-  const de = document?.documentElement;
-  const vw0 = (de && de.clientWidth) || window.innerWidth || 1;
-  const vh0 = (de && de.clientHeight) || window.innerHeight || 1;
-  // visualViewport can differ on some browsers (UI bars/zoom); use it if it’s sane.
-  const vv = window.visualViewport;
-  const vw = vv && Number.isFinite(vv.width) && vv.width > 0 ? vv.width : vw0;
-  const vh = vv && Number.isFinite(vv.height) && vv.height > 0 ? vv.height : vh0;
-  return { vw, vh };
+  const de = document.documentElement;
+  const vw = de?.clientWidth || window.innerWidth || 1;
+  const vh = de?.clientHeight || window.innerHeight || 1;
+  return { vw: Math.max(1, vw), vh: Math.max(1, vh) };
+}
+
+/**
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {Record<string, { ix: number, iy: number, iw: number, ih: number }>} boxes
+ * @param {number} imgW
+ * @param {number} imgH
+ * @returns {string | null}
+ */
+function hitTestCoverHotspots(clientX, clientY, boxes, imgW, imgH) {
+  const { vw, vh } = getLayoutViewportSize();
+  const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
+  const ix = (clientX - ox) / s;
+  const iy = (clientY - oy) / s;
+  for (const [key, box] of Object.entries(boxes)) {
+    if (
+      ix >= box.ix &&
+      ix <= box.ix + box.iw &&
+      iy >= box.iy &&
+      iy <= box.iy + box.ih
+    ) {
+      return key;
+    }
+  }
+  return null;
+}
+
+/**
+ * Position hotspot buttons using the same cover math as body::after backgrounds.
+ * @param {HTMLElement | null | undefined} layer
+ * @param {Record<string, { ix: number, iy: number, iw: number, ih: number }>} boxes
+ * @param {number} imgW
+ * @param {number} imgH
+ * @param {string} attr e.g. data-start-action | data-map-mode
+ */
+function layoutCoverHotspots(layer, boxes, imgW, imgH, attr) {
+  if (!(layer instanceof HTMLElement) || !imgW || !imgH) return;
+  const { vw, vh } = getLayoutViewportSize();
+  const { s, ox, oy } = coverTransform(imgW, imgH, vw, vh);
+
+  layer.querySelectorAll(`[${attr}]`).forEach((el) => {
+    if (!(el instanceof HTMLElement)) return;
+    const key = el.getAttribute(attr);
+    const box = key ? boxes[key] : null;
+    if (!box) return;
+    const w = Math.max(12, box.iw * s);
+    const h = Math.max(12, box.ih * s);
+    el.style.position = "fixed";
+    el.style.left = `${ox + box.ix * s}px`;
+    el.style.top = `${oy + box.iy * s}px`;
+    el.style.width = `${w}px`;
+    el.style.height = `${h}px`;
+    el.style.margin = "0";
+  });
+}
+
+function relayoutMenuHotspots() {
+  if (document.body?.classList?.contains?.("otter-ui-start")) {
+    const iw = startImgNatural.w || 1024;
+    const ih = startImgNatural.h || 572;
+    layoutCoverHotspots(
+      startMenuHotspots,
+      START_HOTSPOT_BOXES,
+      iw,
+      ih,
+      "data-start-action",
+    );
+  }
+  if (
+    document.body?.classList?.contains?.("otter-ui-playtab") &&
+    !document.body?.classList?.contains?.("otter-ui-garage")
+  ) {
+    const iw = mapImgNatural.w || 1672;
+    const ih = mapImgNatural.h || 941;
+    layoutCoverHotspots(mapHotspots, MAP_HOTSPOT_BOXES, iw, ih, "data-map-mode");
+    layoutMapClaimBar();
+  }
+}
+
+function scheduleHotspotRelayout() {
+  if (hotspotLayoutRaf) cancelAnimationFrame(hotspotLayoutRaf);
+  hotspotLayoutRaf = requestAnimationFrame(() => {
+    hotspotLayoutRaf = 0;
+    relayoutMenuHotspots();
+  });
+}
+
+function installHotspotResizeWatchers() {
+  const onResize = () => scheduleHotspotRelayout();
+  window.addEventListener("resize", onResize);
+  window.visualViewport?.addEventListener("resize", onResize);
+  window.visualViewport?.addEventListener("scroll", onResize);
+  window.addEventListener("message", (event) => {
+    if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
+  });
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(onResize);
+    ro.observe(document.documentElement);
+    if (document.body) ro.observe(document.body);
+  }
 }
 
 async function ensureMapImageSize() {
@@ -166,63 +273,6 @@ async function ensureMapImageSize() {
   });
 }
 
-async function calibrateMapHotspotsOnce() {
-  if (mapCalibrated) return;
-  if (!(mapHotspots instanceof HTMLElement)) return;
-  // If the map image changes, force a fresh calibration.
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    delete el.dataset.ix;
-    delete el.dataset.iy;
-    delete el.dataset.iw;
-    delete el.dataset.ih;
-  });
-  const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-
-  // Convert the CURRENT (perfect) viewport rects into image-space boxes.
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const r = el.getBoundingClientRect();
-    const ix = (r.left - ox) / s;
-    const iy = (r.top - oy) / s;
-    const iwBox = r.width / s;
-    const ihBox = r.height / s;
-    el.dataset.ix = String(ix);
-    el.dataset.iy = String(iy);
-    el.dataset.iw = String(iwBox);
-    el.dataset.ih = String(ihBox);
-  });
-
-  mapCalibrated = true;
-}
-
-async function layoutMapHotspots() {
-  if (!mapCalibrated) return;
-  if (!(mapHotspots instanceof HTMLElement)) return;
-  const { w: iw, h: ih } = await ensureMapImageSize();
-  const { vw, vh } = getLayoutViewportSize();
-  const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-
-  mapHotspots.querySelectorAll("[data-map-mode]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const ix = Number(el.dataset.ix);
-    const iy = Number(el.dataset.iy);
-    const iwBox = Number(el.dataset.iw);
-    const ihBox = Number(el.dataset.ih);
-    if (!Number.isFinite(ix) || !Number.isFinite(iy)) return;
-    const left = ox + ix * s;
-    const top = oy + iy * s;
-    const w = (iwBox || 0) * s;
-    const h = (ihBox || 0) * s;
-    el.style.left = `${left}px`;
-    el.style.top = `${top}px`;
-    el.style.width = `${w}px`;
-    el.style.height = `${h}px`;
-  });
-  layoutMapClaimBar();
-}
 
 async function ensureStartImageSize() {
   if (startImgNatural.w > 0 && startImgNatural.h > 0) return startImgNatural;
@@ -240,43 +290,27 @@ async function ensureStartImageSize() {
   });
 }
 
-function applyStartHotspotImageBoxes() {
-  if (!(startMenuHotspots instanceof HTMLElement)) return;
-  startMenuHotspots.querySelectorAll("[data-start-action]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const action = el.getAttribute("data-start-action");
-    const box =
-      action === "start" || action === "demo" || action === "wallet"
-        ? START_HOTSPOT_BOXES[action]
-        : null;
-    if (!box) return;
-    el.dataset.ix = String(box.ix);
-    el.dataset.iy = String(box.iy);
-    el.dataset.iw = String(box.iw);
-    el.dataset.ih = String(box.ih);
-  });
-  startCalibrated = true;
-}
-
-async function layoutStartHotspots() {
-  if (!startCalibrated) return;
-  if (!(startMenuHotspots instanceof HTMLElement)) return;
-  const { w: iw, h: ih } = await ensureStartImageSize();
+function layoutMapClaimBarFromCover() {
+  if (!(mapClaimBar instanceof HTMLElement)) return;
+  const claim = MAP_HOTSPOT_BOXES.claim;
+  if (!claim) return;
+  const iw = mapImgNatural.w || 1672;
+  const ih = mapImgNatural.h || 941;
   const { vw, vh } = getLayoutViewportSize();
   const { s, ox, oy } = coverTransform(iw, ih, vw, vh);
-
-  startMenuHotspots.querySelectorAll("[data-start-action]").forEach((el) => {
-    if (!(el instanceof HTMLElement)) return;
-    const ix = Number(el.dataset.ix);
-    const iy = Number(el.dataset.iy);
-    const iwBox = Number(el.dataset.iw);
-    const ihBox = Number(el.dataset.ih);
-    if (!Number.isFinite(ix) || !Number.isFinite(iy)) return;
-    el.style.left = `${ox + ix * s}px`;
-    el.style.top = `${oy + iy * s}px`;
-    el.style.width = `${(iwBox || 0) * s}px`;
-    el.style.height = `${(ihBox || 0) * s}px`;
-  });
+  const left = ox + claim.ix * s;
+  const top = oy + claim.iy * s;
+  const w = claim.iw * s;
+  const h = claim.ih * s;
+  const bw = mapClaimBar.offsetWidth || 88;
+  const bh = mapClaimBar.offsetHeight || 40;
+  const gap = 232;
+  let barLeft = left - bw - gap;
+  let barTop = top + (h - bh) * 0.5;
+  barLeft = Math.max(8, barLeft);
+  barTop = Math.max(8, Math.min(barTop, vh - bh - 8));
+  mapClaimBar.style.left = `${barLeft}px`;
+  mapClaimBar.style.top = `${barTop}px`;
 }
 
 function syncDemoSessionBadge() {
@@ -295,6 +329,7 @@ function enterMapFromStart(opts = {}) {
   startMenuHotspots?.setAttribute?.("aria-hidden", "true");
   activateMenuTab("play");
   syncDemoSessionBadge();
+  scheduleHotspotRelayout();
 }
 
 let walletToastTimer = 0;
@@ -362,8 +397,6 @@ function hideMapClaimBar() {
 
 function layoutMapClaimBar() {
   if (!(mapClaimBar instanceof HTMLElement)) return;
-  const claim = mapHotspots?.querySelector?.(".map-hotspot--claim");
-  if (!(claim instanceof HTMLElement)) return;
   if (
     !document.body?.classList?.contains?.("otter-ui-menu") ||
     !document.body?.classList?.contains?.("otter-ui-playtab") ||
@@ -375,20 +408,7 @@ function layoutMapClaimBar() {
 
   mapClaimBar.style.removeProperty("display");
   mapClaimBar.style.visibility = "hidden";
-
-  const cr = claim.getBoundingClientRect();
-  const bw = mapClaimBar.offsetWidth || 88;
-  const bh = mapClaimBar.offsetHeight || 40;
-  const gap = 232;
-  let left = cr.left - bw - gap;
-  let top = cr.top + (cr.height - bh) * 0.5;
-  left = Math.max(8, left);
-  top = Math.max(
-    8,
-    Math.min(top, (window.innerHeight || bh) - bh - 8),
-  );
-  mapClaimBar.style.left = `${left}px`;
-  mapClaimBar.style.top = `${top}px`;
+  layoutMapClaimBarFromCover();
   mapClaimBar.style.removeProperty("visibility");
   mapClaimBar.setAttribute("aria-hidden", "false");
 }
@@ -472,8 +492,7 @@ function activateMenuTab(tab) {
       tab === "character" ? "false" : "true",
     );
   if (tab === "play") {
-    // Lock hotspots to map image so resizing doesn't shift them.
-    calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
+    scheduleHotspotRelayout();
     syncDemoSessionBadge();
   } else {
     hideMapClaimBar();
@@ -1093,41 +1112,61 @@ populateAdminTrackList();
 safeMountLoadoutPicker();
 window.addEventListener("otterkart-loadout-change", () => safeMountLoadoutPicker());
 
-applyStartHotspotImageBoxes();
-// Lay out immediately (embedded iframes may report size before the menu image loads).
 startImgNatural = { w: 1024, h: 572 };
-void layoutStartHotspots();
-ensureStartImageSize().then(() => layoutStartHotspots());
+mapImgNatural = { w: 1672, h: 941 };
+installHotspotResizeWatchers();
+void ensureStartImageSize().then(() => scheduleHotspotRelayout());
+void ensureMapImageSize().then(() => scheduleHotspotRelayout());
+scheduleHotspotRelayout();
+window.setTimeout(scheduleHotspotRelayout, 50);
+window.setTimeout(scheduleHotspotRelayout, 250);
 
-const isEmbedded = window.parent !== window;
-if (isEmbedded) {
-  const relayoutMenuHotspots = () => {
-    if (document.body?.classList?.contains?.("otter-ui-start")) {
-      void layoutStartHotspots();
-    }
-    if (document.body?.classList?.contains?.("otter-ui-playtab")) {
-      void layoutMapHotspots();
-    }
-  };
-  window.addEventListener("message", (event) => {
-    if (event?.data?.type === "REQUEST_GAME_SIZE") relayoutMenuHotspots();
-  });
-  if (typeof ResizeObserver !== "undefined") {
-    const ro = new ResizeObserver(() => relayoutMenuHotspots());
-    ro.observe(document.documentElement);
-  }
-  window.setTimeout(relayoutMenuHotspots, 100);
-  window.setTimeout(relayoutMenuHotspots, 400);
-}
+/** Cover hit-test: works even when iframe size changes (clicks map to image coords). */
+startMenuHotspots?.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (!document.body?.classList?.contains?.("otter-ui-start")) return;
+    if (e.button !== 0) return;
+    const iw = startImgNatural.w || 1024;
+    const ih = startImgNatural.h || 572;
+    const action = hitTestCoverHotspots(e.clientX, e.clientY, START_HOTSPOT_BOXES, iw, ih);
+    if (!action) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (action === "start") enterMapFromStart({ demo: false });
+    else if (action === "demo") enterMapFromStart({ demo: true });
+    else if (action === "wallet") void handleWalletConnectHotspot();
+  },
+  { capture: true },
+);
 
-startMenuHotspots?.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-start-action]");
-  if (!(btn instanceof HTMLButtonElement)) return;
-  const action = btn.getAttribute("data-start-action");
-  if (action === "start") enterMapFromStart({ demo: false });
-  else if (action === "demo") enterMapFromStart({ demo: true });
-  else if (action === "wallet") void handleWalletConnectHotspot();
-});
+mapHotspots?.addEventListener(
+  "pointerdown",
+  (e) => {
+    if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
+    if (document.body?.classList?.contains?.("otter-ui-garage")) return;
+    if (document.body?.classList?.contains?.("otter-ui-admin-open")) return;
+    if (e.button !== 0) return;
+    const iw = mapImgNatural.w || 1672;
+    const ih = mapImgNatural.h || 941;
+    const mode = hitTestCoverHotspots(e.clientX, e.clientY, MAP_HOTSPOT_BOXES, iw, ih);
+    if (!mode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (mode === "garage") {
+      activateMenuTab("character");
+      return;
+    }
+    if (mode === "claim") {
+      void handleClaimShells();
+      return;
+    }
+    if (mode === "touge") game.trackId = "neo-touge";
+    if (mode === "endless") game.trackId = "neo-touge";
+    startRaceMode(/** @type {any} */ (mode));
+  },
+  { capture: true },
+);
 
 btnClaim?.addEventListener("click", () => {
   void handleClaimShells();
@@ -1196,7 +1235,10 @@ btnSettingsMenu?.addEventListener("click", () => {
 });
 
 game.resize();
-window.addEventListener("resize", () => game.resize());
+window.addEventListener("resize", () => {
+  game.resize();
+  scheduleHotspotRelayout();
+});
 
 function startRaceMode(mode) {
   try {
@@ -1244,25 +1286,6 @@ btnMainMenu?.addEventListener("click", () => {
   }
 });
 
-// Map hotspots (overlay on OtterKart Map background)
-mapHotspots?.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-map-mode]");
-  if (!(btn instanceof HTMLButtonElement)) return;
-  const mode = btn.getAttribute("data-map-mode");
-  if (!mode) return;
-  if (mode === "garage") {
-    activateMenuTab("character");
-    return;
-  }
-  if (mode === "claim") {
-    btnClaim?.click?.();
-    return;
-  }
-  if (mode === "touge") game.trackId = "neo-touge";
-  if (mode === "endless") game.trackId = "neo-touge";
-  startRaceMode(/** @type {any} */ (mode));
-});
-
 // Garage overlay hotspot: back to Map (Play tab)
 garageHotspots?.addEventListener("click", (e) => {
   const btn = e.target.closest(".garage-hotspot--to-map");
@@ -1272,17 +1295,10 @@ garageHotspots?.addEventListener("click", (e) => {
 
 requestAnimationFrame(game.loop);
 
-// Keep map hotspots aligned to the map image on resize.
 window.addEventListener("resize", () => {
   if (panelSettings && !panelSettings.classList.contains("hidden")) {
     layoutSettingsHotspots();
   }
-  if (document.body?.classList?.contains?.("otter-ui-start")) {
-    void layoutStartHotspots();
-    return;
-  }
-  if (!document.body?.classList?.contains?.("otter-ui-playtab")) return;
-  void layoutMapHotspots();
 });
 
 /** Show backdrop whenever end-results panel is visible. */
