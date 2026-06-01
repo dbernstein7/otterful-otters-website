@@ -11,10 +11,18 @@ export function setEmbedViewport(width, height) {
   const h = Math.round(Number(height));
   if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
   embedViewport = { vw: w, vh: h };
+  applyEmbedViewportToDocument();
 }
 
 export function clearEmbedViewport() {
   embedViewport = null;
+  if (typeof document === "undefined") return;
+  for (const el of [document.documentElement, document.body]) {
+    if (!(el instanceof HTMLElement)) continue;
+    el.style.removeProperty("width");
+    el.style.removeProperty("height");
+    el.style.removeProperty("overflow");
+  }
 }
 
 export function isEmbedded() {
@@ -23,6 +31,25 @@ export function isEmbedded() {
   } catch {
     return true;
   }
+}
+
+/** Lock iframe document to the shell pixel size so cover art = hotspot math. */
+function applyEmbedViewportToDocument() {
+  if (!embedViewport || !isEmbedded()) return;
+  const { vw, vh } = embedViewport;
+  const w = `${vw}px`;
+  const h = `${vh}px`;
+  document.documentElement.style.width = w;
+  document.documentElement.style.height = h;
+  document.documentElement.style.overflow = "hidden";
+  document.body.style.width = w;
+  document.body.style.height = h;
+  document.body.style.overflow = "hidden";
+  document.body.style.margin = "0";
+}
+
+export function getEmbedViewport() {
+  return embedViewport ? { ...embedViewport } : null;
 }
 
 /** Same dimensions for canvas, cover backgrounds, and hotspot layout. */

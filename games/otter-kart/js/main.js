@@ -22,7 +22,15 @@ import {
 } from "./storage.js";
 import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
-import { getGameViewportSize, setEmbedViewport } from "./viewport.js";
+import {
+  getGameViewportSize,
+  getEmbedViewport,
+  setEmbedViewport,
+} from "./viewport.js";
+
+function embedViewportBeforeSet() {
+  return getEmbedViewport();
+}
 import {
   claimSessionShells,
   connectAndCheckRewards,
@@ -237,12 +245,26 @@ function installHotspotResizeWatchers() {
   window.addEventListener("message", (event) => {
     if (event?.data?.type === "REQUEST_GAME_SIZE") onResize();
     if (event?.data?.type === "EMBED_VIEWPORT") {
+      const prev = embedViewportBeforeSet();
       setEmbedViewport(event.data.width, event.data.height);
+      if (
+        prev &&
+        (Math.abs(prev.vw - Number(event.data.width)) > 8 ||
+          Math.abs(prev.vh - Number(event.data.height)) > 8)
+      ) {
+        mapCalibrated = false;
+      }
       onResize();
       try {
         game.resize();
       } catch {
         // ignore
+      }
+      if (
+        document.body?.classList?.contains?.("otter-ui-playtab") &&
+        !document.body?.classList?.contains?.("otter-ui-garage")
+      ) {
+        void calibrateMapHotspotsOnce().then(() => layoutMapHotspots());
       }
     }
   });
