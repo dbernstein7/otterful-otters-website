@@ -6,7 +6,8 @@ import {
   TARGET_FPS,
   raceZoomForViewport,
 } from "./config.js";
-import { getGameViewportSize } from "./viewport.js";
+import { applyHudViewportVars, getGameViewportSize } from "./viewport.js";
+import { readTouchInput } from "./touch-controls.js";
 import {
   surfaceAt,
   resolveWallCollision,
@@ -2203,6 +2204,13 @@ export class Game {
     this.finishLine = finishLineSegment();
     this.decor = getDecor();
     this.keys = new Set();
+    this.touch = {
+      gas: false,
+      brake: false,
+      steerL: false,
+      steerR: false,
+      drift: false,
+    };
     this.cam = { x: 0, y: 0 };
     this.ghostData = null;
     this.ghostTime = 0;
@@ -2627,6 +2635,7 @@ export class Game {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.viewW = w;
     this.viewH = h;
+    applyHudViewportVars();
     invalidatePatternCaches();
   }
 
@@ -3337,11 +3346,16 @@ export class Game {
 
     const insKeys = inputFromKeys(this.keys);
     const insPad = readGamepadInput(this);
+    const insTouch = readTouchInput(this);
     const ins = {
-      gas: Boolean(insKeys.gas || insPad.gas),
-      brake: Boolean(insKeys.brake || insPad.brake),
-      steer: clamp((insKeys.steer ?? 0) + (insPad.steer ?? 0), -1, 1),
-      drift: Boolean(insKeys.drift || insPad.drift),
+      gas: Boolean(insKeys.gas || insPad.gas || insTouch.gas),
+      brake: Boolean(insKeys.brake || insPad.brake || insTouch.brake),
+      steer: clamp(
+        (insKeys.steer ?? 0) + (insPad.steer ?? 0) + (insTouch.steer ?? 0),
+        -1,
+        1,
+      ),
+      drift: Boolean(insKeys.drift || insPad.drift || insTouch.drift),
     };
     const Kc = this.kart;
     const sk = 1 - Math.exp(-PHYS.steerResponse * dt);

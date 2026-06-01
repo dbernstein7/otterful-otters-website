@@ -23,10 +23,12 @@ import {
 import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
+  applyHudViewportVars,
   getGameViewportSize,
   setEmbedViewport,
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
+import { initTouchControls } from "./touch-controls.js";
 
 import {
   claimSessionShells,
@@ -248,6 +250,7 @@ function scheduleHotspotRelayout() {
 
 function installHotspotResizeWatchers() {
   const onResize = () => {
+    applyHudViewportVars();
     scheduleHotspotRelayout();
     try {
       game.resize();
@@ -1437,5 +1440,7 @@ if (panelEnd && modalBackdrop) {
 }
 
 initOtterKartMusic();
+initTouchControls(game);
+applyHudViewportVars();
 
 window.__otterKartBooted = true;

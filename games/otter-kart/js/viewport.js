@@ -1,3 +1,7 @@
+/** Reference layout for race HUD art (matches map aspect). */
+const HUD_REF_W = 1672;
+const HUD_REF_H = 941;
+
 /** @type {{ vw: number, vh: number } | null} */
 let embedViewport = null;
 
@@ -12,6 +16,7 @@ export function setEmbedViewport(width, height) {
   if (!Number.isFinite(w) || !Number.isFinite(h) || w < 1 || h < 1) return;
   embedViewport = { vw: w, vh: h };
   applyEmbedViewportToDocument();
+  applyHudViewportVars();
 }
 
 export function clearEmbedViewport() {
@@ -64,4 +69,15 @@ export function getGameViewportSize() {
     vv?.height ?? document.documentElement.clientHeight ?? window.innerHeight ?? 1,
   );
   return { vw: Math.max(1, vw), vh: Math.max(1, vh) };
+}
+
+/** Scale race HUD to iframe/game size (vw/vh alone use the phone browser chrome on mobile). */
+export function applyHudViewportVars() {
+  if (typeof document === "undefined") return;
+  const { vw, vh } = getGameViewportSize();
+  const scale = Math.min(vw / HUD_REF_W, vh / HUD_REF_H);
+  const root = document.documentElement;
+  root.style.setProperty("--otter-vw", `${vw}px`);
+  root.style.setProperty("--otter-vh", `${vh}px`);
+  root.style.setProperty("--hud-scale", String(scale));
 }
