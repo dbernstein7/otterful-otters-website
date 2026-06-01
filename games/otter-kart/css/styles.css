@@ -738,6 +738,10 @@ body:not(.otter-ui-menu) .demo-session-badge:not(.hidden) {
   pointer-events: auto;
 }
 
+.touch-orient-hint.hidden {
+  display: none !important;
+}
+
 body.touch-orient-portrait .touch-orient-hint:not(.hidden) {
   display: flex;
 }
