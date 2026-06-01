@@ -2727,9 +2727,18 @@ html.otter-embed body {
   position: relative;
 }
 
-html.otter-embed #game {
+html.otter-embed #game,
+html.otter-embed .menu-cover {
   width: 100% !important;
   height: 100% !important;
+}
+
+html.otter-embed .menu-cover {
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
 }
 
 html.otter-embed body.otter-ui-menu.otter-ui-garage #panel-start {
