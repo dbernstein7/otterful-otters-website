@@ -2515,7 +2515,6 @@ export class Game {
     // Ensure mode-specific HUD widgets don't persist on the homepage.
     this.hudDriftCurEl?.classList?.add?.("hidden");
     this.hudLivesEl?.classList?.add?.("hidden");
-    document.getElementById?.("btn-settings")?.classList?.add?.("hidden");
     if (this.mode === "grandprix") {
       this.gpIndex = 0;
       this.gpTotalTime = 0;
@@ -2539,7 +2538,6 @@ export class Game {
     this.resetRace();
     this.panelEnd?.classList?.add?.("hidden");
     this.panelStart?.classList?.add?.("hidden");
-    document.getElementById?.("btn-settings")?.classList?.remove?.("hidden");
   }
 
   /** UI hooks set from main.js */

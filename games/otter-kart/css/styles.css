@@ -230,6 +230,19 @@ body.otter-ui-admin-open .map-hotspots {
   pointer-events: none;
 }
 
+body.otter-ui-settings-open .map-hotspots {
+  pointer-events: none;
+}
+
+body.otter-ui-settings-open .modal-backdrop:not(.hidden) {
+  z-index: 9998;
+  pointer-events: auto;
+}
+
+body.otter-ui-settings-open .panel-settings:not(.hidden) {
+  z-index: 9999;
+}
+
 /* Dim / dismiss layer: above map hotspots (60), below admin panel (73). */
 body.otter-ui-admin-open .modal-backdrop:not(.hidden) {
   z-index: 70;
@@ -411,8 +424,7 @@ body.otter-ui-menu.otter-ui-garage .garage-hotspots {
 }
 
 .garage-hotspot:focus-visible {
-  outline: 3px solid rgba(125, 249, 255, 0.95);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Back-to-map hotspot — same box as minimap (JS on resize) */
@@ -1079,14 +1091,9 @@ body.otter-ui-menu #hud-lives {
   display: none !important;
 }
 
-body.otter-ui-menu #btn-settings,
-body.otter-ui-menu .panel-settings {
-  display: none !important;
-}
-
 .hud-settings {
   position: fixed;
-  z-index: 55;
+  z-index: 9997;
   left: calc(14px + env(safe-area-inset-left, 0px));
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   width: 42px;

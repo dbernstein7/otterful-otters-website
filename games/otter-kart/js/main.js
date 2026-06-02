@@ -1773,6 +1773,7 @@ function layoutSettingsHotspots() {
 
 function setSettingsOpen(open) {
   if (!panelSettings) return;
+  document.body?.classList?.toggle?.("otter-ui-settings-open", !!open);
   if (open) {
     if (panelAdmin) panelAdmin.classList.add("hidden");
     btnAdminOpen?.setAttribute("aria-expanded", "false");
