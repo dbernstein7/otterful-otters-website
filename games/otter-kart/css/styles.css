@@ -1155,7 +1155,8 @@ body.otter-ui-menu .panel-settings {
 .hud-music {
   position: fixed;
   z-index: 9998;
-  left: calc(14px + env(safe-area-inset-left, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  left: auto;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   width: 42px;
   height: 42px;
@@ -1182,7 +1183,8 @@ body.otter-ui-menu .panel-settings {
 .music-panel {
   position: fixed;
   z-index: 9999;
-  left: calc(14px + env(safe-area-inset-left, 0px));
+  right: calc(14px + env(safe-area-inset-right, 0px));
+  left: auto;
   bottom: calc(64px + env(safe-area-inset-bottom, 0px));
   width: min(280px, calc(100vw - 28px));
   max-height: min(320px, calc(var(--otter-vh, 100dvh) - 72px));
