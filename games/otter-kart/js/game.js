@@ -2657,8 +2657,9 @@ export class Game {
       canvas.style.height = "100%";
     }
 
-    let w = Math.max(1, Math.round(canvas.clientWidth || 0));
-    let h = Math.max(1, Math.round(canvas.clientHeight || 0));
+    const layout = getCanvasClientViewSize(canvas);
+    let w = layout.vw;
+    let h = layout.vh;
     if (w < 8 || h < 8) {
       const vp = menu ? getGameViewportSize() : getRaceViewportSize();
       w = vp.vw;
@@ -4263,8 +4264,9 @@ export class Game {
     if (this.phase === "menu" || document.body?.classList?.contains("otter-ui-menu"))
       return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const cw = Math.max(1, Math.round(this.canvas.clientWidth || 0));
-    const ch = Math.max(1, Math.round(this.canvas.clientHeight || 0));
+    const layout = getCanvasClientViewSize(this.canvas);
+    const cw = layout.vw;
+    const ch = layout.vh;
     if (cw < 8 || ch < 8) return;
     const bw = Math.round(this.canvas.width / dpr);
     const bh = Math.round(this.canvas.height / dpr);

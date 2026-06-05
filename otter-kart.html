@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-03-mobile-cam-v3"
+                    src="/games/otter-kart/index.html?v=2026-06-03-mobile-cam-v4"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -139,7 +139,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-mobile-cam-v3';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-mobile-cam-v4';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -194,16 +194,8 @@
             if (cw >= 560 && ch >= 320) {
               w = Math.round(cw);
               h = Math.round(ch);
-            } else if (iframeReportedSize) {
-              w = iframeReportedSize.w;
-              h = iframeReportedSize.h;
             }
-          } catch {
-            if (iframeReportedSize) {
-              w = iframeReportedSize.w;
-              h = iframeReportedSize.h;
-            }
-          }
+          } catch {}
           if (w < 8 || h < 8) return;
           if (
             lastPostedViewport &&

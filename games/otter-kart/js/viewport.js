@@ -67,7 +67,18 @@ export function isDesktopEmbedLayout() {
 function applyEmbedViewportToDocument() {
   if (!embedViewport || !isEmbedded()) return;
   if (isDesktopEmbedLayout()) return;
-  const { vw, vh } = embedViewport;
+  const cw = Math.max(
+    1,
+    Math.round(document.documentElement.clientWidth || window.innerWidth || 0),
+  );
+  const ch = Math.max(
+    1,
+    Math.round(document.documentElement.clientHeight || window.innerHeight || 0),
+  );
+  const mobileShell = Math.min(cw, ch) < 560;
+  /** On phones, always fill the real iframe — parent vv reports can undersize the shell. */
+  const vw = mobileShell ? cw : embedViewport.vw;
+  const vh = mobileShell ? ch : embedViewport.vh;
   const w = `${vw}px`;
   const h = `${vh}px`;
   document.documentElement.style.width = w;
@@ -123,10 +134,7 @@ export function getRaceViewportSize() {
 
   if (mobileRace) {
     if (isEmbedded()) {
-      const ev = embedViewport;
-      const vw = Math.max(1, Math.min(cw, ev?.vw ?? cw));
-      const vh = Math.max(1, Math.min(ch, ev?.vh ?? ch));
-      return { vw, vh, visualViewport: null };
+      return { vw: cw, vh: ch, visualViewport: null };
     }
     const vv = window.visualViewport;
     if (vv) {
@@ -156,6 +164,9 @@ export function getCanvasClientViewSize(canvas) {
   const w = Math.round(cr.width);
   const h = Math.round(cr.height);
   if (w >= 8 && h >= 8) return { vw: w, vh: h };
+  const cw = Math.round(canvas.clientWidth || 0);
+  const ch = Math.round(canvas.clientHeight || 0);
+  if (cw >= 8 && ch >= 8) return { vw: cw, vh: ch };
   const r = getRaceViewportSize();
   return { vw: r.vw, vh: r.vh };
 }
