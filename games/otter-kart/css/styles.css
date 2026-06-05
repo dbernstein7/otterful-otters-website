@@ -1358,25 +1358,7 @@ body.otter-ui-menu #hud-lives {
 }
 
 .settings-panel__hotspot:focus-visible {
-  outline: 3px solid rgba(125, 249, 255, 0.9);
-  outline-offset: 2px;
-}
-
-/* Visible hit-area outlines while settings panel is open (debug / alignment). */
-body.otter-ui-settings-open .settings-panel__hotspot {
-  outline: 2px dashed rgba(125, 249, 255, 0.92);
-  outline-offset: 2px;
-  background: rgba(125, 249, 255, 0.16) !important;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-}
-
-body.otter-ui-settings-open .settings-panel__hotspot:hover,
-body.otter-ui-settings-open .settings-panel__hotspot:active,
-body.otter-ui-settings-open .settings-panel__hotspot:focus {
-  background: rgba(125, 249, 255, 0.3) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 0 12px rgba(125, 249, 255, 0.35);
+  outline: none;
 }
 
 /* ——— Race position (top-right) ——— */
