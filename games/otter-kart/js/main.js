@@ -917,6 +917,8 @@ function layoutMapClaimBar() {
 /** Map homescreen after leaving a race — restore Play tab + shell counter. */
 function returnToMapHome() {
   game.returnToMainMenu();
+  document.body?.classList?.remove?.("otter-ui-start");
+  startMenuHotspots?.setAttribute?.("aria-hidden", "true");
   activateMenuTab("play");
   modalBackdrop?.classList?.add?.("hidden");
 }
@@ -1807,6 +1809,11 @@ btnSettings?.addEventListener("click", () => setSettingsOpen(true));
 btnSettingsClose?.addEventListener("click", () => setSettingsOpen(false));
 btnSettingsMenu?.addEventListener("click", () => {
   setSettingsOpen(false);
+  /** Start screen: only dismiss settings — returnToMapHome would hide all hotspots. */
+  if (document.body?.classList?.contains?.("otter-ui-start")) {
+    scheduleHotspotRelayout();
+    return;
+  }
   returnToMapHome();
 });
 
