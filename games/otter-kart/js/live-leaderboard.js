@@ -5,7 +5,7 @@
  */
 
 import { getConnectedWallet, isEthAddress } from "../../otter-kart-rewards.mjs";
-import { getPlayerId, todayISO } from "./storage.js";
+import { getPlayerId, getPlayerUsername, todayISO } from "./storage.js";
 
 const READ_URL = "/api/rewards/leaderboard";
 const POST_URL = "/api/otter-kart/leaderboard";
@@ -42,6 +42,7 @@ function optionalWallet() {
 }
 
 async function postLeaderboard(mode, stats) {
+  const username = getPlayerUsername();
   const res = await fetch(POST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -49,6 +50,7 @@ async function postLeaderboard(mode, stats) {
       playerId: getPlayerId(),
       mode,
       stats,
+      username: username || undefined,
       wallet: optionalWallet(),
     }),
   });
@@ -281,7 +283,7 @@ export async function claimSessionLeaderboard(shells) {
   }
 
   const data = await postLeaderboard("session", { shells: capped, points: capped });
-  if (data?.updated) {
+  if (data?.updated || data?.reason === "name_updated") {
     void fetchLiveLeaderboards(8).catch(() => {});
     return { ok: true, text: "Saved to global leaderboard!" };
   }
@@ -298,7 +300,7 @@ export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
   stashLastRaceStats(detail);
   const data = await postLeaderboard(detail.mode, statsFromRaceDetail(detail));
-  if (data?.updated) {
+  if (data?.updated || data?.reason === "name_updated") {
     void fetchLiveLeaderboards(8).catch(() => {});
   }
   return data;

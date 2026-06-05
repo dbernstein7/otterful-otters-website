@@ -14,6 +14,7 @@ let demoSessionActive = false;
 
 const PLAYER_ID_KEY = "otterkart:playerId";
 const LEGACY_DEMO_ID_KEY = "otterkart:demoPlayerId";
+const PLAYER_USERNAME_KEY = "otterkart:playerUsername";
 
 export function setDemoSessionActive(active) {
   demoSessionActive = !!active;
@@ -40,6 +41,21 @@ export function getPlayerId() {
 /** @deprecated use getPlayerId */
 export function getDemoPlayerId() {
   return getPlayerId();
+}
+
+export function getPlayerUsername() {
+  try {
+    return String(localStorage.getItem(PLAYER_USERNAME_KEY) || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+export function setPlayerUsername(name) {
+  try {
+    if (name) localStorage.setItem(PLAYER_USERNAME_KEY, name);
+    else localStorage.removeItem(PLAYER_USERNAME_KEY);
+  } catch {}
 }
 
 function clampToDemoList(list, value, fallback) {

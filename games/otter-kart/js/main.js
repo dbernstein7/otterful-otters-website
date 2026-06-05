@@ -14,12 +14,15 @@ import {
 import { Game } from "./game.js?v=2026-05-28-mapring-v16";
 import { TRACK_IDS } from "./tracks.js?v=2026-05-19-neo-v4";
 import {
+  getPlayerUsername,
   isDemoSessionActive,
   isRainbowKartUnlocked,
   loadEffectiveLoadout,
   saveLoadout,
   setDemoSessionActive,
+  setPlayerUsername,
 } from "./storage.js";
+import { validatePlayerUsername } from "./username.js";
 import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
@@ -97,6 +100,10 @@ const mapHotspots = document.getElementById("map-hotspots");
 const startMenuHotspots = document.getElementById("start-menu-hotspots");
 const startWalletToast = document.getElementById("start-wallet-toast");
 const demoSessionBadge = document.getElementById("demo-session-badge");
+const demoUsernameOverlay = document.getElementById("demo-username-overlay");
+const demoUsernameInput = document.getElementById("demo-username-input");
+const demoUsernameError = document.getElementById("demo-username-error");
+const demoUsernameForm = document.getElementById("demo-username-form");
 const garageHotspots = document.getElementById("garage-hotspots");
 const btnAdminOpen = document.getElementById("btn-admin-open");
 const panelAdmin = document.getElementById("panel-admin");
@@ -794,6 +801,58 @@ function syncDemoSessionBadge() {
     !document.body?.classList?.contains?.("otter-ui-garage");
   demoSessionBadge?.classList.toggle("hidden", !show);
   demoSessionBadge?.setAttribute("aria-hidden", show ? "false" : "true");
+  if (show && demoSessionBadge) {
+    const name = getPlayerUsername();
+    demoSessionBadge.textContent = name ? `${name} · Demo` : "Demo";
+  }
+}
+
+function setDemoUsernameOverlayOpen(open) {
+  if (!(demoUsernameOverlay instanceof HTMLElement)) {
+    if (open) enterMapFromStart({ demo: true });
+    return;
+  }
+  demoUsernameOverlay.classList.toggle("hidden", !open);
+  demoUsernameOverlay.setAttribute("aria-hidden", open ? "false" : "true");
+  document.body?.classList?.toggle?.("otter-demo-username-open", open);
+  if (open) {
+    if (demoUsernameInput instanceof HTMLInputElement) {
+      demoUsernameInput.value = getPlayerUsername();
+      demoUsernameInput.focus();
+      demoUsernameInput.select();
+    }
+    if (demoUsernameError instanceof HTMLElement) {
+      demoUsernameError.textContent = "";
+      demoUsernameError.classList.add("hidden");
+    }
+  }
+}
+
+function initDemoUsernameOverlay() {
+  if (!(demoUsernameForm instanceof HTMLFormElement)) return;
+
+  demoUsernameForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const raw = demoUsernameInput instanceof HTMLInputElement ? demoUsernameInput.value : "";
+    const result = validatePlayerUsername(raw);
+    if (!result.ok) {
+      if (demoUsernameError instanceof HTMLElement) {
+        demoUsernameError.textContent = result.error;
+        demoUsernameError.classList.remove("hidden");
+      }
+      return;
+    }
+    setPlayerUsername(result.username);
+    setDemoUsernameOverlayOpen(false);
+    enterMapFromStart({ demo: true });
+  });
+
+  demoUsernameOverlay?.querySelectorAll("[data-demo-username-close]").forEach((el) => {
+    el.addEventListener("click", (event) => {
+      event.preventDefault();
+      setDemoUsernameOverlayOpen(false);
+    });
+  });
 }
 
 /** @param {{ demo?: boolean }} opts */
@@ -1646,7 +1705,7 @@ function handleStartHotspotAction(action) {
     if (!START_HOTSPOT_START_ENABLED) return;
     enterMapFromStart({ demo: false });
   }
-  else if (action === "demo") enterMapFromStart({ demo: true });
+  else if (action === "demo") setDemoUsernameOverlayOpen(true);
   else if (action === "wallet") void handleWalletConnectHotspot();
 }
 
@@ -1914,5 +1973,6 @@ initTouchControls(game);
 applyHudViewportVars();
 installLiveLeaderboardRaceHook();
 initLiveLeaderboardOverlay({ limit: 8, pollMs: 30000 });
+initDemoUsernameOverlay();
 
 window.__otterKartBooted = true;
