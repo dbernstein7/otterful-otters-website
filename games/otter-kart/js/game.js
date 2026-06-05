@@ -4283,17 +4283,8 @@ export class Game {
     const lerp = cameraLerpForViewport(this.viewW, this.viewH);
     const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
     const K = this.kart;
-    const mobile = isMobileRaceViewport(this.viewW, this.viewH);
     const kx = K.x ?? 0;
     const ky = K.y ?? 0;
-
-    /** Mobile: always center on the kart (look-ahead + bad vv sizes caused top-left drift). */
-    if (mobile) {
-      this.cam.x += (kx - this.cam.x) * lfac;
-      this.cam.y += (ky - this.cam.y) * lfac;
-      return;
-    }
-
     const spd = Math.hypot(K.vx ?? 0, K.vy ?? 0);
     const look = raceCameraLookAheadWorld(this.viewW, this.viewH);
     const hx = Math.cos(K.heading ?? 0);
@@ -4647,13 +4638,14 @@ export class Game {
 
     ctx.save();
     try {
+      /** Include dpr — setTransform replaces the resize() scale; without it, iOS draws into the left strip of the buffer. */
       ctx.setTransform(
-        zx,
+        zx * dpr,
         0,
         0,
-        zx,
-        w * 0.5 - zx * this.cam.x - camOffX,
-        h * 0.5 - zx * this.cam.y,
+        zx * dpr,
+        dpr * (w * 0.5 - zx * this.cam.x - camOffX),
+        dpr * (h * 0.5 - zx * this.cam.y),
       );
 
       // Pass edge-band choice into track renderer (cheaper than threading params everywhere).
