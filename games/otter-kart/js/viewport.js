@@ -105,25 +105,59 @@ function isRaceUiActive() {
 }
 
 /**
- * Race canvas size — on phones always use visualViewport so camera centering matches
- * what the player actually sees (layout/embed sizes often differ on mobile Safari).
+ * Race canvas size — must match the painted canvas, not the outer browser viewport.
+ * iOS Safari in an iframe often reports visualViewport larger than the iframe itself,
+ * which pins the world to the top-left and shows too much track.
  * @returns {{ vw: number, vh: number, visualViewport: VisualViewport | null }}
  */
 export function getRaceViewportSize() {
-  const vv = window.visualViewport;
-  if (vv) {
-    const vw = Math.round(vv.width);
-    const vh = Math.round(vv.height);
-    if (Math.min(vw, vh) < 560) {
+  const cw = Math.max(
+    1,
+    Math.round(document.documentElement.clientWidth || 0),
+  );
+  const ch = Math.max(
+    1,
+    Math.round(document.documentElement.clientHeight || 0),
+  );
+  const mobileRace = Math.min(cw, ch) < 560;
+
+  if (mobileRace) {
+    if (isEmbedded()) {
+      const ev = embedViewport;
+      const vw = Math.max(1, Math.min(cw, ev?.vw ?? cw));
+      const vh = Math.max(1, Math.min(ch, ev?.vh ?? ch));
+      return { vw, vh, visualViewport: null };
+    }
+    const vv = window.visualViewport;
+    if (vv) {
       return {
-        vw: Math.max(1, vw),
-        vh: Math.max(1, vh),
+        vw: Math.max(1, Math.round(vv.width)),
+        vh: Math.max(1, Math.round(vv.height)),
         visualViewport: vv,
       };
     }
+    return { vw: cw, vh: ch, visualViewport: null };
   }
+
   const base = getGameViewportSize();
   return { vw: base.vw, vh: base.vh, visualViewport: null };
+}
+
+/**
+ * @param {HTMLCanvasElement | null | undefined} canvas
+ * @returns {{ vw: number, vh: number }}
+ */
+export function getCanvasClientViewSize(canvas) {
+  if (!(canvas instanceof HTMLCanvasElement)) {
+    const r = getRaceViewportSize();
+    return { vw: r.vw, vh: r.vh };
+  }
+  const cr = canvas.getBoundingClientRect();
+  const w = Math.round(cr.width);
+  const h = Math.round(cr.height);
+  if (w >= 8 && h >= 8) return { vw: w, vh: h };
+  const r = getRaceViewportSize();
+  return { vw: r.vw, vh: r.vh };
 }
 
 /** Scale race HUD to iframe/game size (vw/vh alone use the phone browser chrome on mobile). */

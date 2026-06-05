@@ -84,9 +84,9 @@ export function isMobileRaceViewport(viewW, viewH) {
 export function raceZoomForViewport(viewW, viewH) {
   const minor = Math.min(viewW || 320, viewH || 320);
   if (isMobileRaceViewport(viewW, viewH)) {
-    const kartFill = 0.44;
+    const kartFill = 0.54;
     const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
-    return clampCam(raw * 0.72, 1.45, 7);
+    return clampCam(raw * 0.92, 1.9, 8.5);
   }
   /** Desktop / large viewports — original fullscreen tuning */
   const kartFill = 0.38;
@@ -100,8 +100,8 @@ export function raceZoomForViewport(viewW, viewH) {
  */
 export function mobileRaceCameraScreenOffsetX(viewW, viewH) {
   if (!isMobileRaceViewport(viewW, viewH)) return 0;
-  /** Clear the right-side minimap / touch column without fighting look-ahead. */
-  return Math.round((viewW || 320) * 0.03);
+  /** Nudge kart left of the minimap / touch column (screen space). */
+  return Math.round((viewW || 320) * 0.045);
 }
 
 /**

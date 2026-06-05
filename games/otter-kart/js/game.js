@@ -11,8 +11,10 @@ import {
 } from "./config.js";
 import {
   applyHudViewportVars,
+  getCanvasClientViewSize,
   getGameViewportSize,
   getRaceViewportSize,
+  isEmbedded,
 } from "./viewport.js";
 import { resolveRaceMinimapLayout, readTouchInput } from "./touch-controls.js";
 import {
@@ -2641,7 +2643,7 @@ export class Game {
     const h = vp.vh;
     const vv = vp.visualViewport;
 
-    if (vv) {
+    if (vv && !isEmbedded()) {
       canvas.style.position = "fixed";
       canvas.style.inset = "auto";
       canvas.style.left = `${Math.round(vv.offsetLeft)}px`;
@@ -2649,12 +2651,14 @@ export class Game {
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
     } else {
-      canvas.style.position = "";
-      canvas.style.inset = "";
-      canvas.style.left = "";
-      canvas.style.top = "";
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+      canvas.style.position = "fixed";
+      canvas.style.inset = "0";
+      canvas.style.left = "0";
+      canvas.style.top = "0";
+      canvas.style.right = "0";
+      canvas.style.bottom = "0";
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
     }
 
     canvas.width = Math.floor(w * dpr);
@@ -4247,27 +4251,40 @@ export class Game {
     el.appendChild(ol);
   }
 
+  syncRaceViewFromCanvas() {
+    if (this.phase === "menu" || document.body?.classList?.contains("otter-ui-menu"))
+      return;
+    const { vw, vh } = getCanvasClientViewSize(this.canvas);
+    if (!isMobileRaceViewport(vw, vh)) return;
+    if (Math.abs(vw - this.viewW) > 3 || Math.abs(vh - this.viewH) > 3) {
+      this.resize();
+      return;
+    }
+    this.viewW = vw;
+    this.viewH = vh;
+  }
+
   stepCameraFollow(dt) {
+    this.syncRaceViewFromCanvas();
     const lerp = cameraLerpForViewport(this.viewW, this.viewH);
     const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
     const K = this.kart;
     const mobile = isMobileRaceViewport(this.viewW, this.viewH);
-    const spd = Math.hypot(K.vx ?? 0, K.vy ?? 0);
     const kx = K.x ?? 0;
     const ky = K.y ?? 0;
 
-    /** Creeping / stopped on mobile: lock to kart center (no look-ahead drift). */
-    if (mobile && spd < 36) {
+    /** Mobile: always center on the kart (look-ahead + bad vv sizes caused top-left drift). */
+    if (mobile) {
       this.cam.x += (kx - this.cam.x) * lfac;
       this.cam.y += (ky - this.cam.y) * lfac;
       return;
     }
 
+    const spd = Math.hypot(K.vx ?? 0, K.vy ?? 0);
     const look = raceCameraLookAheadWorld(this.viewW, this.viewH);
     const hx = Math.cos(K.heading ?? 0);
     const hy = Math.sin(K.heading ?? 0);
-    const minFrac = mobile ? 0 : 0.12;
-    const ahead = look * clamp(spd / 220, minFrac, 1);
+    const ahead = look * clamp(spd / 220, 0.12, 1);
     const tx = kx + hx * ahead;
     const ty = ky + hy * ahead;
     this.cam.x += (tx - this.cam.x) * lfac;
@@ -4590,6 +4607,7 @@ export class Game {
   }
 
   draw(showFinishedBackdrop) {
+    this.syncRaceViewFromCanvas();
     const ctx = this.ctx;
     const w = this.viewW;
     const h = this.viewH;
@@ -4754,7 +4772,10 @@ export class Game {
   }
 
   resizeCheck() {
-    const { vw, vh } = getGameViewportSize();
+    const menu = document.body?.classList?.contains("otter-ui-menu");
+    const { vw, vh } = menu
+      ? getGameViewportSize()
+      : getCanvasClientViewSize(this.canvas);
     if (Math.abs(this.viewW - vw) > 4 || Math.abs(this.viewH - vh) > 4) this.resize();
   }
 }
