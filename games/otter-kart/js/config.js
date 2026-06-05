@@ -100,7 +100,19 @@ export function raceZoomForViewport(viewW, viewH) {
  */
 export function mobileRaceCameraScreenOffsetX(viewW, viewH) {
   if (!isMobileRaceViewport(viewW, viewH)) return 0;
-  return Math.round((viewW || 320) * 0.07);
+  return Math.round((viewW || 320) * 0.04);
+}
+
+/**
+ * World-units to shift the camera target ahead of the kart (more road visible in steer direction).
+ * Scales with viewport minor axis so phones/tablets/iframe embeds stay readable.
+ */
+export function raceCameraLookAheadWorld(viewW, viewH) {
+  const minor = Math.min(viewW || 320, viewH || 320);
+  const zoom = raceZoomForViewport(viewW, viewH);
+  const raw = minor / zoom;
+  if (isMobileRaceViewport(viewW, viewH)) return clampCam(raw * 0.11, 38, 72);
+  return clampCam(raw * 0.09, 32, 64);
 }
 
 /** Snappier follow on mobile so the kart stays centered while turning. */

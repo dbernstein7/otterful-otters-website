@@ -6,6 +6,7 @@ import {
   raceZoomForViewport,
   cameraLerpForViewport,
   mobileRaceCameraScreenOffsetX,
+  raceCameraLookAheadWorld,
   isMobileRaceViewport,
 } from "./config.js";
 import {
@@ -130,7 +131,7 @@ const NEON_SNAKE_EDGE_TILE_SCALE = 0.22;
 const NEON_SNAKE_BG_TILE_FRAC = 0.28;
 const NEON_SNAKE_FALLBACK_BG = { green: "#143d1a", purple: "#1a0a22" };
 // Bump this when swapping any Track Assets images (fireball, shield, rock, etc).
-const TRACK_ASSET_VER = "2026-05-28-mapring-v16";
+const TRACK_ASSET_VER = "2026-06-03-camera-lookahead";
 
 const ROULETTE_HUD_ITEMS = [
   { label: "BOOST", key: "boost" },
@@ -2260,6 +2261,7 @@ export class Game {
     this.acc = 0;
     this.frameDt = 1 / TARGET_FPS;
     this.loop = this.loop.bind(this);
+    getTrackItemArt();
   }
 
   lapTarget() {
@@ -4250,8 +4252,16 @@ export class Game {
   stepCameraFollow(dt) {
     const lerp = cameraLerpForViewport(this.viewW, this.viewH);
     const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
-    this.cam.x += (this.kart.x - this.cam.x) * lfac;
-    this.cam.y += (this.kart.y - this.cam.y) * lfac;
+    const K = this.kart;
+    const spd = Math.hypot(K.vx ?? 0, K.vy ?? 0);
+    const look = raceCameraLookAheadWorld(this.viewW, this.viewH);
+    const hx = Math.cos(K.heading ?? 0);
+    const hy = Math.sin(K.heading ?? 0);
+    const ahead = look * clamp(spd / 220, 0.12, 1);
+    const tx = (K.x ?? 0) + hx * ahead;
+    const ty = (K.y ?? 0) + hy * ahead;
+    this.cam.x += (tx - this.cam.x) * lfac;
+    this.cam.y += (ty - this.cam.y) * lfac;
   }
 
   updateRandomizerHud() {
@@ -5735,10 +5745,16 @@ function drawPickup(ctx, p, oy, pulse) {
     const ok = drawSpriteCentered(ctx, art.mysteryBox, 16, 16, 0.98);
     ctx.restore();
     if (!ok) {
-      ctx.fillStyle = "#e7e7e7";
+      ctx.fillStyle = "#c9a227";
       ctx.fillRect(-10, -10, 20, 20);
-      ctx.strokeStyle = "rgba(0,0,0,0.25)";
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = 1.5;
       ctx.strokeRect(-10, -10, 20, 20);
+      ctx.fillStyle = "#1a1208";
+      ctx.font = "bold 14px system-ui,sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("?", 0, 1);
     }
   } else {
     const art = getTrackItemArt();
