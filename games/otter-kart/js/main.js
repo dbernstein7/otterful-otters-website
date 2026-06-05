@@ -34,7 +34,7 @@ import {
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 import { initTouchControls } from "./touch-controls.js";
-import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, peekLastRaceStatsForClaim, fetchLiveLeaderboards, claimDemoSessionLeaderboard, claimWalletSessionLeaderboard } from "./live-leaderboard.js";
+import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, fetchLiveLeaderboards, claimSessionLeaderboard } from "./live-leaderboard.js";
 
 import {
   claimSessionShells,
@@ -856,40 +856,22 @@ async function handleClaimShells() {
   if (btnClaim) btnClaim.textContent = "Claiming…";
   if (btnClaim) btnClaim.disabled = true;
   try {
-    if (isDemoSessionActive()) {
-      const result = await claimDemoSessionLeaderboard(shells);
-      showStartWalletToast(result.text, result.ok);
-      if (result.ok) {
-        game.totalShellsSession = 0;
-        game.updateHomeShellsUI();
-      }
-      return;
-    }
-    const leaderboard = peekLastRaceStatsForClaim();
-    const lbResult = await claimWalletSessionLeaderboard(shells);
-    const dripResult = await claimSessionShells(shells, undefined, shells, leaderboard || undefined);
+    const savedShells = shells;
+    const lbResult = await claimSessionLeaderboard(savedShells);
 
     if (lbResult.ok) {
       game.totalShellsSession = 0;
       game.updateHomeShellsUI();
       void fetchLiveLeaderboards(8).catch(() => {});
-    } else if (dripResult.ok) {
-      game.totalShellsSession = 0;
-      game.updateHomeShellsUI();
-      void fetchLiveLeaderboards(8).catch(() => {});
+      showStartWalletToast(lbResult.text, true);
+    } else {
+      showStartWalletToast(lbResult.text, false);
     }
 
-    if (lbResult.ok && dripResult.ok) {
-      showStartWalletToast(dripResult.text, true);
-    } else if (lbResult.ok) {
-      showStartWalletToast(
-        `${lbResult.text} Sign in your wallet to earn drip points too.`,
-        true,
-      );
-    } else if (dripResult.ok) {
-      showStartWalletToast(dripResult.text, true);
-    } else {
-      showStartWalletToast(dripResult.text || lbResult.text, false);
+    if (!isDemoSessionActive() && getConnectedWallet()) {
+      void claimSessionShells(savedShells, undefined, savedShells).then((drip) => {
+        if (drip.ok) showStartWalletToast(drip.text, true);
+      });
     }
   } catch {
     showStartWalletToast("Claim failed. Try again.", false);

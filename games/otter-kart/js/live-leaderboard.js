@@ -1,21 +1,17 @@
 /**
- * Live global leaderboards — same KV + API pattern as Shell Rush.
+ * Global Otter Kart leaderboards (Vercel KV).
  * GET  /api/rewards/leaderboard?game=otter-kart&all=1
- * POST /api/otter-kart/leaderboard (wallet address or demo id — no signature)
- * Drip rewards on claim still use signed /api/rewards/award separately.
+ * POST /api/otter-kart/leaderboard { playerId, mode, stats }
  */
 
-import {
-  getConnectedWallet,
-  isEthAddress,
-} from "../../otter-kart-rewards.mjs";
-import { getDemoPlayerId, isDemoSessionActive, todayISO } from "./storage.js";
+import { getConnectedWallet, isEthAddress } from "../../otter-kart-rewards.mjs";
+import { getPlayerId, todayISO } from "./storage.js";
 
 const READ_URL = "/api/rewards/leaderboard";
 const POST_URL = "/api/otter-kart/leaderboard";
 const LAST_RACE_KEY = "otterkart:lastRaceStats";
 const POLL_MS = 15000;
-const MAX_DEMO_SHELLS = 50000;
+const MAX_SHELLS = 50000;
 const MODE_ORDER = ["session", "practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
   session: "Session",
@@ -28,11 +24,8 @@ const MODE_LABELS = {
 
 /** @type {ReturnType<typeof setInterval> | null} */
 let pollTimer = null;
-/** @type {number} */
 let lastFetchAt = 0;
-/** @type {boolean} */
 let serverConfigured = false;
-/** @type {string} */
 let statusText = "Loading…";
 /** @type {Record<string, { label?: string, date?: string, rows: Array<{ rank: number, label: string }> }>} */
 let cachedBoards = {};
@@ -43,11 +36,21 @@ let overlayEl = null;
 /** @type {HTMLButtonElement | null} */
 let overlayToggleBtn = null;
 
-async function postWalletLeaderboard(wallet, mode, stats) {
+function optionalWallet() {
+  const wallet = getConnectedWallet();
+  return wallet && isEthAddress(wallet) ? wallet.trim().toLowerCase() : undefined;
+}
+
+async function postLeaderboard(mode, stats) {
   const res = await fetch(POST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ wallet: wallet.trim().toLowerCase(), mode, stats }),
+    body: JSON.stringify({
+      playerId: getPlayerId(),
+      mode,
+      stats,
+      wallet: optionalWallet(),
+    }),
   });
   return res.json().catch(() => ({}));
 }
@@ -66,16 +69,11 @@ export async function fetchLiveLeaderboards(limit = 8) {
   lastFetchAt = Date.now();
   serverConfigured = !!data.configured;
   cachedBoards = data.boards && typeof data.boards === "object" ? data.boards : {};
-
-  if (!serverConfigured) {
-    statusText = "Storage not configured";
-  } else if (totalRowCount(cachedBoards) > 0) {
-    statusText = "Live";
-  } else {
-    statusText = isDemoSessionActive()
-      ? "No entries yet — finish a race, then claim shells"
-      : "No entries yet — race and claim shells to appear here";
-  }
+  statusText = !serverConfigured
+    ? "Storage not configured"
+    : totalRowCount(cachedBoards) > 0
+      ? "Live"
+      : "No entries yet — race, then claim shells";
 
   for (const root of mountedRoots) renderRoot(root);
   return cachedBoards;
@@ -134,11 +132,8 @@ function renderRoot(root) {
   if (!(root instanceof HTMLElement)) return;
   const variant = root.dataset.liveLbVariant || "overlay";
   const activeMode = root.dataset.liveLbActive || "session";
-  const configured = serverConfigured;
-  const emptyText = configured
-    ? isDemoSessionActive()
-      ? "No runs yet — finish a race, then tap Claim on the map."
-      : "No runs yet — finish a race and claim shells (wallet or demo)."
+  const emptyText = serverConfigured
+    ? "No runs yet — finish races and claim shells on the map."
     : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
@@ -156,7 +151,7 @@ function renderRoot(root) {
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
       <div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Best runs save on finish; session shells save on Claim.</p>`;
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Saves globally on race finish and Claim.</p>`;
     return;
   }
 
@@ -251,7 +246,6 @@ export function statsFromRaceDetail(detail) {
   };
 }
 
-/** Stash for shell claim → award → KV (Shell Rush pattern). */
 export function stashLastRaceStats(detail) {
   if (!detail || typeof detail !== "object") return;
   try {
@@ -280,87 +274,30 @@ function shouldSubmitRace(detail) {
   return true;
 }
 
-async function postDemoLeaderboard(mode, stats) {
-  const demoId = getDemoPlayerId();
-  const res = await fetch(POST_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ demo: true, demoId, mode, stats }),
-  });
-  return res.json().catch(() => ({}));
-}
-
-export async function claimWalletSessionLeaderboard(shells) {
-  const wallet = getConnectedWallet();
-  if (!wallet || !isEthAddress(wallet)) {
-    return {
-      ok: false,
-      text: "Connect your wallet on the start screen to save session shells to the leaderboard.",
-    };
-  }
-
-  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_DEMO_SHELLS);
+export async function claimSessionLeaderboard(shells) {
+  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_SHELLS);
   if (capped <= 0) {
     return { ok: false, text: "No session shells to claim yet." };
   }
 
-  const data = await postWalletLeaderboard(wallet, "session", { shells: capped, points: capped });
+  const data = await postLeaderboard("session", { shells: capped, points: capped });
   if (data?.updated) {
     void fetchLiveLeaderboards(8).catch(() => {});
-    return { ok: true, text: "Session saved to leaderboard!" };
+    return { ok: true, text: "Saved to global leaderboard!" };
   }
   if (data?.reason === "not_improved") {
-    return {
-      ok: true,
-      text: "Session shells cleared — leaderboard already has your best total.",
-    };
+    return { ok: true, text: "Shells cleared — your best session is already on the board." };
   }
   if (data?.configured === false) {
-    return { ok: false, text: "Leaderboard storage is not configured yet." };
+    return { ok: false, text: "Leaderboard storage is not configured on the server." };
   }
-  return { ok: !!data?.ok, text: data?.ok ? "Session recorded." : "Could not save to leaderboard." };
-}
-
-export async function claimDemoSessionLeaderboard(shells) {
-  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_DEMO_SHELLS);
-  if (capped <= 0) {
-    return { ok: false, text: "No session shells to claim yet." };
-  }
-
-  const data = await postDemoLeaderboard("session", { shells: capped, points: capped });
-  if (data?.updated) {
-    void fetchLiveLeaderboards(8).catch(() => {});
-    return { ok: true, text: "Demo session saved to leaderboard!" };
-  }
-  if (data?.reason === "not_improved") {
-    return { ok: true, text: "Session shells cleared — leaderboard already has your best run." };
-  }
-  if (data?.configured === false) {
-    return { ok: false, text: "Leaderboard storage is not configured yet." };
-  }
-  return { ok: !!data?.ok, text: data?.ok ? "Session recorded." : "Could not save to leaderboard." };
+  return { ok: !!data?.ok, text: data?.ok ? "Saved." : "Could not save to leaderboard." };
 }
 
 export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
   stashLastRaceStats(detail);
-
-  if (isDemoSessionActive()) {
-    const mode = detail.mode;
-    const stats = statsFromRaceDetail(detail);
-    const data = await postDemoLeaderboard(mode, stats);
-    if (data?.updated) {
-      void fetchLiveLeaderboards(8).catch(() => {});
-    }
-    return data;
-  }
-
-  const wallet = getConnectedWallet();
-  if (!wallet || !isEthAddress(wallet)) return { ok: false, skipped: true, reason: "no_wallet" };
-
-  const mode = detail.mode;
-  const stats = statsFromRaceDetail(detail);
-  const data = await postWalletLeaderboard(wallet, mode, stats);
+  const data = await postLeaderboard(detail.mode, statsFromRaceDetail(detail));
   if (data?.updated) {
     void fetchLiveLeaderboards(8).catch(() => {});
   }

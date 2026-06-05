@@ -12,7 +12,8 @@ import {
 
 let demoSessionActive = false;
 
-const DEMO_PLAYER_ID_KEY = "otterkart:demoPlayerId";
+const PLAYER_ID_KEY = "otterkart:playerId";
+const LEGACY_DEMO_ID_KEY = "otterkart:demoPlayerId";
 
 export function setDemoSessionActive(active) {
   demoSessionActive = !!active;
@@ -22,18 +23,23 @@ export function isDemoSessionActive() {
   return demoSessionActive;
 }
 
-/** Stable anonymous id for demo leaderboard entries (no wallet). */
-export function getDemoPlayerId() {
+/** Stable id for this browser — used for global leaderboards (demo and full game). */
+export function getPlayerId() {
   try {
-    let id = localStorage.getItem(DEMO_PLAYER_ID_KEY);
+    let id = localStorage.getItem(PLAYER_ID_KEY) || localStorage.getItem(LEGACY_DEMO_ID_KEY);
     if (!id || id.length < 8) {
-      id = `d${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
-      localStorage.setItem(DEMO_PLAYER_ID_KEY, id);
+      id = `p${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+      localStorage.setItem(PLAYER_ID_KEY, id);
     }
     return id;
   } catch {
-    return `d${Math.random().toString(36).slice(2, 14)}`;
+    return `p${Math.random().toString(36).slice(2, 14)}`;
   }
+}
+
+/** @deprecated use getPlayerId */
+export function getDemoPlayerId() {
+  return getPlayerId();
 }
 
 function clampToDemoList(list, value, fallback) {
