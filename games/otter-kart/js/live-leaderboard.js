@@ -12,9 +12,8 @@ const POST_URL = "/api/otter-kart/leaderboard";
 const LAST_RACE_KEY = "otterkart:lastRaceStats";
 const POLL_MS = 15000;
 const MAX_SHELLS = 50000;
-const MODE_ORDER = ["session", "practice", "daily", "touge", "endless", "grandprix"];
+const MODE_ORDER = ["practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
-  session: "Session",
   practice: "Practice",
   daily: "Drift",
   touge: "Snake",
@@ -75,7 +74,7 @@ export async function fetchLiveLeaderboards(limit = 8) {
     ? "Storage not configured"
     : totalRowCount(cachedBoards) > 0
       ? "Live"
-      : "No entries yet — race, then claim shells";
+      : "No entries yet — finish a race to appear here";
 
   for (const root of mountedRoots) renderRoot(root);
   return cachedBoards;
@@ -125,7 +124,7 @@ function bindPanelTabs(panel) {
     if (!(tab instanceof HTMLButtonElement)) return;
     event.preventDefault();
     event.stopPropagation();
-    panel.dataset.liveLbActive = tab.getAttribute("data-live-lb-tab") || "session";
+    panel.dataset.liveLbActive = tab.getAttribute("data-live-lb-tab") || "practice";
     renderRoot(panel);
   });
 }
@@ -133,9 +132,9 @@ function bindPanelTabs(panel) {
 function renderRoot(root) {
   if (!(root instanceof HTMLElement)) return;
   const variant = root.dataset.liveLbVariant || "overlay";
-  const activeMode = root.dataset.liveLbActive || "session";
+  const activeMode = root.dataset.liveLbActive || "practice";
   const emptyText = serverConfigured
-    ? "No runs yet — finish races and claim shells on the map."
+    ? "No runs yet — finish a race to save your best time."
     : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
@@ -153,7 +152,7 @@ function renderRoot(root) {
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
       <div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Saves globally on race finish and Claim.</p>`;
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Best runs save when you finish a race.</p>`;
     return;
   }
 
@@ -187,7 +186,7 @@ function setLiveLeaderboardOverlayOpen(open) {
 export function mountLiveLeaderboard(root, opts = {}) {
   if (!(root instanceof HTMLElement)) return;
   root.dataset.liveLbVariant = opts.variant || "overlay";
-  root.dataset.liveLbActive = opts.activeMode || "session";
+  root.dataset.liveLbActive = opts.activeMode || "practice";
   mountedRoots.add(root);
   bindPanelTabs(root);
   renderRoot(root);
@@ -274,26 +273,6 @@ function shouldSubmitRace(detail) {
   if (detail.mode === "admin" || detail.mode === "session") return false;
   if (detail.mode === "grandprix" && !detail.gpSeriesComplete) return false;
   return true;
-}
-
-export async function claimSessionLeaderboard(shells) {
-  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_SHELLS);
-  if (capped <= 0) {
-    return { ok: false, text: "No session shells to claim yet." };
-  }
-
-  const data = await postLeaderboard("session", { shells: capped, points: capped });
-  if (data?.updated || data?.reason === "name_updated") {
-    void fetchLiveLeaderboards(8).catch(() => {});
-    return { ok: true, text: "Saved to global leaderboard!" };
-  }
-  if (data?.reason === "not_improved") {
-    return { ok: true, text: "Shells cleared — your best session is already on the board." };
-  }
-  if (data?.configured === false) {
-    return { ok: false, text: "Leaderboard storage is not configured on the server." };
-  }
-  return { ok: !!data?.ok, text: data?.ok ? "Saved." : "Could not save to leaderboard." };
 }
 
 export async function submitLiveLeaderboardRun(detail) {
