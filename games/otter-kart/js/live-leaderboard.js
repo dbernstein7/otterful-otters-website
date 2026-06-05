@@ -9,12 +9,13 @@ import {
   getConnectedWallet,
   isEthAddress,
 } from "../../otter-kart-rewards.mjs";
-import { isDemoSessionActive, todayISO } from "./storage.js";
+import { getDemoPlayerId, isDemoSessionActive, todayISO } from "./storage.js";
 
 const READ_URL = "/api/rewards/leaderboard";
 const POST_URL = "/api/otter-kart/leaderboard";
 const LAST_RACE_KEY = "otterkart:lastRaceStats";
 const POLL_MS = 15000;
+const MAX_DEMO_SHELLS = 50000;
 const MODE_ORDER = ["session", "practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
   session: "Session",
@@ -106,7 +107,9 @@ export async function fetchLiveLeaderboards(limit = 8) {
   } else if (totalRowCount(cachedBoards) > 0) {
     statusText = "Live";
   } else {
-    statusText = "No entries yet — connect wallet, race, and claim shells";
+    statusText = isDemoSessionActive()
+      ? "No entries yet — finish a race, then claim shells"
+      : "No entries yet — race and claim shells (wallet or demo)";
   }
 
   for (const root of mountedRoots) renderRoot(root);
@@ -168,7 +171,9 @@ function renderRoot(root) {
   const activeMode = root.dataset.liveLbActive || "session";
   const configured = serverConfigured;
   const emptyText = configured
-    ? "No runs yet — connect wallet, finish a race, then claim shells."
+    ? isDemoSessionActive()
+      ? "No runs yet — finish a race, then tap Claim on the map."
+      : "No runs yet — finish a race and claim shells (wallet or demo)."
     : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
@@ -306,14 +311,53 @@ export function peekLastRaceStatsForClaim() {
 function shouldSubmitRace(detail) {
   if (!detail || typeof detail !== "object") return false;
   if (detail.mode === "admin" || detail.mode === "session") return false;
-  if (isDemoSessionActive()) return false;
   if (detail.mode === "grandprix" && !detail.gpSeriesComplete) return false;
   return true;
+}
+
+async function postDemoLeaderboard(mode, stats) {
+  const demoId = getDemoPlayerId();
+  const res = await fetch(POST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ demo: true, demoId, mode, stats }),
+  });
+  return res.json().catch(() => ({}));
+}
+
+export async function claimDemoSessionLeaderboard(shells) {
+  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_DEMO_SHELLS);
+  if (capped <= 0) {
+    return { ok: false, text: "No session shells to claim yet." };
+  }
+
+  const data = await postDemoLeaderboard("session", { shells: capped, points: capped });
+  if (data?.updated) {
+    void fetchLiveLeaderboards(8).catch(() => {});
+    return { ok: true, text: "Demo session saved to leaderboard!" };
+  }
+  if (data?.reason === "not_improved") {
+    return { ok: true, text: "Session shells cleared — leaderboard already has your best run." };
+  }
+  if (data?.configured === false) {
+    return { ok: false, text: "Leaderboard storage is not configured yet." };
+  }
+  return { ok: !!data?.ok, text: data?.ok ? "Session recorded." : "Could not save to leaderboard." };
 }
 
 export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
   stashLastRaceStats(detail);
+
+  if (isDemoSessionActive()) {
+    const mode = detail.mode;
+    const stats = statsFromRaceDetail(detail);
+    const data = await postDemoLeaderboard(mode, stats);
+    if (data?.updated) {
+      void fetchLiveLeaderboards(8).catch(() => {});
+    }
+    return data;
+  }
 
   const wallet = getConnectedWallet();
   if (!wallet || !isEthAddress(wallet)) return { ok: false, skipped: true, reason: "no_wallet" };

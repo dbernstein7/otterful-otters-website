@@ -34,7 +34,7 @@ import {
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 import { initTouchControls } from "./touch-controls.js";
-import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, peekLastRaceStatsForClaim, fetchLiveLeaderboards } from "./live-leaderboard.js";
+import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, peekLastRaceStatsForClaim, fetchLiveLeaderboards, claimDemoSessionLeaderboard } from "./live-leaderboard.js";
 
 import {
   claimSessionShells,
@@ -856,6 +856,15 @@ async function handleClaimShells() {
   if (btnClaim) btnClaim.textContent = "Claiming…";
   if (btnClaim) btnClaim.disabled = true;
   try {
+    if (isDemoSessionActive()) {
+      const result = await claimDemoSessionLeaderboard(shells);
+      showStartWalletToast(result.text, result.ok);
+      if (result.ok) {
+        game.totalShellsSession = 0;
+        game.updateHomeShellsUI();
+      }
+      return;
+    }
     const leaderboard = peekLastRaceStatsForClaim();
     const result = await claimSessionShells(shells, undefined, shells, leaderboard || undefined);
     showStartWalletToast(result.text, result.ok);

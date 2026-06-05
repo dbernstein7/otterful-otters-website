@@ -12,12 +12,28 @@ import {
 
 let demoSessionActive = false;
 
+const DEMO_PLAYER_ID_KEY = "otterkart:demoPlayerId";
+
 export function setDemoSessionActive(active) {
   demoSessionActive = !!active;
 }
 
 export function isDemoSessionActive() {
   return demoSessionActive;
+}
+
+/** Stable anonymous id for demo leaderboard entries (no wallet). */
+export function getDemoPlayerId() {
+  try {
+    let id = localStorage.getItem(DEMO_PLAYER_ID_KEY);
+    if (!id || id.length < 8) {
+      id = `d${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+      localStorage.setItem(DEMO_PLAYER_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return `d${Math.random().toString(36).slice(2, 14)}`;
+  }
 }
 
 function clampToDemoList(list, value, fallback) {
