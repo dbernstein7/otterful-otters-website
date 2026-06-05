@@ -101,6 +101,29 @@
       <button type="button" class="start-hotspot start-hotspot--wallet" data-start-action="wallet" data-ix="394" data-iy="402" data-iw="224" data-ih="48" aria-label="Wallet connect"></button>
     </div>
     <div id="start-wallet-toast" class="start-wallet-toast hidden" role="status" aria-live="polite"></div>
+
+    <div id="demo-name-overlay" class="demo-name-overlay hidden" aria-hidden="true" role="dialog" aria-labelledby="demo-name-title" aria-modal="true">
+      <button type="button" class="demo-name-overlay__backdrop" data-demo-name-close aria-label="Cancel"></button>
+      <div class="demo-name-panel">
+        <h2 id="demo-name-title" class="demo-name-panel__title">Your leaderboard name</h2>
+        <p class="demo-name-panel__hint">Shown on global top 10 boards. Keep it friendly — 2–16 characters.</p>
+        <input
+          id="demo-name-input"
+          class="demo-name-panel__input"
+          type="text"
+          maxlength="16"
+          autocomplete="nickname"
+          placeholder="e.g. TurboOtter"
+          aria-describedby="demo-name-error"
+        />
+        <p id="demo-name-error" class="demo-name-panel__error hidden" role="alert"></p>
+        <div class="demo-name-panel__actions">
+          <button type="button" id="demo-name-cancel" class="demo-name-panel__btn demo-name-panel__btn--ghost">Cancel</button>
+          <button type="button" id="demo-name-submit" class="demo-name-panel__btn demo-name-panel__btn--primary">Play demo</button>
+        </div>
+      </div>
+    </div>
+
     <div id="demo-session-badge" class="demo-session-badge hidden" aria-hidden="true">Demo</div>
 
     <div id="map-hotspots" class="map-hotspots" aria-hidden="true">
@@ -434,7 +457,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-03-live-lb-v5"></script>
+    <script type="module" src="js/main.js?v=2026-06-03-live-lb-v6"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {

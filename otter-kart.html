@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-03-live-lb-v5"
+                    src="/games/otter-kart/index.html?v=2026-06-03-live-lb-v6"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -145,7 +145,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-live-lb-v5';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-live-lb-v6';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -259,7 +259,7 @@
       import { initLiveLeaderboard } from "/games/otter-kart/js/live-leaderboard.js";
       const root = document.getElementById("otterKartLiveLeaderboards");
       if (root instanceof HTMLElement) {
-        initLiveLeaderboard(root, { variant: "page", limit: 8, pollMs: 20000 });
+        initLiveLeaderboard(root, { variant: "page", limit: 10, pollMs: 20000 });
       }
     </script>
 </body>

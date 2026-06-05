@@ -171,112 +171,6 @@ body.otter-ui-menu.otter-ui-start:not(.otter-ui-garage) #panel-start {
   display: none;
 }
 
-.demo-username-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 120;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-}
-
-.demo-username-overlay.hidden {
-  display: none;
-}
-
-.demo-username-overlay__backdrop {
-  position: absolute;
-  inset: 0;
-  border: 0;
-  background: rgba(4, 8, 20, 0.72);
-  cursor: pointer;
-}
-
-.demo-username-overlay__panel {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 360px);
-  padding: 20px 18px 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #1a2744 0%, #0f1728 100%);
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
-  color: #eef4ff;
-}
-
-.demo-username-overlay__panel h2 {
-  margin: 0 0 8px;
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.demo-username-overlay__hint {
-  margin: 0 0 14px;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: rgba(238, 244, 255, 0.72);
-}
-
-.demo-username-form {
-  display: grid;
-  gap: 10px;
-}
-
-.demo-username-input {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.25);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
-.demo-username-input:focus {
-  outline: none;
-  border-color: #ffb830;
-}
-
-.demo-username-error {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #ff8a8a;
-}
-
-.demo-username-error.hidden {
-  display: none;
-}
-
-.demo-username-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 4px;
-}
-
-.demo-username-btn {
-  border: 0;
-  border-radius: 999px;
-  padding: 9px 14px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.demo-username-btn--ghost {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(238, 244, 255, 0.85);
-}
-
-.demo-username-btn--primary {
-  background: linear-gradient(180deg, #ffe566, #ffb830);
-  color: #0a1020;
-}
-
 body.otter-ui-menu.otter-ui-playtab #game {
   z-index: -1;
 }
@@ -661,6 +555,118 @@ body.otter-live-lb-open .start-menu-hotspots {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.live-lb__entry--empty {
+  color: rgba(160, 180, 200, 0.45);
+  font-style: italic;
+}
+
+.live-lb__slot--empty {
+  opacity: 0.72;
+}
+
+.live-lb__list--top10 {
+  min-height: 280px;
+}
+
+.demo-name-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.demo-name-overlay.hidden {
+  display: none;
+}
+
+.demo-name-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(4, 10, 18, 0.72);
+  cursor: pointer;
+}
+
+.demo-name-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 360px);
+  padding: 20px 18px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 249, 255, 0.35);
+  background: linear-gradient(180deg, rgba(12, 28, 44, 0.98), rgba(8, 18, 30, 0.98));
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.demo-name-panel__title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  color: #e8f4ff;
+}
+
+.demo-name-panel__hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(180, 198, 214, 0.9);
+}
+
+.demo-name-panel__input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 249, 255, 0.28);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f3fbff;
+  font-size: 15px;
+}
+
+.demo-name-panel__input:focus {
+  outline: 2px solid rgba(125, 249, 255, 0.55);
+  outline-offset: 1px;
+}
+
+.demo-name-panel__error {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #ff8a8a;
+}
+
+.demo-name-panel__error.hidden {
+  display: none;
+}
+
+.demo-name-panel__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.demo-name-panel__btn {
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.demo-name-panel__btn--ghost {
+  border: 1px solid rgba(160, 180, 200, 0.35);
+  background: transparent;
+  color: rgba(220, 232, 244, 0.9);
+}
+
+.demo-name-panel__btn--primary {
+  border: 0;
+  background: linear-gradient(180deg, #5ce8ff, #2bb8d4);
+  color: #04202a;
 }
 
 .live-lb__empty {

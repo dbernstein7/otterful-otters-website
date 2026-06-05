@@ -1,16 +1,14 @@
 /**
  * Global leaderboards — best run per mode, saved on race finish (Vercel KV).
- * GET  /api/rewards/leaderboard?game=otter-kart&all=1
- * POST /api/otter-kart/leaderboard
- * Claim = signed drip rewards only (not leaderboards).
  */
 
 import { getConnectedWallet, isEthAddress } from "../../otter-kart-rewards.mjs";
-import { getDemoPlayerId, todayISO } from "./storage.js";
+import { getDemoPlayerId, getDemoPlayerName, isDemoSessionActive, todayISO } from "./storage.js";
 
 const READ_URL = "/api/rewards/leaderboard";
 const POST_URL = "/api/otter-kart/leaderboard";
 const POLL_MS = 15000;
+const TOP_SLOTS = 10;
 const MODE_ORDER = ["practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
   practice: "Practice",
@@ -28,7 +26,7 @@ let lastFetchAt = 0;
 let serverConfigured = false;
 /** @type {string} */
 let statusText = "Loading…";
-/** @type {Record<string, { label?: string, date?: string, rows: Array<{ rank: number, label: string }> }>} */
+/** @type {Record<string, { label?: string, date?: string, rows: Array<{ rank: number, label: string, blank?: boolean }> }>} */
 let cachedBoards = {};
 /** @type {Set<HTMLElement>} */
 const mountedRoots = new Set();
@@ -38,25 +36,52 @@ let overlayEl = null;
 let overlayToggleBtn = null;
 
 async function postLeaderboardRun(mode, stats) {
+  if (isDemoSessionActive()) {
+    const playerName = getDemoPlayerName();
+    if (!playerName) return { ok: false, skipped: true, reason: "no_name" };
+    const res = await fetch(POST_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        demo: true,
+        demoId: getDemoPlayerId(),
+        playerName,
+        mode,
+        stats,
+      }),
+    });
+    return res.json().catch(() => ({}));
+  }
+
   const wallet = getConnectedWallet();
-  const body =
-    wallet && isEthAddress(wallet)
-      ? { wallet: wallet.trim().toLowerCase(), mode, stats }
-      : { demo: true, demoId: getDemoPlayerId(), mode, stats };
+  if (!wallet || !isEthAddress(wallet)) {
+    return { ok: false, skipped: true, reason: "no_wallet" };
+  }
 
   const res = await fetch(POST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ wallet: wallet.trim().toLowerCase(), mode, stats }),
   });
   return res.json().catch(() => ({}));
 }
 
-function totalRowCount(boards) {
-  return MODE_ORDER.reduce((n, mode) => n + (boards[mode]?.rows?.length || 0), 0);
+function padRows(rows) {
+  const out = Array.isArray(rows) ? rows.slice(0, TOP_SLOTS) : [];
+  while (out.length < TOP_SLOTS) {
+    out.push({ rank: out.length + 1, label: "", blank: true });
+  }
+  return out;
 }
 
-export async function fetchLiveLeaderboards(limit = 8) {
+function filledRowCount(boards) {
+  return MODE_ORDER.reduce((n, mode) => {
+    const rows = boards[mode]?.rows || [];
+    return n + rows.filter((r) => !r.blank && (r.label || r.walletShort)).length;
+  }, 0);
+}
+
+export async function fetchLiveLeaderboards(limit = TOP_SLOTS) {
   const date = todayISO();
   const url = `${READ_URL}?game=otter-kart&all=1&limit=${encodeURIComponent(String(limit))}&date=${encodeURIComponent(date)}`;
   const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" }, cache: "no-store" });
@@ -65,8 +90,17 @@ export async function fetchLiveLeaderboards(limit = 8) {
 
   lastFetchAt = Date.now();
   serverConfigured = !!data.configured;
-  cachedBoards = data.boards && typeof data.boards === "object" ? data.boards : {};
-  statusText = !serverConfigured ? "Storage not configured" : totalRowCount(cachedBoards) > 0 ? "Live" : "No entries yet — finish a race";
+  cachedBoards = {};
+  if (data.boards && typeof data.boards === "object") {
+    for (const mode of MODE_ORDER) {
+      const board = data.boards[mode] || { rows: [] };
+      cachedBoards[mode] = {
+        ...board,
+        rows: padRows(board.rows),
+      };
+    }
+  }
+  statusText = !serverConfigured ? "Storage not configured" : filledRowCount(cachedBoards) > 0 ? "Live" : "Top 10 — finish a race to claim a spot";
 
   for (const root of mountedRoots) renderRoot(root);
   return cachedBoards;
@@ -84,20 +118,19 @@ function relTime(ts) {
   return `${Math.floor(sec / 60)}m ago`;
 }
 
-function renderBoardList(rows, emptyText) {
-  if (!rows?.length) {
-    return `<p class="live-lb__empty">${emptyText}</p>`;
-  }
-  const items = rows
-    .slice(0, 8)
-    .map(
-      (r) =>
-        `<li><span class="live-lb__rank">${r.rank}</span><span class="live-lb__entry">${escapeHtml(
-          r.label || r.walletShort || "—",
-        )}</span></li>`,
-    )
+function renderBoardList(rows) {
+  const slots = padRows(rows);
+  const items = slots
+    .map((r) => {
+      const empty = !!r.blank || !(r.label || r.walletShort);
+      const entry = empty ? "—" : r.label || r.walletShort;
+      const cls = empty ? " live-lb__entry live-lb__entry--empty" : "live-lb__entry";
+      return `<li class="${empty ? "live-lb__slot--empty" : ""}"><span class="live-lb__rank">${r.rank}</span><span class="${cls}">${escapeHtml(
+        entry,
+      )}</span></li>`;
+    })
     .join("");
-  return `<ol class="live-lb__list">${items}</ol>`;
+  return `<ol class="live-lb__list live-lb__list--top10">${items}</ol>`;
 }
 
 function escapeHtml(s) {
@@ -125,13 +158,10 @@ function renderRoot(root) {
   if (!(root instanceof HTMLElement)) return;
   const variant = root.dataset.liveLbVariant || "overlay";
   const activeMode = root.dataset.liveLbActive || "practice";
-  const emptyText = serverConfigured
-    ? "No runs yet — finish a race to post a score."
-    : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
     const cards = MODE_ORDER.map((mode) => {
-      const board = cachedBoards[mode] || { rows: [], label: MODE_LABELS[mode] };
+      const board = cachedBoards[mode] || { rows: padRows([]), label: MODE_LABELS[mode] };
       const sub =
         mode === "daily" && board.date ? `<span class="live-lb__date">${escapeHtml(board.date)}</span>` : "";
       return `<article class="live-lb-card" data-mode="${mode}">
@@ -139,12 +169,12 @@ function renderRoot(root) {
           <h3 class="live-lb-card__title">${escapeHtml(board.label || MODE_LABELS[mode])}</h3>
           ${sub}
         </header>
-        ${renderBoardList(board.rows, emptyText)}
+        ${renderBoardList(board.rows)}
       </article>`;
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
       <div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Scores save when you finish a race.</p>`;
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Top ${TOP_SLOTS} per mode · scores save when you finish a race.</p>`;
     return;
   }
 
@@ -154,10 +184,10 @@ function renderRoot(root) {
         MODE_LABELS[mode],
       )}</button>`,
   ).join("");
-  const board = cachedBoards[activeMode] || { rows: [] };
+  const board = cachedBoards[activeMode] || { rows: padRows([]) };
   root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
     <div class="live-lb__tabs" role="tablist" aria-label="Game mode">${tabs}</div>
-    ${renderBoardList(board.rows, emptyText)}
+    ${renderBoardList(board.rows)}
     <div class="live-lb__meta">Updated ${relTime(lastFetchAt)}</div>`;
 }
 
@@ -168,7 +198,7 @@ function setLiveLeaderboardOverlayOpen(open) {
   overlayToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
   document.body?.classList?.toggle?.("otter-live-lb-open", open);
   if (open) {
-    void fetchLiveLeaderboards(8).catch(() => renderRoot(overlayEl.querySelector("#live-leaderboard-panel")));
+    void fetchLiveLeaderboards(TOP_SLOTS).catch(() => renderRoot(overlayEl.querySelector("#live-leaderboard-panel")));
     const panel = overlayEl.querySelector("#live-leaderboard-panel");
     if (panel instanceof HTMLElement) renderRoot(panel);
     overlayEl.querySelector(".live-lb-overlay__close")?.focus?.();
@@ -186,10 +216,10 @@ export function mountLiveLeaderboard(root, opts = {}) {
 
 export function initLiveLeaderboard(root, opts = {}) {
   mountLiveLeaderboard(root, opts);
-  void fetchLiveLeaderboards(opts.limit || 8).catch(() => renderRoot(root));
+  void fetchLiveLeaderboards(opts.limit || TOP_SLOTS).catch(() => renderRoot(root));
   if (pollTimer) return;
   pollTimer = window.setInterval(() => {
-    void fetchLiveLeaderboards(opts.limit || 8).catch(() => {});
+    void fetchLiveLeaderboards(opts.limit || TOP_SLOTS).catch(() => {});
   }, opts.pollMs || POLL_MS);
 }
 
@@ -219,7 +249,7 @@ export function initLiveLeaderboardOverlay(opts = {}) {
     }
   });
 
-  initLiveLeaderboard(panel, { variant: "overlay", limit: opts.limit || 8, pollMs: opts.pollMs || POLL_MS });
+  initLiveLeaderboard(panel, { variant: "overlay", limit: opts.limit || TOP_SLOTS, pollMs: opts.pollMs || POLL_MS });
 }
 
 function statsFromRaceDetail(detail) {
@@ -243,6 +273,7 @@ function shouldSubmitRace(detail) {
   if (!detail || typeof detail !== "object") return false;
   if (detail.mode === "admin" || detail.mode === "session") return false;
   if (detail.mode === "grandprix" && !detail.gpSeriesComplete) return false;
+  if (isDemoSessionActive() && !getDemoPlayerName()) return false;
   return true;
 }
 
@@ -250,7 +281,7 @@ export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
   const data = await postLeaderboardRun(detail.mode, statsFromRaceDetail(detail));
   if (data?.updated) {
-    void fetchLiveLeaderboards(8).catch(() => {});
+    void fetchLiveLeaderboards(TOP_SLOTS).catch(() => {});
   }
   return data;
 }

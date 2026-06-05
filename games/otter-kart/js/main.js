@@ -19,7 +19,10 @@ import {
   loadEffectiveLoadout,
   saveLoadout,
   setDemoSessionActive,
+  getDemoPlayerName,
+  setDemoPlayerName,
 } from "./storage.js";
+import { validatePlayerName } from "./player-name.js";
 import { KART_SPRITE_WORLD_SPAN } from "./config.js";
 import { formatStatBars, resolveKartStats } from "./kart-stats.js";
 import {
@@ -794,6 +797,74 @@ function syncDemoSessionBadge() {
     !document.body?.classList?.contains?.("otter-ui-garage");
   demoSessionBadge?.classList.toggle("hidden", !show);
   demoSessionBadge?.setAttribute("aria-hidden", show ? "false" : "true");
+  if (demoSessionBadge instanceof HTMLElement && show) {
+    const name = getDemoPlayerName();
+    demoSessionBadge.textContent = name ? `Demo · ${name}` : "Demo";
+  }
+}
+
+const demoNameOverlay = document.getElementById("demo-name-overlay");
+const demoNameInput = document.getElementById("demo-name-input");
+const demoNameError = document.getElementById("demo-name-error");
+const demoNameSubmit = document.getElementById("demo-name-submit");
+const demoNameCancel = document.getElementById("demo-name-cancel");
+
+/** @returns {Promise<boolean>} */
+function promptDemoPlayerName() {
+  return new Promise((resolve) => {
+    if (
+      !(demoNameOverlay instanceof HTMLElement) ||
+      !(demoNameInput instanceof HTMLInputElement) ||
+      !(demoNameError instanceof HTMLElement)
+    ) {
+      resolve(false);
+      return;
+    }
+
+    const finish = (ok) => {
+      demoNameOverlay.classList.add("hidden");
+      demoNameOverlay.setAttribute("aria-hidden", "true");
+      document.body?.classList?.remove("otter-demo-name-open");
+      resolve(ok);
+    };
+
+    demoNameError.classList.add("hidden");
+    demoNameError.textContent = "";
+    demoNameInput.value = getDemoPlayerName() || "";
+    demoNameOverlay.classList.remove("hidden");
+    demoNameOverlay.setAttribute("aria-hidden", "false");
+    document.body?.classList?.add("otter-demo-name-open");
+    window.setTimeout(() => demoNameInput.focus(), 30);
+
+    const onSubmit = () => {
+      const result = validatePlayerName(demoNameInput.value);
+      if (!result.ok) {
+        demoNameError.textContent = result.error;
+        demoNameError.classList.remove("hidden");
+        demoNameInput.focus();
+        return;
+      }
+      setDemoPlayerName(result.name);
+      finish(true);
+    };
+
+    const onCancel = () => finish(false);
+
+    demoNameSubmit?.addEventListener("click", onSubmit, { once: true });
+    demoNameCancel?.addEventListener("click", onCancel, { once: true });
+    demoNameOverlay.querySelector("[data-demo-name-close]")?.addEventListener("click", onCancel, { once: true });
+
+    const onKey = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCancel();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        onSubmit();
+      }
+    };
+    demoNameInput.addEventListener("keydown", onKey, { once: true });
+  });
 }
 
 /** @param {{ demo?: boolean }} opts */
@@ -1635,7 +1706,11 @@ function handleStartHotspotAction(action) {
     if (!START_HOTSPOT_START_ENABLED) return;
     enterMapFromStart({ demo: false });
   }
-  else if (action === "demo") enterMapFromStart({ demo: true });
+  else if (action === "demo") {
+    void promptDemoPlayerName().then((ok) => {
+      if (ok) enterMapFromStart({ demo: true });
+    });
+  }
   else if (action === "wallet") void handleWalletConnectHotspot();
 }
 
@@ -1902,6 +1977,6 @@ initOtterKartMusic();
 initTouchControls(game);
 applyHudViewportVars();
 installLiveLeaderboardRaceHook();
-initLiveLeaderboardOverlay({ limit: 8, pollMs: 30000 });
+initLiveLeaderboardOverlay({ limit: 10, pollMs: 30000 });
 
 window.__otterKartBooted = true;

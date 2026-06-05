@@ -12,9 +12,8 @@ import {
 
 let demoSessionActive = false;
 
-const PLAYER_ID_KEY = "otterkart:playerId";
-const LEGACY_DEMO_ID_KEY = "otterkart:demoPlayerId";
-const PLAYER_USERNAME_KEY = "otterkart:playerUsername";
+const DEMO_PLAYER_ID_KEY = "otterkart:demoPlayerId";
+const DEMO_PLAYER_NAME_KEY = "otterkart:demoPlayerName";
 
 export function setDemoSessionActive(active) {
   demoSessionActive = !!active;
@@ -24,38 +23,39 @@ export function isDemoSessionActive() {
   return demoSessionActive;
 }
 
-/** Stable id for this browser — used for global leaderboards (demo and full game). */
-export function getPlayerId() {
+export function getDemoPlayerName() {
   try {
-    let id = localStorage.getItem(PLAYER_ID_KEY) || localStorage.getItem(LEGACY_DEMO_ID_KEY);
-    if (!id || id.length < 8) {
-      id = `p${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
-      localStorage.setItem(PLAYER_ID_KEY, id);
-    }
-    return id;
-  } catch {
-    return `p${Math.random().toString(36).slice(2, 14)}`;
-  }
-}
-
-/** @deprecated use getPlayerId */
-export function getDemoPlayerId() {
-  return getPlayerId();
-}
-
-export function getPlayerUsername() {
-  try {
-    return String(localStorage.getItem(PLAYER_USERNAME_KEY) || "").trim();
+    const name = localStorage.getItem(DEMO_PLAYER_NAME_KEY);
+    return name && name.trim() ? name.trim() : "";
   } catch {
     return "";
   }
 }
 
-export function setPlayerUsername(name) {
+export function setDemoPlayerName(name) {
   try {
-    if (name) localStorage.setItem(PLAYER_USERNAME_KEY, name);
-    else localStorage.removeItem(PLAYER_USERNAME_KEY);
+    localStorage.setItem(DEMO_PLAYER_NAME_KEY, String(name || "").trim());
   } catch {}
+}
+
+export function clearDemoPlayerName() {
+  try {
+    localStorage.removeItem(DEMO_PLAYER_NAME_KEY);
+  } catch {}
+}
+
+/** Stable anonymous id for demo leaderboard entries (no wallet). */
+export function getDemoPlayerId() {
+  try {
+    let id = localStorage.getItem(DEMO_PLAYER_ID_KEY);
+    if (!id || id.length < 8) {
+      id = `d${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36).slice(-4)}`;
+      localStorage.setItem(DEMO_PLAYER_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return `d${Math.random().toString(36).slice(2, 14)}`;
+  }
 }
 
 function clampToDemoList(list, value, fallback) {
