@@ -535,8 +535,9 @@ body.otter-live-lb-open .start-menu-hotspots {
 
 .live-lb__list li {
   display: grid;
-  grid-template-columns: 18px 1fr;
-  gap: 6px;
+  grid-template-columns: 2.25em 1fr;
+  gap: 10px;
+  align-items: baseline;
   padding: 3px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -549,6 +550,9 @@ body.otter-live-lb-open .start-menu-hotspots {
   font-weight: 800;
   color: rgba(125, 249, 255, 0.75);
   font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 2.25em;
+  flex-shrink: 0;
 }
 
 .live-lb__entry {

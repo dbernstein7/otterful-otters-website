@@ -1422,6 +1422,37 @@ body::before {
 
 .live-lb--page .live-lb__list {
     font-size: 0.86rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.live-lb--page .live-lb__list li {
+    display: grid;
+    grid-template-columns: 2.25em 1fr;
+    gap: 10px;
+    align-items: baseline;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.live-lb--page .live-lb__rank {
+    text-align: right;
+    min-width: 2.25em;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: rgba(125, 249, 255, 0.75);
+}
+
+.live-lb--page .live-lb__entry {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.live-lb--page .live-lb__entry--empty {
+    color: rgba(160, 180, 200, 0.45);
+    font-style: italic;
 }
 
 .live-lb--page .live-lb__meta {

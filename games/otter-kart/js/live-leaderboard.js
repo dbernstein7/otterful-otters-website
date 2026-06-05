@@ -124,8 +124,7 @@ function renderBoardList(rows) {
     .map((r) => {
       const empty = !!r.blank || !(r.label || r.walletShort);
       const entry = empty ? "—" : r.label || r.walletShort;
-      const cls = empty ? " live-lb__entry live-lb__entry--empty" : "live-lb__entry";
-      return `<li class="${empty ? "live-lb__slot--empty" : ""}"><span class="live-lb__rank">${r.rank}</span><span class="${cls}">${escapeHtml(
+      return `<li class="${empty ? "live-lb__slot--empty" : ""}"><span class="live-lb__rank">${r.rank}.</span><span class="live-lb__entry${empty ? " live-lb__entry--empty" : ""}">${escapeHtml(
         entry,
       )}</span></li>`;
     })
