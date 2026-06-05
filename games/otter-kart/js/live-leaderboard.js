@@ -32,6 +32,23 @@ let cachedBoards = {};
 const listeners = new Set();
 /** @type {Set<HTMLElement>} */
 const mountedRoots = new Set();
+/** @type {HTMLElement | null} */
+let overlayEl = null;
+/** @type {HTMLButtonElement | null} */
+let overlayToggleBtn = null;
+
+function bindPanelTabs(panel) {
+  if (!(panel instanceof HTMLElement) || panel.dataset.liveLbBound === "1") return;
+  panel.dataset.liveLbBound = "1";
+  panel.addEventListener("click", (event) => {
+    const tab = event.target.closest?.("[data-live-lb-tab]");
+    if (!(tab instanceof HTMLButtonElement)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    panel.dataset.liveLbActive = tab.getAttribute("data-live-lb-tab") || "practice";
+    renderRoot(panel);
+  });
+}
 
 function getEthereum() {
   const eth = typeof window !== "undefined" ? window.ethereum : null;
@@ -125,7 +142,7 @@ function escapeHtml(s) {
 
 function renderRoot(root) {
   if (!(root instanceof HTMLElement)) return;
-  const variant = root.dataset.liveLbVariant || "map";
+  const variant = root.dataset.liveLbVariant || "overlay";
   const activeMode = root.dataset.liveLbActive || "practice";
   const configured = serverConfigured;
 
@@ -154,27 +171,63 @@ function renderRoot(root) {
       )}</button>`,
   ).join("");
   const board = cachedBoards[activeMode] || { rows: [] };
-  root.innerHTML = `<div class="live-lb__head">Live leaderboards</div>
-    <div class="live-lb__tabs" role="tablist">${tabs}</div>
+  root.innerHTML = `<div class="live-lb__tabs" role="tablist" aria-label="Game mode">${tabs}</div>
     ${renderBoardList(
       board.rows,
       configured ? "No runs yet — connect wallet & race." : "Server storage not configured.",
     )}
-    <div class="live-lb__meta">Updated ${relTime(lastFetchAt)}</div>`;
+    <div class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Connect wallet to submit scores</div>`;
+}
 
-  root.querySelectorAll("[data-live-lb-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      root.dataset.liveLbActive = btn.getAttribute("data-live-lb-tab") || "practice";
-      renderRoot(root);
+function setLiveLeaderboardOverlayOpen(open) {
+  if (!(overlayEl instanceof HTMLElement) || !(overlayToggleBtn instanceof HTMLButtonElement)) return;
+  overlayEl.classList.toggle("hidden", !open);
+  overlayEl.setAttribute("aria-hidden", open ? "false" : "true");
+  overlayToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  document.body?.classList?.toggle?.("otter-live-lb-open", open);
+  if (open) {
+    void fetchLiveLeaderboards(8).catch(() => {});
+    const panel = overlayEl.querySelector("#live-leaderboard-panel");
+    if (panel instanceof HTMLElement) renderRoot(panel);
+    overlayEl.querySelector(".live-lb-overlay__close")?.focus?.();
+  }
+}
+
+export function initLiveLeaderboardOverlay(opts = {}) {
+  overlayEl = document.getElementById("live-leaderboard-overlay");
+  overlayToggleBtn = document.getElementById("btn-live-leaderboard");
+  const panel = document.getElementById("live-leaderboard-panel");
+  if (!(overlayEl instanceof HTMLElement) || !(overlayToggleBtn instanceof HTMLButtonElement)) return;
+  if (!(panel instanceof HTMLElement)) return;
+
+  overlayToggleBtn.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setLiveLeaderboardOverlayOpen(overlayEl.classList.contains("hidden"));
+  });
+
+  overlayEl.querySelectorAll("[data-live-lb-close]").forEach((el) => {
+    el.addEventListener("click", (event) => {
+      event.preventDefault();
+      setLiveLeaderboardOverlayOpen(false);
     });
   });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !overlayEl.classList.contains("hidden")) {
+      setLiveLeaderboardOverlayOpen(false);
+    }
+  });
+
+  initLiveLeaderboard(panel, { variant: "overlay", limit: opts.limit || 8, pollMs: opts.pollMs || POLL_MS });
 }
 
 export function mountLiveLeaderboard(root, opts = {}) {
   if (!(root instanceof HTMLElement)) return;
-  root.dataset.liveLbVariant = opts.variant || "map";
+  root.dataset.liveLbVariant = opts.variant || "overlay";
   root.dataset.liveLbActive = opts.activeMode || "practice";
   mountedRoots.add(root);
+  bindPanelTabs(root);
   renderRoot(root);
 }
 

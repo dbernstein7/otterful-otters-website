@@ -34,7 +34,7 @@ import {
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 import { initTouchControls } from "./touch-controls.js";
-import { initLiveLeaderboard, installLiveLeaderboardRaceHook } from "./live-leaderboard.js";
+import { initLiveLeaderboard, initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook } from "./live-leaderboard.js";
 
 import {
   claimSessionShells,
@@ -1902,9 +1902,6 @@ initOtterKartMusic();
 initTouchControls(game);
 applyHudViewportVars();
 installLiveLeaderboardRaceHook();
-const mapLiveLeaderboard = document.getElementById("map-live-leaderboard");
-if (mapLiveLeaderboard instanceof HTMLElement) {
-  initLiveLeaderboard(mapLiveLeaderboard, { variant: "map", limit: 5 });
-}
+initLiveLeaderboardOverlay({ limit: 8, pollMs: 30000 });
 
 window.__otterKartBooted = true;

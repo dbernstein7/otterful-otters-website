@@ -120,12 +120,39 @@
       </div>
     </div>
 
-    <aside
-      id="map-live-leaderboard"
-      class="map-live-leaderboard live-lb"
-      data-live-lb-variant="map"
-      aria-label="Live global leaderboards"
-    ></aside>
+    <button
+      type="button"
+      id="btn-live-leaderboard"
+      class="menu-live-lb-btn"
+      aria-label="Live leaderboards"
+      aria-expanded="false"
+      aria-controls="live-leaderboard-overlay"
+    >
+      <span class="menu-live-lb-btn__icon" aria-hidden="true">🏆</span>
+      <span class="menu-live-lb-btn__lbl">Ranks</span>
+    </button>
+
+    <div
+      id="live-leaderboard-overlay"
+      class="live-lb-overlay hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="live-lb-overlay-title"
+    >
+      <button type="button" class="live-lb-overlay__backdrop" data-live-lb-close aria-label="Close leaderboards"></button>
+      <div class="live-lb-overlay__panel">
+        <header class="live-lb-overlay__head">
+          <h2 id="live-lb-overlay-title">Live leaderboards</h2>
+          <button type="button" class="live-lb-overlay__close" data-live-lb-close aria-label="Close">×</button>
+        </header>
+        <div
+          id="live-leaderboard-panel"
+          class="live-lb-overlay__body live-lb"
+          data-live-lb-variant="overlay"
+        ></div>
+      </div>
+    </div>
 
     <div id="garage-hotspots" class="garage-hotspots" aria-hidden="true">
       <div class="garage-minimap" aria-hidden="true"></div>
@@ -407,7 +434,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-03-live-lb"></script>
+    <script type="module" src="js/main.js?v=2026-06-03-live-lb-overlay"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
