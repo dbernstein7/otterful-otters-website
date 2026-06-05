@@ -8,7 +8,6 @@ import {
   cameraLerpForViewport,
   mobileRaceCameraScreenOffsetX,
   raceCameraLookAheadWorld,
-  isMobileRaceViewport,
 } from "./config.js";
 import {
   applyHudViewportVars,
