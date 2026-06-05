@@ -1137,6 +1137,18 @@ body:not(.otter-ui-menu) .hud-place:not(.hud-place--drift) {
   transform-origin: top right;
 }
 
+body:not(.otter-ui-menu) .hud-drift-board:not(.hidden) {
+  transform: scale(var(--hud-scale, 1));
+}
+
+body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--corner {
+  transform-origin: top right;
+}
+
+body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--under-time {
+  transform-origin: top left;
+}
+
 body:not(.otter-ui-menu) .hud-randomizer:not(.hidden) {
   transform: translateX(-50%) scale(var(--hud-scale, 1));
   transform-origin: top center;
@@ -1424,25 +1436,24 @@ body.otter-ui-menu .touch-controls {
   width: 100%;
 }
 
-#hud .hud-drift-board--under-time {
-  position: relative;
-  top: auto;
-  right: auto;
-  left: auto;
-  align-self: center;
-  width: min(78%, 176px);
+body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--under-time {
+  position: fixed;
+  z-index: 45;
+  top: calc(12px + env(safe-area-inset-top, 0px) + min(150px, 22vh));
+  left: calc(14px + env(safe-area-inset-left, 0px));
+  width: min(176px, calc((var(--otter-vw, 100vw) - 40px) * 0.42));
   max-width: 176px;
-  margin-top: 2px;
+  margin-top: 0;
   aspect-ratio: 1414 / 487;
   filter: drop-shadow(0 5px 16px rgba(0, 0, 0, 0.38));
 }
 
-#hud .hud-drift-board--under-time .hud-drift-board__inner {
+body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--under-time .hud-drift-board__inner {
   inset: 12% 5% 10% 5%;
 }
 
-#hud .hud-drift-board--under-time .hud-drift-board__val {
-  font-size: clamp(0.9rem, 2.9vw, 1.12rem);
+body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--under-time .hud-drift-board__val {
+  font-size: clamp(0.9rem, calc(1rem * var(--hud-scale, 1)), 1.12rem);
   font-weight: 900;
   letter-spacing: 0.01em;
   line-height: 1.12;
@@ -1823,16 +1834,13 @@ body.otter-ui-menu #hud-lives {
   box-shadow: none;
 }
 
-/* Drift challenge / Neon Snake / Endless — top-right (absolute within full-screen #hud) */
+/* Drift challenge / Neon Snake / Endless — top-right (sibling of #hud, like placement board) */
 .hud-drift-board.hud-drift-board--corner {
-  position: absolute;
-  z-index: 46;
+  position: fixed;
+  z-index: 45;
   top: calc(12px + env(safe-area-inset-top, 0px));
   right: calc(14px + env(safe-area-inset-right, 0px));
-  left: auto;
-  bottom: auto;
-  width: min(calc(220px * var(--hud-scale, 1)), calc((var(--otter-vw, 100vw) - 40px) * 0.46));
-  max-width: calc(var(--otter-vw, 100vw) - 28px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  width: min(220px, calc((var(--otter-vw, 100vw) - 32px) * 0.42));
   aspect-ratio: 1414 / 487;
   filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
 }

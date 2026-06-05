@@ -189,6 +189,12 @@
       <div class="hud-place__inner"></div>
     </div>
 
+    <div id="hud-drift-board" class="hud-drift-board hidden" aria-label="Drift distance">
+      <div class="hud-drift-board__inner">
+        <span id="hud-drift-cur-val" class="hud-drift-board__val">0 m</span>
+      </div>
+    </div>
+
     <div id="hud-lives" class="hud-lives hidden" aria-label="Lives remaining">
       <span class="hud-lives__lbl">Lives</span>
       <span id="hud-lives-val" class="hud-lives__val">3</span>
@@ -235,11 +241,6 @@
               <div id="drift-meter-fill" class="meter-fill"></div>
             </div>
           </div>
-        </div>
-      </div>
-      <div id="hud-drift-board" class="hud-drift-board hidden" aria-label="Drift distance">
-        <div class="hud-drift-board__inner">
-          <span id="hud-drift-cur-val" class="hud-drift-board__val">0 m</span>
         </div>
       </div>
       </div>
@@ -456,7 +457,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-03-drift-hud-v1"></script>
+    <script type="module" src="js/main.js?v=2026-06-03-drift-hud-v2"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {
