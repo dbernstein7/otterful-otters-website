@@ -1137,11 +1137,6 @@ body:not(.otter-ui-menu) .hud-place:not(.hud-place--drift) {
   transform-origin: top right;
 }
 
-body:not(.otter-ui-menu) .hud-drift-board.hud-drift-board--corner {
-  transform: scale(var(--hud-scale, 1));
-  transform-origin: top right;
-}
-
 body:not(.otter-ui-menu) .hud-randomizer:not(.hidden) {
   transform: translateX(-50%) scale(var(--hud-scale, 1));
   transform-origin: top center;
@@ -1410,6 +1405,7 @@ body.otter-ui-menu .touch-controls {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  overflow: visible;
   padding: calc(12px + env(safe-area-inset-top, 0px))
     calc(14px + env(safe-area-inset-right, 0px))
     calc(12px + env(safe-area-inset-bottom, 0px))
@@ -1827,19 +1823,29 @@ body.otter-ui-menu #hud-lives {
   box-shadow: none;
 }
 
-/* Drift challenge / Neon Snake / Endless — top-right */
+/* Drift challenge / Neon Snake / Endless — top-right (absolute within full-screen #hud) */
 .hud-drift-board.hud-drift-board--corner {
-  position: fixed;
-  z-index: 45;
+  position: absolute;
+  z-index: 46;
   top: calc(12px + env(safe-area-inset-top, 0px));
   right: calc(14px + env(safe-area-inset-right, 0px));
-  width: min(300px, 54vw);
+  left: auto;
+  bottom: auto;
+  width: min(calc(220px * var(--hud-scale, 1)), calc((var(--otter-vw, 100vw) - 40px) * 0.46));
+  max-width: calc(var(--otter-vw, 100vw) - 28px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   aspect-ratio: 1414 / 487;
   filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.45));
 }
 
-body.hud-placement-active .hud-drift-board.hud-drift-board--corner {
-  top: calc(min(46vh, 320px) + 20px + env(safe-area-inset-top, 0px));
+.hud-drift-board.hud-drift-board--corner .hud-drift-board__val {
+  font-size: clamp(0.72rem, calc(1rem * var(--hud-scale, 1)), 1.25rem);
+}
+
+/* Placement sits below drift board when both are shown (drift stays top-right). */
+body.hud-placement-active .hud-place:not(.hud-place--drift) {
+  top: calc(
+    12px + env(safe-area-inset-top, 0px) + min(calc(96px * var(--hud-scale, 1)), 16vh)
+  );
 }
 
 /* Practice / GP — under Timeboard */
