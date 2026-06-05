@@ -83,15 +83,16 @@ export function isMobileRaceViewport(viewW, viewH) {
 
 export function raceZoomForViewport(viewW, viewH) {
   const minor = Math.min(viewW || 320, viewH || 320);
-  if (isMobileRaceViewport(viewW, viewH)) {
-    const kartFill = 0.54;
-    const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
-    return clampCam(raw * 0.92, 1.9, 8.5);
-  }
-  /** Desktop / large viewports — original fullscreen tuning */
   const kartFill = 0.38;
   const raw = (minor * kartFill) / KART_SPRITE_WORLD_SPAN;
   return clampCam(raw * 0.5, 1.35, 6);
+}
+
+/** Lower cap on phones — enough sharpness, fewer pixels to fill each frame. */
+export function raceDevicePixelRatio(viewW, viewH) {
+  const dpr = window.devicePixelRatio || 1;
+  if (isMobileRaceViewport(viewW, viewH)) return Math.min(dpr, 1.5);
+  return Math.min(dpr, 2);
 }
 
 /**
@@ -115,9 +116,8 @@ export function raceCameraLookAheadWorld(viewW, viewH) {
   return clampCam(raw * 0.09, 32, 64);
 }
 
-/** Snappier follow on mobile so the kart stays centered while turning. */
-export function cameraLerpForViewport(viewW, viewH) {
-  return isMobileRaceViewport(viewW, viewH) ? 14 : CAMERA.lerp;
+export function cameraLerpForViewport(_viewW, _viewH) {
+  return CAMERA.lerp;
 }
 
 export const CAMERA = {

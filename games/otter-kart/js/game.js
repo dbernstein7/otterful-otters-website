@@ -4,6 +4,7 @@ import {
   TOTAL_LAPS,
   TARGET_FPS,
   raceZoomForViewport,
+  raceDevicePixelRatio,
   cameraLerpForViewport,
   mobileRaceCameraScreenOffsetX,
   raceCameraLookAheadWorld,
@@ -2632,7 +2633,6 @@ export class Game {
   }
 
   resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvas = this.canvas;
     const menu = document.body?.classList?.contains("otter-ui-menu");
 
@@ -2670,11 +2670,12 @@ export class Game {
       h = Math.max(1, Math.round(canvas.clientHeight || h));
     }
 
+    this.viewW = w;
+    this.viewH = h;
+    const dpr = raceDevicePixelRatio(w, h);
     canvas.width = Math.max(1, Math.floor(w * dpr));
     canvas.height = Math.max(1, Math.floor(h * dpr));
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    this.viewW = w;
-    this.viewH = h;
     applyHudViewportVars();
     invalidatePatternCaches();
   }
@@ -4263,11 +4264,11 @@ export class Game {
   syncRaceViewFromCanvas() {
     if (this.phase === "menu" || document.body?.classList?.contains("otter-ui-menu"))
       return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const layout = getCanvasClientViewSize(this.canvas);
     const cw = layout.vw;
     const ch = layout.vh;
     if (cw < 8 || ch < 8) return;
+    const dpr = raceDevicePixelRatio(cw, ch);
     const bw = Math.round(this.canvas.width / dpr);
     const bh = Math.round(this.canvas.height / dpr);
     if (Math.abs(cw - bw) > 2 || Math.abs(ch - bh) > 2) {
@@ -4279,7 +4280,6 @@ export class Game {
   }
 
   stepCameraFollow(dt) {
-    this.syncRaceViewFromCanvas();
     const lerp = cameraLerpForViewport(this.viewW, this.viewH);
     const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
     const K = this.kart;
@@ -4614,9 +4614,9 @@ export class Game {
   draw(showFinishedBackdrop) {
     this.syncRaceViewFromCanvas();
     const ctx = this.ctx;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = this.viewW;
     const h = this.viewH;
+    const dpr = raceDevicePixelRatio(w, h);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const snakeField = neonSnakeFieldKind(this);
