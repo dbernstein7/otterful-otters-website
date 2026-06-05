@@ -18,6 +18,43 @@ const MODE_LABELS = {
   grandprix: "GP",
 };
 
+const FALLBACK_COLUMNS = {
+  practice: [
+    { key: "player", header: "Player" },
+    { key: "shells", header: "🐚" },
+    { key: "totalTime", header: "3 laps" },
+  ],
+  daily: [
+    { key: "player", header: "Player" },
+    { key: "shells", header: "🐚" },
+    { key: "longestDrift", header: "Longest drift" },
+    { key: "longestDriftTime", header: "Drift time" },
+  ],
+  touge: [
+    { key: "player", header: "Player" },
+    { key: "shells", header: "🐚" },
+    { key: "totalTime", header: "Time" },
+    { key: "longestDrift", header: "Longest drift" },
+    { key: "longestDriftTime", header: "Drift time" },
+  ],
+  endless: [
+    { key: "player", header: "Player" },
+    { key: "distance", header: "Distance" },
+    { key: "shells", header: "🐚" },
+    { key: "shellBonus", header: "Dist bonus" },
+    { key: "longestDrift", header: "Longest drift" },
+    { key: "longestDriftTime", header: "Drift time" },
+  ],
+  grandprix: [
+    { key: "player", header: "Player" },
+    { key: "gpTotalShells", header: "Total 🐚" },
+    { key: "gpPickupShells", header: "Race 🐚" },
+    { key: "gpShellBonus", header: "Bonus 🐚" },
+    { key: "gpPlayerPoints", header: "Pts" },
+    { key: "gpTotalTime", header: "Time" },
+  ],
+};
+
 /** @type {ReturnType<typeof setInterval> | null} */
 let pollTimer = null;
 /** @type {number} */
@@ -118,18 +155,58 @@ function relTime(ts) {
   return `${Math.floor(sec / 60)}m ago`;
 }
 
-function renderBoardList(rows) {
+function columnsForMode(mode, board) {
+  if (Array.isArray(board?.columns) && board.columns.length) return board.columns;
+  return FALLBACK_COLUMNS[mode] || FALLBACK_COLUMNS.practice;
+}
+
+function cellValueForRow(row, key) {
+  if (Array.isArray(row.cells)) {
+    const hit = row.cells.find((c) => c.key === key);
+    if (hit) return hit.value ?? "—";
+  }
+  if (key === "player") return row.walletShort || "—";
+  return "—";
+}
+
+function renderBoardList(mode, rows, board = {}) {
+  const columns = columnsForMode(mode, board);
+  const colCount = columns.length;
   const slots = padRows(rows);
+  const head = columns
+    .map(
+      (col) =>
+        `<span class="live-lb__col live-lb__col--${col.key}" title="${escapeHtml(col.header)}">${escapeHtml(col.header)}</span>`,
+    )
+    .join("");
   const items = slots
     .map((r) => {
-      const empty = !!r.blank || !(r.label || r.walletShort);
-      const entry = empty ? "—" : r.label || r.walletShort;
-      return `<li class="${empty ? "live-lb__slot--empty" : ""}"><span class="live-lb__rank">${r.rank}.</span><span class="live-lb__entry${empty ? " live-lb__entry--empty" : ""}">${escapeHtml(
-        entry,
-      )}</span></li>`;
+      const empty = !!r.blank || !(r.label || r.walletShort || r.cells?.length);
+      const cells = empty
+        ? columns.map(() => `<span class="live-lb__col live-lb__col--empty">—</span>`).join("")
+        : columns
+            .map((col) => {
+              const value = cellValueForRow(r, col.key);
+              const cls =
+                col.key === "player"
+                  ? "live-lb__col live-lb__col--player"
+                  : `live-lb__col live-lb__col--${col.key} live-lb__col--stat`;
+              return `<span class="${cls}">${escapeHtml(value)}</span>`;
+            })
+            .join("");
+      return `<li class="${empty ? "live-lb__slot--empty" : ""}" style="--live-lb-cols:${colCount}">
+        <span class="live-lb__rank">${r.rank}.</span>
+        ${cells}
+      </li>`;
     })
     .join("");
-  return `<ol class="live-lb__list live-lb__list--top10">${items}</ol>`;
+  return `<div class="live-lb__table" data-mode="${mode}" data-cols="${colCount}">
+    <div class="live-lb__table-head" style="--live-lb-cols:${colCount}">
+      <span class="live-lb__rank live-lb__rank--head">#</span>
+      ${head}
+    </div>
+    <ol class="live-lb__list live-lb__list--top10 live-lb__list--cols">${items}</ol>
+  </div>`;
 }
 
 function escapeHtml(s) {
@@ -168,7 +245,7 @@ function renderRoot(root) {
           <h3 class="live-lb-card__title">${escapeHtml(board.label || MODE_LABELS[mode])}</h3>
           ${sub}
         </header>
-        ${renderBoardList(board.rows)}
+        ${renderBoardList(mode, board.rows, board)}
       </article>`;
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
@@ -186,7 +263,7 @@ function renderRoot(root) {
   const board = cachedBoards[activeMode] || { rows: padRows([]) };
   root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
     <div class="live-lb__tabs" role="tablist" aria-label="Game mode">${tabs}</div>
-    ${renderBoardList(board.rows)}
+    ${renderBoardList(activeMode, board.rows, board)}
     <div class="live-lb__meta">Updated ${relTime(lastFetchAt)}</div>`;
 }
 
@@ -252,6 +329,8 @@ export function initLiveLeaderboardOverlay(opts = {}) {
 }
 
 function statsFromRaceDetail(detail) {
+  const gpTotalShells = Math.max(0, Math.floor(Number(detail.gpTotalShells) || 0));
+  const gpShellBonus = Math.max(0, Math.floor(Number(detail.gpShellBonus ?? detail.gpSeriesPayout) || 0));
   return {
     mode: detail.mode,
     dateISO: detail.dateISO || (detail.mode === "daily" ? todayISO() : ""),
@@ -262,8 +341,16 @@ function statsFromRaceDetail(detail) {
     longestDriftTime: Number(detail.longestDriftTime) || 0,
     distance: Number(detail.endlessDist ?? detail.distance) || 0,
     endlessLongestDrift: Number(detail.endlessLongestDrift) || 0,
+    endlessLongestDriftTime: Number(detail.endlessLongestDriftTime) || 0,
+    shellBonus: Math.floor(Number(detail.endlessDistShellBonus ?? detail.shellBonus) || 0),
     gpTotalTime: Number(detail.gpTotalTime) || 0,
     gpPlayerPoints: Math.floor(Number(detail.gpPlayerPoints) || 0),
+    gpTotalShells,
+    gpPickupShells: Math.max(
+      0,
+      Math.floor(Number(detail.gpPickupShells) || gpTotalShells - gpShellBonus),
+    ),
+    gpShellBonus,
     gpSeriesComplete: !!detail.gpSeriesComplete,
   };
 }

@@ -1312,9 +1312,14 @@ function stepCurrentDriftDistance(game, kart, dt) {
         game.endlessLongestDrift ?? 0,
         game.endlessDriftCurD ?? 0,
       );
+      game._endlessDriftCurT = (game._endlessDriftCurT ?? 0) + dt;
+      game.endlessLongestDriftTime = Math.max(
+        game.endlessLongestDriftTime ?? 0,
+        game._endlessDriftCurT ?? 0,
+      );
     } else {
       game._driftCurD = (game._driftCurD ?? 0) + dStep;
-      if (game.mode === "daily") {
+      if (game.mode === "daily" || game.mode === "touge") {
         game.longestDrift = Math.max(game.longestDrift ?? 0, game._driftCurD);
         game._driftCurT = (game._driftCurT ?? 0) + dt;
         game.longestDriftTime = Math.max(
@@ -1326,9 +1331,10 @@ function stepCurrentDriftDistance(game, kart, dt) {
   } else {
     if (game.mode === "endless") {
       game.endlessDriftCurD = 0;
+      game._endlessDriftCurT = 0;
     } else {
       game._driftCurD = 0;
-      if (game.mode === "daily") game._driftCurT = 0;
+      if (game.mode === "daily" || game.mode === "touge") game._driftCurT = 0;
     }
     if (snakeDriftDistanceMode(game)) resetDriftProgressAnchor(game, kart);
   }
@@ -2993,6 +2999,8 @@ export class Game {
     this._driftCurT = 0;
     this.endlessLongestDrift = 0;
     this.endlessDriftCurD = 0;
+    this.endlessLongestDriftTime = 0;
+    this._endlessDriftCurT = 0;
     this.endlessBananaHits = 0;
     this.dailyLeft = this.mode === "daily" ? 120 : 0;
 
@@ -3136,9 +3144,12 @@ export class Game {
             : { lapTime: bestLap || totalTime / TOTAL_LAPS, samples: [] },
         totalTime,
         shells,
-        longestDrift: this.mode === "daily" ? (this.longestDrift ?? 0) : 0,
+        longestDrift:
+          this.mode === "daily" || this.mode === "touge" ? (this.longestDrift ?? 0) : 0,
         longestDriftTime:
-          this.mode === "daily" ? (this.longestDriftTime ?? 0) : 0,
+          this.mode === "daily" || this.mode === "touge"
+            ? (this.longestDriftTime ?? 0)
+            : 0,
       });
     }
     this.fillEndScreen(totalTime, bestLap, shells, lbTime, finishExtra);
@@ -3147,6 +3158,8 @@ export class Game {
 
   emitLiveLeaderboardEvent(totalTime, bestLap, shells, extra = {}) {
     if (typeof window === "undefined") return;
+    const gpTotalShells = this.gpTotalShells ?? 0;
+    const gpShellBonus = this.gpSeriesPayout ?? 0;
     window.dispatchEvent(
       new CustomEvent("otterkart-race-finished", {
         detail: {
@@ -3159,8 +3172,13 @@ export class Game {
           longestDriftTime: this.longestDriftTime ?? 0,
           endlessDist: this.endlessDist ?? 0,
           endlessLongestDrift: this.endlessLongestDrift ?? 0,
+          endlessLongestDriftTime: this.endlessLongestDriftTime ?? 0,
+          endlessDistShellBonus: this.endlessDistShellBonus ?? 0,
           gpTotalTime: this.gpTotalTime ?? 0,
           gpPlayerPoints: this.gpPlayerPoints ?? 0,
+          gpTotalShells,
+          gpPickupShells: Math.max(0, gpTotalShells - gpShellBonus),
+          gpShellBonus,
           gpSeriesComplete: !!extra.gpSeriesComplete,
         },
       }),
