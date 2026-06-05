@@ -6,6 +6,9 @@
       "maxDuration": 30,
       "memory": 2048,
       "includeFiles": "lib/**"
+    },
+    "api/otter-kart/leaderboard.js": {
+      "includeFiles": "lib/**"
     }
   },
   "env": {

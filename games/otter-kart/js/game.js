@@ -3120,6 +3120,9 @@ export class Game {
         gpPlace: Number.isFinite(seriesPlace) ? seriesPlace : finishPlace,
         gpSeriesComplete: lastGp,
       });
+      this.emitLiveLeaderboardEvent(totalTime, bestLap, shells, {
+        gpSeriesComplete: lastGp,
+      });
       return;
     }
     if (this.mode !== "endless" && this.mode !== "admin") {
@@ -3139,6 +3142,29 @@ export class Game {
       });
     }
     this.fillEndScreen(totalTime, bestLap, shells, lbTime, finishExtra);
+    this.emitLiveLeaderboardEvent(totalTime, bestLap, shells);
+  }
+
+  emitLiveLeaderboardEvent(totalTime, bestLap, shells, extra = {}) {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("otterkart-race-finished", {
+        detail: {
+          mode: this.mode,
+          dateISO: this.dateISO || "",
+          totalTime,
+          bestLap,
+          shells,
+          longestDrift: this.longestDrift ?? 0,
+          longestDriftTime: this.longestDriftTime ?? 0,
+          endlessDist: this.endlessDist ?? 0,
+          endlessLongestDrift: this.endlessLongestDrift ?? 0,
+          gpTotalTime: this.gpTotalTime ?? 0,
+          gpPlayerPoints: this.gpPlayerPoints ?? 0,
+          gpSeriesComplete: !!extra.gpSeriesComplete,
+        },
+      }),
+    );
   }
 
   /** @param {{ finishPlace?: number, nRacers?: number, newRainbowUnlock?: boolean, gpPlace?: number, gpSeriesComplete?: boolean }} [extra] */

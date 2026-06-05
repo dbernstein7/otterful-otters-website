@@ -1368,6 +1368,68 @@ body::before {
     max-height: none !important;
 }
 
+.otter-kart-live-boards {
+    width: 100%;
+    margin-top: 28px;
+    padding: 0 4px 24px;
+}
+
+.otter-kart-live-boards__title {
+    margin-bottom: 8px;
+}
+
+.otter-kart-live-boards__hint {
+    margin: 0 0 18px;
+    max-width: 720px;
+    color: rgba(200, 220, 235, 0.82);
+    font-size: 0.98rem;
+    line-height: 1.5;
+}
+
+.live-lb-page__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.live-lb-card {
+    border: 1px solid rgba(90, 255, 180, 0.22);
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.28);
+    padding: 14px 16px 12px;
+    box-shadow: 0 0 24px rgba(79, 214, 165, 0.08);
+}
+
+.live-lb-card__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.live-lb-card__title {
+    margin: 0;
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    color: #dffef0;
+}
+
+.live-lb__date {
+    font-size: 0.78rem;
+    color: rgba(180, 210, 200, 0.75);
+}
+
+.live-lb--page .live-lb__list {
+    font-size: 0.86rem;
+}
+
+.live-lb--page .live-lb__meta {
+    margin-top: 14px;
+    text-align: center;
+    font-size: 0.82rem;
+}
+
 /* Top Holders Leaderboard */
 .leaderboard-section {
     margin-top: 24px;

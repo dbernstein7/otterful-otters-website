@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-03-mobile-zoom-perf"
+                    src="/games/otter-kart/index.html?v=2026-06-03-live-lb"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -86,6 +86,12 @@
             <div class="page-embed-note page-embed-note--centered">
                 <button type="button" class="action-btn primary" id="otterKartFullscreenBtn">Full Screen</button>
             </div>
+
+            <section class="otter-kart-live-boards" aria-labelledby="otterKartLiveLbTitle">
+                <h2 id="otterKartLiveLbTitle" class="section-title otter-kart-live-boards__title">OtterKart live leaderboards</h2>
+                <p class="otter-kart-live-boards__hint">Global best runs across all modes — updates every 30 seconds. Connect your wallet in-game to submit scores.</p>
+                <div id="otterKartLiveLeaderboards" class="live-lb live-lb--page" data-live-lb-variant="page"></div>
+            </section>
         </div>
     </div>
 
@@ -139,7 +145,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-mobile-zoom-perf';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-live-lb';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
@@ -248,6 +254,13 @@
 
         schedulePostEmbedViewport();
       })();
+    </script>
+    <script type="module">
+      import { initLiveLeaderboard } from "/games/otter-kart/js/live-leaderboard.js";
+      const root = document.getElementById("otterKartLiveLeaderboards");
+      if (root instanceof HTMLElement) {
+        initLiveLeaderboard(root, { variant: "page", limit: 8, pollMs: 20000 });
+      }
     </script>
 </body>
 </html>
