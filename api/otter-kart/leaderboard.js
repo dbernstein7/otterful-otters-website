@@ -1,9 +1,9 @@
-const { handleGet, handlePost, handleReset } = require("../../lib/otter-kart-leaderboard/handlers.js");
+const { handleGet, handlePost } = require("../../lib/otter-kart-leaderboard/handlers.js");
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -11,12 +11,6 @@ module.exports = async (req, res) => {
 
   if (req.method === "GET") {
     const result = await handleGet(req.query || {});
-    return res.status(result.status).json(result.json);
-  }
-
-  if (req.method === "DELETE") {
-    const authHeader = req.headers.authorization || req.headers.Authorization || "";
-    const result = await handleReset(authHeader, { ...process.env });
     return res.status(result.status).json(result.json);
   }
 

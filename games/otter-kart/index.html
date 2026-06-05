@@ -20,7 +20,7 @@
     </script>
     <!-- Without a base URL, /games/otter-kart (no trailing slash) resolves ./css to /games/css and breaks the whole UI. -->
     <base href="/games/otter-kart/" />
-    <link rel="stylesheet" href="css/styles.css?v=2026-06-03-live-lb-v7" />
+    <link rel="stylesheet" href="css/styles.css?v=2026-06-03-mobile-camera-fix" />
     <script>
       (function () {
         function reportGameSize() {
@@ -102,40 +102,6 @@
     </div>
     <div id="start-wallet-toast" class="start-wallet-toast hidden" role="status" aria-live="polite"></div>
     <div id="demo-session-badge" class="demo-session-badge hidden" aria-hidden="true">Demo</div>
-
-    <div
-      id="demo-username-overlay"
-      class="demo-username-overlay hidden"
-      aria-hidden="true"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="demo-username-title"
-    >
-      <button type="button" class="demo-username-overlay__backdrop" data-demo-username-close aria-label="Cancel"></button>
-      <div class="demo-username-overlay__panel">
-        <h2 id="demo-username-title">Pick a username</h2>
-        <p class="demo-username-overlay__hint">Shown on global leaderboards. 3–16 letters, numbers, _ or -.</p>
-        <form id="demo-username-form" class="demo-username-form" novalidate>
-          <input
-            id="demo-username-input"
-            class="demo-username-input"
-            type="text"
-            name="username"
-            maxlength="16"
-            autocomplete="nickname"
-            autocapitalize="off"
-            spellcheck="false"
-            required
-            placeholder="Your name"
-          />
-          <p id="demo-username-error" class="demo-username-error hidden" role="alert"></p>
-          <div class="demo-username-actions">
-            <button type="button" class="demo-username-btn demo-username-btn--ghost" data-demo-username-close>Cancel</button>
-            <button type="submit" class="demo-username-btn demo-username-btn--primary">Play demo</button>
-          </div>
-        </form>
-      </div>
-    </div>
 
     <div id="map-hotspots" class="map-hotspots" aria-hidden="true">
       <button type="button" class="map-hotspot map-hotspot--garage" data-map-mode="garage" aria-label="Garage"></button>
@@ -468,7 +434,7 @@
       </div>
     </div>
 
-    <script type="module" src="js/main.js?v=2026-06-03-live-lb-v7"></script>
+    <script type="module" src="js/main.js?v=2026-06-03-live-lb-v5"></script>
     <script>
       window.addEventListener("load", function () {
         window.setTimeout(function () {

@@ -1,17 +1,16 @@
 /**
- * Global Otter Kart leaderboards (Vercel KV).
+ * Global leaderboards — best run per mode, saved on race finish (Vercel KV).
  * GET  /api/rewards/leaderboard?game=otter-kart&all=1
- * POST /api/otter-kart/leaderboard { playerId, mode, stats }
+ * POST /api/otter-kart/leaderboard
+ * Claim = signed drip rewards only (not leaderboards).
  */
 
 import { getConnectedWallet, isEthAddress } from "../../otter-kart-rewards.mjs";
-import { getPlayerId, getPlayerUsername, todayISO } from "./storage.js";
+import { getDemoPlayerId, todayISO } from "./storage.js";
 
 const READ_URL = "/api/rewards/leaderboard";
 const POST_URL = "/api/otter-kart/leaderboard";
-const LAST_RACE_KEY = "otterkart:lastRaceStats";
 const POLL_MS = 15000;
-const MAX_SHELLS = 50000;
 const MODE_ORDER = ["practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
   practice: "Practice",
@@ -23,8 +22,11 @@ const MODE_LABELS = {
 
 /** @type {ReturnType<typeof setInterval> | null} */
 let pollTimer = null;
+/** @type {number} */
 let lastFetchAt = 0;
+/** @type {boolean} */
 let serverConfigured = false;
+/** @type {string} */
 let statusText = "Loading…";
 /** @type {Record<string, { label?: string, date?: string, rows: Array<{ rank: number, label: string }> }>} */
 let cachedBoards = {};
@@ -35,23 +37,17 @@ let overlayEl = null;
 /** @type {HTMLButtonElement | null} */
 let overlayToggleBtn = null;
 
-function optionalWallet() {
+async function postLeaderboardRun(mode, stats) {
   const wallet = getConnectedWallet();
-  return wallet && isEthAddress(wallet) ? wallet.trim().toLowerCase() : undefined;
-}
+  const body =
+    wallet && isEthAddress(wallet)
+      ? { wallet: wallet.trim().toLowerCase(), mode, stats }
+      : { demo: true, demoId: getDemoPlayerId(), mode, stats };
 
-async function postLeaderboard(mode, stats) {
-  const username = getPlayerUsername();
   const res = await fetch(POST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      playerId: getPlayerId(),
-      mode,
-      stats,
-      username: username || undefined,
-      wallet: optionalWallet(),
-    }),
+    body: JSON.stringify(body),
   });
   return res.json().catch(() => ({}));
 }
@@ -70,11 +66,7 @@ export async function fetchLiveLeaderboards(limit = 8) {
   lastFetchAt = Date.now();
   serverConfigured = !!data.configured;
   cachedBoards = data.boards && typeof data.boards === "object" ? data.boards : {};
-  statusText = !serverConfigured
-    ? "Storage not configured"
-    : totalRowCount(cachedBoards) > 0
-      ? "Live"
-      : "No entries yet — finish a race to appear here";
+  statusText = !serverConfigured ? "Storage not configured" : totalRowCount(cachedBoards) > 0 ? "Live" : "No entries yet — finish a race";
 
   for (const root of mountedRoots) renderRoot(root);
   return cachedBoards;
@@ -134,7 +126,7 @@ function renderRoot(root) {
   const variant = root.dataset.liveLbVariant || "overlay";
   const activeMode = root.dataset.liveLbActive || "practice";
   const emptyText = serverConfigured
-    ? "No runs yet — finish a race to save your best time."
+    ? "No runs yet — finish a race to post a score."
     : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
@@ -152,7 +144,7 @@ function renderRoot(root) {
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
       <div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Best runs save when you finish a race.</p>`;
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Scores save when you finish a race.</p>`;
     return;
   }
 
@@ -230,7 +222,7 @@ export function initLiveLeaderboardOverlay(opts = {}) {
   initLiveLeaderboard(panel, { variant: "overlay", limit: opts.limit || 8, pollMs: opts.pollMs || POLL_MS });
 }
 
-export function statsFromRaceDetail(detail) {
+function statsFromRaceDetail(detail) {
   return {
     mode: detail.mode,
     dateISO: detail.dateISO || (detail.mode === "daily" ? todayISO() : ""),
@@ -247,27 +239,6 @@ export function statsFromRaceDetail(detail) {
   };
 }
 
-export function stashLastRaceStats(detail) {
-  if (!detail || typeof detail !== "object") return;
-  try {
-    sessionStorage.setItem(LAST_RACE_KEY, JSON.stringify(statsFromRaceDetail(detail)));
-  } catch {}
-}
-
-export function peekLastRaceStatsForClaim() {
-  try {
-    const raw = sessionStorage.getItem(LAST_RACE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || typeof parsed.mode !== "string") return null;
-    if (parsed.mode === "admin") return null;
-    if (parsed.mode === "grandprix" && !parsed.gpSeriesComplete) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
 function shouldSubmitRace(detail) {
   if (!detail || typeof detail !== "object") return false;
   if (detail.mode === "admin" || detail.mode === "session") return false;
@@ -277,9 +248,8 @@ function shouldSubmitRace(detail) {
 
 export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
-  stashLastRaceStats(detail);
-  const data = await postLeaderboard(detail.mode, statsFromRaceDetail(detail));
-  if (data?.updated || data?.reason === "name_updated") {
+  const data = await postLeaderboardRun(detail.mode, statsFromRaceDetail(detail));
+  if (data?.updated) {
     void fetchLiveLeaderboards(8).catch(() => {});
   }
   return data;
@@ -287,9 +257,7 @@ export async function submitLiveLeaderboardRun(detail) {
 
 export function installLiveLeaderboardRaceHook() {
   window.addEventListener("otterkart-race-finished", (event) => {
-    const detail = event?.detail;
-    stashLastRaceStats(detail);
-    void submitLiveLeaderboardRun(detail).catch(() => {});
+    void submitLiveLeaderboardRun(event?.detail).catch(() => {});
   });
 }
 
