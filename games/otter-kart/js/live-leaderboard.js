@@ -1,6 +1,8 @@
 /**
- * Live global leaderboards — GET /api/otter-kart/leaderboard
- * Submit signed runs after races (wallet required).
+ * Live global leaderboards — same KV + API pattern as Shell Rush.
+ * GET  /api/rewards/leaderboard?game=otter-kart&all=1
+ * POST /api/otter-kart/leaderboard (signed race stats)
+ * Writes on shell claim via /api/rewards/award (game: otter-kart)
  */
 
 import {
@@ -9,15 +11,18 @@ import {
 } from "../../otter-kart-rewards.mjs";
 import { isDemoSessionActive, todayISO } from "./storage.js";
 
-const API_URL = "/api/otter-kart/leaderboard";
-const POLL_MS = 30000;
-const MODE_ORDER = ["practice", "daily", "touge", "endless", "grandprix"];
+const READ_URL = "/api/rewards/leaderboard";
+const POST_URL = "/api/otter-kart/leaderboard";
+const LAST_RACE_KEY = "otterkart:lastRaceStats";
+const POLL_MS = 15000;
+const MODE_ORDER = ["session", "practice", "daily", "touge", "endless", "grandprix"];
 const MODE_LABELS = {
+  session: "Session",
   practice: "Practice",
-  daily: "Drift challenge",
-  touge: "Neon Snake",
+  daily: "Drift",
+  touge: "Snake",
   endless: "Endless",
-  grandprix: "Grand Prix",
+  grandprix: "GP",
 };
 
 /** @type {ReturnType<typeof setInterval> | null} */
@@ -26,29 +31,16 @@ let pollTimer = null;
 let lastFetchAt = 0;
 /** @type {boolean} */
 let serverConfigured = false;
+/** @type {string} */
+let statusText = "Loading…";
 /** @type {Record<string, { label?: string, date?: string, rows: Array<{ rank: number, label: string }> }>} */
 let cachedBoards = {};
-/** @type {Set<(boards: typeof cachedBoards) => void>} */
-const listeners = new Set();
 /** @type {Set<HTMLElement>} */
 const mountedRoots = new Set();
 /** @type {HTMLElement | null} */
 let overlayEl = null;
 /** @type {HTMLButtonElement | null} */
 let overlayToggleBtn = null;
-
-function bindPanelTabs(panel) {
-  if (!(panel instanceof HTMLElement) || panel.dataset.liveLbBound === "1") return;
-  panel.dataset.liveLbBound = "1";
-  panel.addEventListener("click", (event) => {
-    const tab = event.target.closest?.("[data-live-lb-tab]");
-    if (!(tab instanceof HTMLButtonElement)) return;
-    event.preventDefault();
-    event.stopPropagation();
-    panel.dataset.liveLbActive = tab.getAttribute("data-live-lb-tab") || "practice";
-    renderRoot(panel);
-  });
-}
 
 function getEthereum() {
   const eth = typeof window !== "undefined" ? window.ethereum : null;
@@ -94,18 +86,35 @@ async function personalSign(message, address) {
   }
 }
 
-export async function fetchLiveLeaderboards(limit = 6) {
+function totalRowCount(boards) {
+  return MODE_ORDER.reduce((n, mode) => n + (boards[mode]?.rows?.length || 0), 0);
+}
+
+export async function fetchLiveLeaderboards(limit = 8) {
   const date = todayISO();
-  const url = `${API_URL}?all=1&limit=${encodeURIComponent(String(limit))}&date=${encodeURIComponent(date)}`;
-  const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" } });
+  const url = `${READ_URL}?game=otter-kart&all=1&limit=${encodeURIComponent(String(limit))}&date=${encodeURIComponent(date)}`;
+  const res = await fetch(url, { method: "GET", headers: { Accept: "application/json" }, cache: "no-store" });
   const data = await res.json().catch(() => ({}));
   if (!data?.ok) throw new Error(data?.error || "Leaderboard fetch failed");
+
   lastFetchAt = Date.now();
   serverConfigured = !!data.configured;
   cachedBoards = data.boards && typeof data.boards === "object" ? data.boards : {};
-  for (const fn of listeners) fn(cachedBoards);
+
+  if (!serverConfigured) {
+    statusText = "Storage not configured";
+  } else if (totalRowCount(cachedBoards) > 0) {
+    statusText = "Live";
+  } else {
+    statusText = "No entries yet — connect wallet, race, and claim shells";
+  }
+
   for (const root of mountedRoots) renderRoot(root);
   return cachedBoards;
+}
+
+export function getLiveLeaderboardStatus() {
+  return statusText;
 }
 
 function relTime(ts) {
@@ -121,7 +130,7 @@ function renderBoardList(rows, emptyText) {
     return `<p class="live-lb__empty">${emptyText}</p>`;
   }
   const items = rows
-    .slice(0, 6)
+    .slice(0, 8)
     .map(
       (r) =>
         `<li><span class="live-lb__rank">${r.rank}</span><span class="live-lb__entry">${escapeHtml(
@@ -140,11 +149,27 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+function bindPanelTabs(panel) {
+  if (!(panel instanceof HTMLElement) || panel.dataset.liveLbBound === "1") return;
+  panel.dataset.liveLbBound = "1";
+  panel.addEventListener("click", (event) => {
+    const tab = event.target.closest?.("[data-live-lb-tab]");
+    if (!(tab instanceof HTMLButtonElement)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    panel.dataset.liveLbActive = tab.getAttribute("data-live-lb-tab") || "session";
+    renderRoot(panel);
+  });
+}
+
 function renderRoot(root) {
   if (!(root instanceof HTMLElement)) return;
   const variant = root.dataset.liveLbVariant || "overlay";
-  const activeMode = root.dataset.liveLbActive || "practice";
+  const activeMode = root.dataset.liveLbActive || "session";
   const configured = serverConfigured;
+  const emptyText = configured
+    ? "No runs yet — connect wallet, finish a race, then claim shells."
+    : "Leaderboard storage not configured on the server yet.";
 
   if (variant === "page") {
     const cards = MODE_ORDER.map((mode) => {
@@ -156,11 +181,12 @@ function renderRoot(root) {
           <h3 class="live-lb-card__title">${escapeHtml(board.label || MODE_LABELS[mode])}</h3>
           ${sub}
         </header>
-        ${renderBoardList(board.rows, configured ? "No runs yet." : "Leaderboard storage not configured.")}
+        ${renderBoardList(board.rows, emptyText)}
       </article>`;
     }).join("");
-    root.innerHTML = `<div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Connect wallet on the map to post scores</p>`;
+    root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
+      <div class="live-lb-page__grid">${cards}</div>
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Scores update when players claim signed shell runs (like Shell Rush).</p>`;
     return;
   }
 
@@ -171,12 +197,10 @@ function renderRoot(root) {
       )}</button>`,
   ).join("");
   const board = cachedBoards[activeMode] || { rows: [] };
-  root.innerHTML = `<div class="live-lb__tabs" role="tablist" aria-label="Game mode">${tabs}</div>
-    ${renderBoardList(
-      board.rows,
-      configured ? "No runs yet — connect wallet & race." : "Server storage not configured.",
-    )}
-    <div class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Connect wallet to submit scores</div>`;
+  root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
+    <div class="live-lb__tabs" role="tablist" aria-label="Game mode">${tabs}</div>
+    ${renderBoardList(board.rows, emptyText)}
+    <div class="live-lb__meta">Updated ${relTime(lastFetchAt)}</div>`;
 }
 
 function setLiveLeaderboardOverlayOpen(open) {
@@ -186,11 +210,29 @@ function setLiveLeaderboardOverlayOpen(open) {
   overlayToggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
   document.body?.classList?.toggle?.("otter-live-lb-open", open);
   if (open) {
-    void fetchLiveLeaderboards(8).catch(() => {});
+    void fetchLiveLeaderboards(8).catch(() => renderRoot(overlayEl.querySelector("#live-leaderboard-panel")));
     const panel = overlayEl.querySelector("#live-leaderboard-panel");
     if (panel instanceof HTMLElement) renderRoot(panel);
     overlayEl.querySelector(".live-lb-overlay__close")?.focus?.();
   }
+}
+
+export function mountLiveLeaderboard(root, opts = {}) {
+  if (!(root instanceof HTMLElement)) return;
+  root.dataset.liveLbVariant = opts.variant || "overlay";
+  root.dataset.liveLbActive = opts.activeMode || "session";
+  mountedRoots.add(root);
+  bindPanelTabs(root);
+  renderRoot(root);
+}
+
+export function initLiveLeaderboard(root, opts = {}) {
+  mountLiveLeaderboard(root, opts);
+  void fetchLiveLeaderboards(opts.limit || 8).catch(() => renderRoot(root));
+  if (pollTimer) return;
+  pollTimer = window.setInterval(() => {
+    void fetchLiveLeaderboards(opts.limit || 8).catch(() => {});
+  }, opts.pollMs || POLL_MS);
 }
 
 export function initLiveLeaderboardOverlay(opts = {}) {
@@ -222,34 +264,9 @@ export function initLiveLeaderboardOverlay(opts = {}) {
   initLiveLeaderboard(panel, { variant: "overlay", limit: opts.limit || 8, pollMs: opts.pollMs || POLL_MS });
 }
 
-export function mountLiveLeaderboard(root, opts = {}) {
-  if (!(root instanceof HTMLElement)) return;
-  root.dataset.liveLbVariant = opts.variant || "overlay";
-  root.dataset.liveLbActive = opts.activeMode || "practice";
-  mountedRoots.add(root);
-  bindPanelTabs(root);
-  renderRoot(root);
-}
-
-export function initLiveLeaderboard(root, opts = {}) {
-  mountLiveLeaderboard(root, opts);
-  void fetchLiveLeaderboards(opts.limit || 6).catch(() => renderRoot(root));
-  if (pollTimer) return;
-  pollTimer = window.setInterval(() => {
-    void fetchLiveLeaderboards(opts.limit || 6).catch(() => {});
-  }, opts.pollMs || POLL_MS);
-}
-
-function shouldSubmitRace(detail) {
-  if (!detail || typeof detail !== "object") return false;
-  if (detail.mode === "admin") return false;
-  if (isDemoSessionActive()) return false;
-  if (detail.mode === "grandprix" && !detail.gpSeriesComplete) return false;
-  return true;
-}
-
-function statsFromDetail(detail) {
+export function statsFromRaceDetail(detail) {
   return {
+    mode: detail.mode,
     dateISO: detail.dateISO || (detail.mode === "daily" ? todayISO() : ""),
     totalTime: Number(detail.totalTime) || 0,
     bestLap: Number(detail.bestLap) || 0,
@@ -264,27 +281,59 @@ function statsFromDetail(detail) {
   };
 }
 
+/** Stash for shell claim → award → KV (Shell Rush pattern). */
+export function stashLastRaceStats(detail) {
+  if (!detail || typeof detail !== "object") return;
+  try {
+    sessionStorage.setItem(LAST_RACE_KEY, JSON.stringify(statsFromRaceDetail(detail)));
+  } catch {}
+}
+
+export function peekLastRaceStatsForClaim() {
+  try {
+    const raw = sessionStorage.getItem(LAST_RACE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || typeof parsed.mode !== "string") return null;
+    if (parsed.mode === "admin") return null;
+    if (parsed.mode === "grandprix" && !parsed.gpSeriesComplete) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function shouldSubmitRace(detail) {
+  if (!detail || typeof detail !== "object") return false;
+  if (detail.mode === "admin" || detail.mode === "session") return false;
+  if (isDemoSessionActive()) return false;
+  if (detail.mode === "grandprix" && !detail.gpSeriesComplete) return false;
+  return true;
+}
+
 export async function submitLiveLeaderboardRun(detail) {
   if (!shouldSubmitRace(detail)) return { ok: false, skipped: true };
+  stashLastRaceStats(detail);
+
   const wallet = getConnectedWallet();
   if (!wallet || !isEthAddress(wallet)) return { ok: false, skipped: true, reason: "no_wallet" };
 
   const mode = detail.mode;
-  const stats = statsFromDetail(detail);
+  const stats = statsFromRaceDetail(detail);
   const issuedAtSec = Math.floor(Date.now() / 1000);
   const runId = `lb-${mode}-${issuedAtSec}-${Math.random().toString(36).slice(2, 10)}`;
   const message = submitMessage(wallet, mode, runId, issuedAtSec, stats);
   const signature = await personalSign(message, wallet);
   if (!signature) return { ok: false, error: "signature_failed" };
 
-  const res = await fetch(API_URL, {
+  const res = await fetch(POST_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ mode, wallet, runId, issuedAtSec, signature, stats }),
   });
   const data = await res.json().catch(() => ({}));
   if (data?.updated) {
-    void fetchLiveLeaderboards(6).catch(() => {});
+    void fetchLiveLeaderboards(8).catch(() => {});
   }
   return data;
 }
@@ -292,6 +341,7 @@ export async function submitLiveLeaderboardRun(detail) {
 export function installLiveLeaderboardRaceHook() {
   window.addEventListener("otterkart-race-finished", (event) => {
     const detail = event?.detail;
+    stashLastRaceStats(detail);
     void submitLiveLeaderboardRun(detail).catch(() => {});
   });
 }

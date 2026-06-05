@@ -479,6 +479,15 @@ body.otter-live-lb-open .start-menu-hotspots {
   line-height: 1;
 }
 
+.live-lb__status {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(125, 249, 255, 0.88);
+}
+
 .live-lb__head {
   font-size: 11px;
   font-weight: 800;

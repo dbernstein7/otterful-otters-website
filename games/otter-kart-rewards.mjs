@@ -225,7 +225,7 @@ export function formatCheckResult(result) {
   }
 }
 
-export async function claimSessionShells(shells, runId, score) {
+export async function claimSessionShells(shells, runId, score, leaderboard) {
   const wallet = getConnectedWallet() || (await resolveActiveWallet(""));
   if (!wallet) {
     return {
@@ -263,6 +263,9 @@ export async function claimSessionShells(shells, runId, score) {
   const body = { game: GAME_ID, wallet, shells: capped, runId: id, issuedAtSec, signature };
   if (typeof score === "number" && Number.isFinite(score)) {
     body.score = Math.max(0, Math.floor(score));
+  }
+  if (leaderboard && typeof leaderboard === "object" && typeof leaderboard.mode === "string") {
+    body.leaderboard = leaderboard;
   }
 
   const res = await fetch(AWARD_URL, {

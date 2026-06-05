@@ -70,6 +70,13 @@ module.exports = async (req, res) => {
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
+  const game = typeof req.query?.game === "string" ? req.query.game.trim().toLowerCase() : "";
+  if (game === "otter-kart") {
+    const { handleGet } = require("../../lib/otter-kart-leaderboard/handlers.js");
+    const result = await handleGet(req.query || {});
+    return res.status(result.status).json(result.json);
+  }
+
   const limitRaw = typeof req.query?.limit === "string" ? req.query.limit : "";
   const limit = Math.min(50, Math.max(3, Number.isFinite(Number(limitRaw)) ? Math.floor(Number(limitRaw)) : 10));
 

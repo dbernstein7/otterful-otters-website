@@ -75,7 +75,7 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-03-live-lb-overlay"
+                    src="/games/otter-kart/index.html?v=2026-06-03-live-lb-v2"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
@@ -89,7 +89,7 @@
 
             <section class="otter-kart-live-boards" aria-labelledby="otterKartLiveLbTitle">
                 <h2 id="otterKartLiveLbTitle" class="section-title otter-kart-live-boards__title">OtterKart live leaderboards</h2>
-                <p class="otter-kart-live-boards__hint">Global best runs across all modes — updates every 30 seconds. Connect your wallet in-game to submit scores.</p>
+                <p class="otter-kart-live-boards__hint">Updates when players claim signed shell runs — same live storage as Shell Rush. Connect wallet, race, then claim.</p>
                 <div id="otterKartLiveLeaderboards" class="live-lb live-lb--page" data-live-lb-variant="page"></div>
             </section>
         </div>
@@ -145,7 +145,7 @@
       (function () {
         const fullscreenBtn = document.getElementById('otterKartFullscreenBtn');
         const shell = document.getElementById('otterKartEmbedShell');
-        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-live-lb-overlay';
+        const gameUrl = '/games/otter-kart/index.html?v=2026-06-03-live-lb-v2';
 
         fullscreenBtn?.addEventListener('click', function () {
           const target = shell || document.documentElement;
