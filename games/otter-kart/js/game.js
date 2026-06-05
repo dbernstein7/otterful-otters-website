@@ -14,7 +14,6 @@ import {
   getCanvasClientViewSize,
   getGameViewportSize,
   getRaceViewportSize,
-  isEmbedded,
 } from "./viewport.js";
 import { resolveRaceMinimapLayout, readTouchInput } from "./touch-controls.js";
 import {
@@ -2636,33 +2635,42 @@ export class Game {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvas = this.canvas;
     const menu = document.body?.classList?.contains("otter-ui-menu");
-    const vp = menu
-      ? { ...getGameViewportSize(), visualViewport: null }
-      : getRaceViewportSize();
-    const w = vp.vw;
-    const h = vp.vh;
-    const vv = vp.visualViewport;
 
-    if (vv && !isEmbedded()) {
-      canvas.style.position = "fixed";
-      canvas.style.inset = "auto";
-      canvas.style.left = `${Math.round(vv.offsetLeft)}px`;
-      canvas.style.top = `${Math.round(vv.offsetTop)}px`;
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
+    canvas.style.position = "fixed";
+    canvas.style.left = "0";
+    canvas.style.top = "0";
+    canvas.style.margin = "0";
+    canvas.style.padding = "0";
+
+    if (menu) {
+      const vp = getGameViewportSize();
+      canvas.style.inset = "";
+      canvas.style.right = "";
+      canvas.style.bottom = "";
+      canvas.style.width = `${vp.vw}px`;
+      canvas.style.height = `${vp.vh}px`;
     } else {
-      canvas.style.position = "fixed";
       canvas.style.inset = "0";
-      canvas.style.left = "0";
-      canvas.style.top = "0";
       canvas.style.right = "0";
       canvas.style.bottom = "0";
       canvas.style.width = "100%";
       canvas.style.height = "100%";
     }
 
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
+    let w = Math.max(1, Math.round(canvas.clientWidth || 0));
+    let h = Math.max(1, Math.round(canvas.clientHeight || 0));
+    if (w < 8 || h < 8) {
+      const vp = menu ? getGameViewportSize() : getRaceViewportSize();
+      w = vp.vw;
+      h = vp.vh;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      w = Math.max(1, Math.round(canvas.clientWidth || w));
+      h = Math.max(1, Math.round(canvas.clientHeight || h));
+    }
+
+    canvas.width = Math.max(1, Math.floor(w * dpr));
+    canvas.height = Math.max(1, Math.floor(h * dpr));
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.viewW = w;
     this.viewH = h;
@@ -4254,14 +4262,18 @@ export class Game {
   syncRaceViewFromCanvas() {
     if (this.phase === "menu" || document.body?.classList?.contains("otter-ui-menu"))
       return;
-    const { vw, vh } = getCanvasClientViewSize(this.canvas);
-    if (!isMobileRaceViewport(vw, vh)) return;
-    if (Math.abs(vw - this.viewW) > 3 || Math.abs(vh - this.viewH) > 3) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const cw = Math.max(1, Math.round(this.canvas.clientWidth || 0));
+    const ch = Math.max(1, Math.round(this.canvas.clientHeight || 0));
+    if (cw < 8 || ch < 8) return;
+    const bw = Math.round(this.canvas.width / dpr);
+    const bh = Math.round(this.canvas.height / dpr);
+    if (Math.abs(cw - bw) > 2 || Math.abs(ch - bh) > 2) {
       this.resize();
       return;
     }
-    this.viewW = vw;
-    this.viewH = vh;
+    this.viewW = cw;
+    this.viewH = ch;
   }
 
   stepCameraFollow(dt) {
@@ -4609,8 +4621,10 @@ export class Game {
   draw(showFinishedBackdrop) {
     this.syncRaceViewFromCanvas();
     const ctx = this.ctx;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = this.viewW;
     const h = this.viewH;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const snakeField = neonSnakeFieldKind(this);
     if (snakeField) {

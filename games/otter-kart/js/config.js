@@ -98,10 +98,9 @@ export function raceZoomForViewport(viewW, viewH) {
  * Nudge world draw left on mobile so the kart isn’t framed under the right-side minimap + buttons.
  * @returns {number} pixels subtracted from camera translate X (0 on desktop)
  */
-export function mobileRaceCameraScreenOffsetX(viewW, viewH) {
-  if (!isMobileRaceViewport(viewW, viewH)) return 0;
-  /** Nudge kart left of the minimap / touch column (screen space). */
-  return Math.round((viewW || 320) * 0.045);
+export function mobileRaceCameraScreenOffsetX(_viewW, _viewH) {
+  /** Keep the kart at true screen center on mobile; HUD clears corners on its own. */
+  return 0;
 }
 
 /**
