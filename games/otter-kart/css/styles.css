@@ -346,30 +346,44 @@ body.otter-ui-admin-open .map-claim-bar {
 .menu-live-lb-btn {
   position: fixed;
   z-index: 250;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
+  max-width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
   display: none;
   align-items: center;
   justify-content: center;
   gap: 0;
   box-sizing: border-box;
-  min-width: min(92vw, 280px);
-  min-height: 48px;
-  padding: 12px 20px;
-  border-radius: 14px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 12px;
   border: 1px solid rgba(125, 249, 255, 0.35);
   background: rgba(6, 12, 18, 0.92);
   color: #eaffff;
-  font: 800 13px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif;
-  letter-spacing: 0.08em;
+  font: 700 11px/1.1 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   pointer-events: auto;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   cursor: pointer;
+  transform: none;
+}
+
+.menu-live-lb-btn:hover,
+.menu-live-lb-btn:active {
+  transform: none;
+  border-color: rgba(125, 249, 255, 0.5);
+  background: rgba(10, 18, 28, 0.96);
+}
+
+.menu-live-lb-btn:active {
+  filter: brightness(0.96);
 }
 
 .menu-live-lb-btn:focus-visible {
@@ -692,10 +706,11 @@ body.otter-live-lb-open .start-menu-hotspots {
 
 @media (max-width: 720px), (max-height: 520px) {
   .menu-live-lb-btn {
-    min-width: min(94vw, 260px);
-    min-height: 52px;
-    padding: 14px 16px;
-    font-size: 12px;
+    min-height: 44px;
+    padding: 9px 14px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    border-radius: 10px;
   }
 
   .live-lb-overlay__panel {
