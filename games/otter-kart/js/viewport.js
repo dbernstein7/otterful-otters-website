@@ -97,10 +97,41 @@ export function getGameViewportSize() {
   return { vw: Math.max(1, vw), vh: Math.max(1, vh) };
 }
 
+function isRaceUiActive() {
+  return (
+    typeof document !== "undefined" &&
+    !document.body?.classList?.contains("otter-ui-menu")
+  );
+}
+
+/**
+ * Race canvas size — on phones always use visualViewport so camera centering matches
+ * what the player actually sees (layout/embed sizes often differ on mobile Safari).
+ * @returns {{ vw: number, vh: number, visualViewport: VisualViewport | null }}
+ */
+export function getRaceViewportSize() {
+  const vv = window.visualViewport;
+  if (vv) {
+    const vw = Math.round(vv.width);
+    const vh = Math.round(vv.height);
+    if (Math.min(vw, vh) < 560) {
+      return {
+        vw: Math.max(1, vw),
+        vh: Math.max(1, vh),
+        visualViewport: vv,
+      };
+    }
+  }
+  const base = getGameViewportSize();
+  return { vw: base.vw, vh: base.vh, visualViewport: null };
+}
+
 /** Scale race HUD to iframe/game size (vw/vh alone use the phone browser chrome on mobile). */
 export function applyHudViewportVars() {
   if (typeof document === "undefined") return;
-  const { vw, vh } = getGameViewportSize();
+  const { vw, vh } = isRaceUiActive()
+    ? getRaceViewportSize()
+    : getGameViewportSize();
   const scale = Math.min(vw / HUD_REF_W, vh / HUD_REF_H);
   const root = document.documentElement;
   root.style.setProperty("--otter-vw", `${vw}px`);

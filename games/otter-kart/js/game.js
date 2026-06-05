@@ -11,8 +11,8 @@ import {
 } from "./config.js";
 import {
   applyHudViewportVars,
-  getEmbedViewport,
   getGameViewportSize,
+  getRaceViewportSize,
 } from "./viewport.js";
 import { resolveRaceMinimapLayout, readTouchInput } from "./touch-controls.js";
 import {
@@ -2633,16 +2633,15 @@ export class Game {
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const canvas = this.canvas;
-    const vp0 = getGameViewportSize();
-    let w = vp0.vw;
-    let h = vp0.vh;
-    const mobileStandalone =
-      !getEmbedViewport() && isMobileRaceViewport(w, h);
+    const menu = document.body?.classList?.contains("otter-ui-menu");
+    const vp = menu
+      ? { ...getGameViewportSize(), visualViewport: null }
+      : getRaceViewportSize();
+    const w = vp.vw;
+    const h = vp.vh;
+    const vv = vp.visualViewport;
 
-    if (mobileStandalone && window.visualViewport) {
-      const vv = window.visualViewport;
-      w = Math.max(1, Math.round(vv.width));
-      h = Math.max(1, Math.round(vv.height));
+    if (vv) {
       canvas.style.position = "fixed";
       canvas.style.inset = "auto";
       canvas.style.left = `${Math.round(vv.offsetLeft)}px`;
@@ -2650,7 +2649,6 @@ export class Game {
       canvas.style.width = `${w}px`;
       canvas.style.height = `${h}px`;
     } else {
-      ({ vw: w, vh: h } = getGameViewportSize());
       canvas.style.position = "";
       canvas.style.inset = "";
       canvas.style.left = "";
@@ -4253,13 +4251,25 @@ export class Game {
     const lerp = cameraLerpForViewport(this.viewW, this.viewH);
     const lfac = clamp(1 - Math.exp(-lerp * dt), 0, 1);
     const K = this.kart;
+    const mobile = isMobileRaceViewport(this.viewW, this.viewH);
     const spd = Math.hypot(K.vx ?? 0, K.vy ?? 0);
+    const kx = K.x ?? 0;
+    const ky = K.y ?? 0;
+
+    /** Creeping / stopped on mobile: lock to kart center (no look-ahead drift). */
+    if (mobile && spd < 36) {
+      this.cam.x += (kx - this.cam.x) * lfac;
+      this.cam.y += (ky - this.cam.y) * lfac;
+      return;
+    }
+
     const look = raceCameraLookAheadWorld(this.viewW, this.viewH);
     const hx = Math.cos(K.heading ?? 0);
     const hy = Math.sin(K.heading ?? 0);
-    const ahead = look * clamp(spd / 220, 0.12, 1);
-    const tx = (K.x ?? 0) + hx * ahead;
-    const ty = (K.y ?? 0) + hy * ahead;
+    const minFrac = mobile ? 0 : 0.12;
+    const ahead = look * clamp(spd / 220, minFrac, 1);
+    const tx = kx + hx * ahead;
+    const ty = ky + hy * ahead;
     this.cam.x += (tx - this.cam.x) * lfac;
     this.cam.y += (ty - this.cam.y) * lfac;
   }

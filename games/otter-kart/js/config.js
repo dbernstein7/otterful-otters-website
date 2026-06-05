@@ -98,9 +98,10 @@ export function raceZoomForViewport(viewW, viewH) {
  * Nudge world draw left on mobile so the kart isn’t framed under the right-side minimap + buttons.
  * @returns {number} pixels subtracted from camera translate X (0 on desktop)
  */
-export function mobileRaceCameraScreenOffsetX(_viewW, _viewH) {
-  /** Look-ahead framing replaced the old fixed horizontal nudge. */
-  return 0;
+export function mobileRaceCameraScreenOffsetX(viewW, viewH) {
+  if (!isMobileRaceViewport(viewW, viewH)) return 0;
+  /** Clear the right-side minimap / touch column without fighting look-ahead. */
+  return Math.round((viewW || 320) * 0.03);
 }
 
 /**
@@ -111,7 +112,7 @@ export function raceCameraLookAheadWorld(viewW, viewH) {
   const minor = Math.min(viewW || 320, viewH || 320);
   const zoom = raceZoomForViewport(viewW, viewH);
   const raw = minor / zoom;
-  if (isMobileRaceViewport(viewW, viewH)) return clampCam(raw * 0.14, 44, 82);
+  if (isMobileRaceViewport(viewW, viewH)) return clampCam(raw * 0.09, 24, 52);
   return clampCam(raw * 0.09, 32, 64);
 }
 
