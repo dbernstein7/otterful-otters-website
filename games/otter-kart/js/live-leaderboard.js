@@ -1,8 +1,8 @@
 /**
  * Live global leaderboards — same KV + API pattern as Shell Rush.
  * GET  /api/rewards/leaderboard?game=otter-kart&all=1
- * POST /api/otter-kart/leaderboard (signed race stats)
- * Writes on shell claim via /api/rewards/award (game: otter-kart)
+ * POST /api/otter-kart/leaderboard (wallet address or demo id — no signature)
+ * Drip rewards on claim still use signed /api/rewards/award separately.
  */
 
 import {
@@ -43,48 +43,13 @@ let overlayEl = null;
 /** @type {HTMLButtonElement | null} */
 let overlayToggleBtn = null;
 
-function getEthereum() {
-  const eth = typeof window !== "undefined" ? window.ethereum : null;
-  return eth && typeof eth.request === "function" ? eth : null;
-}
-
-function submitMessage(wallet, mode, runId, issuedAtSec, stats) {
-  const w = wallet.trim().toLowerCase();
-  const lines = [
-    "Otter Kart - Leaderboard Submit",
-    "v1",
-    `mode:${mode}`,
-    `wallet:${w}`,
-    `runId:${runId}`,
-    `issuedAt:${issuedAtSec}`,
-  ];
-  if (stats.dateISO) lines.push(`date:${stats.dateISO}`);
-  if (Number(stats.totalTime) > 0) lines.push(`time:${Number(stats.totalTime).toFixed(3)}`);
-  if (Number(stats.bestLap) > 0) lines.push(`bestLap:${Number(stats.bestLap).toFixed(3)}`);
-  if (Number(stats.shells) >= 0) lines.push(`shells:${Math.floor(Number(stats.shells) || 0)}`);
-  if (Number(stats.longestDrift) > 0)
-    lines.push(`longestDrift:${Number(stats.longestDrift).toFixed(3)}`);
-  if (Number(stats.longestDriftTime) > 0)
-    lines.push(`longestDriftTime:${Number(stats.longestDriftTime).toFixed(3)}`);
-  if (Number(stats.distance) > 0) lines.push(`distance:${Number(stats.distance).toFixed(3)}`);
-  if (Number(stats.endlessLongestDrift) > 0)
-    lines.push(`endlessLongestDrift:${Number(stats.endlessLongestDrift).toFixed(3)}`);
-  if (Number(stats.gpPlayerPoints) > 0)
-    lines.push(`gpPoints:${Math.floor(Number(stats.gpPlayerPoints) || 0)}`);
-  if (Number(stats.gpTotalTime) > 0)
-    lines.push(`gpTotalTime:${Number(stats.gpTotalTime).toFixed(3)}`);
-  return lines.join("\n");
-}
-
-async function personalSign(message, address) {
-  const eth = getEthereum();
-  if (!eth) return null;
-  try {
-    const sig = await eth.request({ method: "personal_sign", params: [message, address] });
-    return typeof sig === "string" ? sig : null;
-  } catch {
-    return null;
-  }
+async function postWalletLeaderboard(wallet, mode, stats) {
+  const res = await fetch(POST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ wallet: wallet.trim().toLowerCase(), mode, stats }),
+  });
+  return res.json().catch(() => ({}));
 }
 
 function totalRowCount(boards) {
@@ -109,7 +74,7 @@ export async function fetchLiveLeaderboards(limit = 8) {
   } else {
     statusText = isDemoSessionActive()
       ? "No entries yet — finish a race, then claim shells"
-      : "No entries yet — race and claim shells (wallet or demo)";
+      : "No entries yet — race and claim shells to appear here";
   }
 
   for (const root of mountedRoots) renderRoot(root);
@@ -191,7 +156,7 @@ function renderRoot(root) {
     }).join("");
     root.innerHTML = `<p class="live-lb__status">${escapeHtml(statusText)}</p>
       <div class="live-lb-page__grid">${cards}</div>
-      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Scores update when players claim signed shell runs (like Shell Rush).</p>`;
+      <p class="live-lb__meta">Updated ${relTime(lastFetchAt)} · Best runs save on finish; session shells save on Claim.</p>`;
     return;
   }
 
@@ -325,6 +290,37 @@ async function postDemoLeaderboard(mode, stats) {
   return res.json().catch(() => ({}));
 }
 
+export async function claimWalletSessionLeaderboard(shells) {
+  const wallet = getConnectedWallet();
+  if (!wallet || !isEthAddress(wallet)) {
+    return {
+      ok: false,
+      text: "Connect your wallet on the start screen to save session shells to the leaderboard.",
+    };
+  }
+
+  const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_DEMO_SHELLS);
+  if (capped <= 0) {
+    return { ok: false, text: "No session shells to claim yet." };
+  }
+
+  const data = await postWalletLeaderboard(wallet, "session", { shells: capped, points: capped });
+  if (data?.updated) {
+    void fetchLiveLeaderboards(8).catch(() => {});
+    return { ok: true, text: "Session saved to leaderboard!" };
+  }
+  if (data?.reason === "not_improved") {
+    return {
+      ok: true,
+      text: "Session shells cleared — leaderboard already has your best total.",
+    };
+  }
+  if (data?.configured === false) {
+    return { ok: false, text: "Leaderboard storage is not configured yet." };
+  }
+  return { ok: !!data?.ok, text: data?.ok ? "Session recorded." : "Could not save to leaderboard." };
+}
+
 export async function claimDemoSessionLeaderboard(shells) {
   const capped = Math.min(Math.max(0, Math.floor(shells)), MAX_DEMO_SHELLS);
   if (capped <= 0) {
@@ -364,18 +360,7 @@ export async function submitLiveLeaderboardRun(detail) {
 
   const mode = detail.mode;
   const stats = statsFromRaceDetail(detail);
-  const issuedAtSec = Math.floor(Date.now() / 1000);
-  const runId = `lb-${mode}-${issuedAtSec}-${Math.random().toString(36).slice(2, 10)}`;
-  const message = submitMessage(wallet, mode, runId, issuedAtSec, stats);
-  const signature = await personalSign(message, wallet);
-  if (!signature) return { ok: false, error: "signature_failed" };
-
-  const res = await fetch(POST_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mode, wallet, runId, issuedAtSec, signature, stats }),
-  });
-  const data = await res.json().catch(() => ({}));
+  const data = await postWalletLeaderboard(wallet, mode, stats);
   if (data?.updated) {
     void fetchLiveLeaderboards(8).catch(() => {});
   }

@@ -34,7 +34,7 @@ import {
 } from "./viewport.js";
 import { initOtterKartMusic } from "./music.js";
 import { initTouchControls } from "./touch-controls.js";
-import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, peekLastRaceStatsForClaim, fetchLiveLeaderboards, claimDemoSessionLeaderboard } from "./live-leaderboard.js";
+import { initLiveLeaderboardOverlay, installLiveLeaderboardRaceHook, peekLastRaceStatsForClaim, fetchLiveLeaderboards, claimDemoSessionLeaderboard, claimWalletSessionLeaderboard } from "./live-leaderboard.js";
 
 import {
   claimSessionShells,
@@ -866,12 +866,30 @@ async function handleClaimShells() {
       return;
     }
     const leaderboard = peekLastRaceStatsForClaim();
-    const result = await claimSessionShells(shells, undefined, shells, leaderboard || undefined);
-    showStartWalletToast(result.text, result.ok);
-    if (result.ok) {
+    const lbResult = await claimWalletSessionLeaderboard(shells);
+    const dripResult = await claimSessionShells(shells, undefined, shells, leaderboard || undefined);
+
+    if (lbResult.ok) {
       game.totalShellsSession = 0;
       game.updateHomeShellsUI();
       void fetchLiveLeaderboards(8).catch(() => {});
+    } else if (dripResult.ok) {
+      game.totalShellsSession = 0;
+      game.updateHomeShellsUI();
+      void fetchLiveLeaderboards(8).catch(() => {});
+    }
+
+    if (lbResult.ok && dripResult.ok) {
+      showStartWalletToast(dripResult.text, true);
+    } else if (lbResult.ok) {
+      showStartWalletToast(
+        `${lbResult.text} Sign in your wallet to earn drip points too.`,
+        true,
+      );
+    } else if (dripResult.ok) {
+      showStartWalletToast(dripResult.text, true);
+    } else {
+      showStartWalletToast(dripResult.text || lbResult.text, false);
     }
   } catch {
     showStartWalletToast("Claim failed. Try again.", false);
