@@ -875,7 +875,7 @@ body:not(.otter-ui-menu) .touch-controls {
   display: flex;
 }
 
-@media (pointer: fine) and (min-width: 901px) {
+@media (pointer: fine) and (min-width: 901px) and (min-height: 560px) {
   body:not(.otter-ui-menu) .touch-controls {
     display: none !important;
   }
@@ -1161,6 +1161,29 @@ body.otter-ui-menu #hud-lives {
   line-height: 1;
 }
 
+/* Mobile race: smaller music control above corner drive buttons (no overlap). */
+@media not ((pointer: fine) and (min-width: 901px) and (min-height: 560px)) {
+  body:not(.otter-ui-menu) .hud-music {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+    border-radius: 9px;
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(
+      78px + env(safe-area-inset-bottom, 0px)
+    );
+    z-index: 49;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+  }
+
+  body:not(.otter-ui-menu) .music-panel {
+    right: calc(10px + env(safe-area-inset-right, 0px));
+    bottom: calc(114px + env(safe-area-inset-bottom, 0px));
+    width: min(260px, calc(100vw - 20px));
+    max-height: min(280px, calc(var(--otter-vh, 100dvh) - 120px));
+  }
+}
+
 .music-panel {
   position: fixed;
   z-index: 9999;
@@ -1337,6 +1360,23 @@ body.otter-ui-menu #hud-lives {
 .settings-panel__hotspot:focus-visible {
   outline: 3px solid rgba(125, 249, 255, 0.9);
   outline-offset: 2px;
+}
+
+/* Visible hit-area outlines while settings panel is open (debug / alignment). */
+body.otter-ui-settings-open .settings-panel__hotspot {
+  outline: 2px dashed rgba(125, 249, 255, 0.92);
+  outline-offset: 2px;
+  background: rgba(125, 249, 255, 0.16) !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+body.otter-ui-settings-open .settings-panel__hotspot:hover,
+body.otter-ui-settings-open .settings-panel__hotspot:active,
+body.otter-ui-settings-open .settings-panel__hotspot:focus {
+  background: rgba(125, 249, 255, 0.3) !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 12px rgba(125, 249, 255, 0.35);
 }
 
 /* ——— Race position (top-right) ——— */

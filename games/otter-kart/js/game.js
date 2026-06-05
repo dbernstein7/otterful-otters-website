@@ -14,7 +14,7 @@ import {
   getEmbedViewport,
   getGameViewportSize,
 } from "./viewport.js";
-import { getTouchMinimapLayout, readTouchInput } from "./touch-controls.js";
+import { resolveRaceMinimapLayout, readTouchInput } from "./touch-controls.js";
 import {
   surfaceAt,
   resolveWallCollision,
@@ -5130,16 +5130,10 @@ function drawGpCourseMinimap(ctx, game) {
   const Hh = Math.max(maxY - minY, 200);
   const padW = (tr.widths?.wall ?? 150) * 2.1;
 
-  const touchMap = getTouchMinimapLayout(game.canvas);
-  const outerD = touchMap?.outerD ?? 248;
-  const outerR = touchMap?.outerR ?? outerD * 0.5;
+  const touchMap = resolveRaceMinimapLayout(game.canvas, wv, hv);
+  if (!touchMap) return;
+  const { outerD, outerR, x0, y0, cxScreen, cyScreen, mapCy } = touchMap;
   const innerR = outerR * MAP_RING_INNER_RADIUS_FRAC;
-  const margin = touchMap ? 0 : 12;
-  const x0 = touchMap?.x0 ?? wv - outerD - margin;
-  const y0 = touchMap?.y0 ?? hv - outerD - margin;
-  const cxScreen = touchMap?.cxScreen ?? x0 + outerR;
-  const cyScreen = touchMap?.cyScreen ?? y0 + outerR;
-  const mapCy = touchMap?.mapCy ?? cyScreen + MAP_RING_MAP_OFFSET_Y;
   const fillR = innerR + MAP_RING_FILL_BLEED_PX;
   const innerPad = 4;
   const drawD = innerR * 2 - innerPad * 2;
@@ -5237,7 +5231,7 @@ function drawGpCourseMinimap(ctx, game) {
   ctx.fillStyle = "rgba(255, 255, 255, 0.88)";
   ctx.shadowColor = "rgba(0, 0, 0, 0.65)";
   ctx.shadowBlur = 4;
-  if (!touchMap) {
+  if (!touchMap.fromDomSlot) {
     ctx.fillText(
       String(tr.name ?? game.trackId).toUpperCase(),
       cxScreen,

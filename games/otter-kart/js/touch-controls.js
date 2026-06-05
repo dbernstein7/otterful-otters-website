@@ -1,6 +1,9 @@
-/** @typedef {{ x0: number, y0: number, outerD: number, cxScreen: number, cyScreen: number, mapCy: number, outerR: number }} TouchMinimapLayout */
+/** @typedef {{ x0: number, y0: number, outerD: number, cxScreen: number, cyScreen: number, mapCy: number, outerR: number, fromDomSlot?: boolean }} TouchMinimapLayout */
 
 const MINIMAP_RING_MAP_OFFSET_Y = -5;
+const HUD_REF_W = 1672;
+const HUD_REF_H = 941;
+
 /** Stick Y past this fraction of radius → gas (up) or brake (down). */
 const JOYSTICK_PEDAL_DEADZONE = 0.2;
 
@@ -43,7 +46,52 @@ export function getTouchMinimapLayout(canvas) {
   const y0 = cyScreen - outerR;
   const mapCy = cyScreen + MINIMAP_RING_MAP_OFFSET_Y;
 
-  return { x0, y0, outerD, cxScreen, cyScreen, mapCy, outerR };
+  return { x0, y0, outerD, cxScreen, cyScreen, mapCy, outerR, fromDomSlot: true };
+}
+
+/**
+ * Canvas minimap layout — DOM slot when touch UI is up, else DPR-safe bottom-right fallback.
+ * @param {HTMLCanvasElement | null | undefined} canvas
+ * @param {number} viewW
+ * @param {number} viewH
+ * @returns {TouchMinimapLayout | null}
+ */
+export function resolveRaceMinimapLayout(canvas, viewW, viewH) {
+  const touch = getTouchMinimapLayout(canvas);
+  if (touch) return touch;
+  if (!(canvas instanceof HTMLCanvasElement)) return null;
+
+  const cr = canvas.getBoundingClientRect();
+  if (cr.width < 1 || cr.height < 1) return null;
+  const sx = canvas.width / cr.width;
+  const sy = canvas.height / cr.height;
+  const vw = viewW || cr.width;
+  const vh = viewH || cr.height;
+  const pad = 10;
+  const hudScale = Math.min(vw / HUD_REF_W, vh / HUD_REF_H);
+  const mobileRace = Math.min(vw, vh) < 560;
+
+  let outerD;
+  let x0;
+  let y0;
+  if (mobileRace) {
+    outerD = Math.max(92, 104 * hudScale) * sx;
+    const actionsH = Math.max(54, 62 * hudScale) * sy;
+    const gap = 6 * hudScale * sy;
+    x0 = vw * sx - (pad * sx) - outerD;
+    y0 = vh * sy - (pad * sy) - actionsH - gap - outerD;
+  } else {
+    outerD = 248 * sx;
+    const margin = 12 * sx;
+    x0 = vw * sx - outerD - margin;
+    y0 = vh * sy - outerD - margin;
+  }
+
+  const outerR = outerD * 0.5;
+  const cxScreen = x0 + outerR;
+  const cyScreen = y0 + outerR;
+  const mapCy = cyScreen + MINIMAP_RING_MAP_OFFSET_Y * sy;
+  return { x0, y0, outerD, cxScreen, cyScreen, mapCy, outerR, fromDomSlot: false };
 }
 
 function initTouchOrientationHint() {
