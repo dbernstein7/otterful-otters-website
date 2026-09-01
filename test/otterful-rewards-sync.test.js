@@ -71,9 +71,9 @@ mock.module("../lib/otterful-rewards/urnz.js", {
   namedExports: {
     getUrnzConfig: () => ({
       apiKey: "test-urnz-key",
-      realmId: "realm_test",
+      realmId: "9ee65660fbd2344f82ad71ad",
       baseUrl: "https://www.urnz.app/api/v1",
-      memberSearchType: "wallet",
+      memberSearchType: "wallet-evm",
       configured: true,
     }),
     getStatus: () => ({ ok: true, configured: true }),
