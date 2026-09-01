@@ -1,9 +1,10 @@
-// Shell Snag → Shell Rush proxy; Otter Kart → local Drip handler (same route, no extra function).
+// Shell Snag → verified gate + upstream Drip check; Otter Kart → local handler.
 
 const {
   isOtterKartRewardsRequest,
   handleOtterKartCheck,
 } = require("../../lib/otter-kart-rewards/handlers.js");
+const { handleShellSnagCheck } = require("../../lib/shell-rush-rewards/handlers.js");
 
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -30,24 +31,6 @@ module.exports = async (req, res) => {
     return res.status(result.status).json(result.json);
   }
 
-  const upstream = "https://shell-rush-otterful-otters.vercel.app/api/rewards/check";
-
-  try {
-    const upstreamRes = await fetch(upstream, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const text = await upstreamRes.text();
-
-    res.status(upstreamRes.status);
-    res.setHeader("Content-Type", upstreamRes.headers.get("content-type") || "application/json");
-    return res.send(text);
-  } catch (e) {
-    return res.status(200).json({
-      ok: true,
-      skipped: "upstream_unreachable",
-      message: e && e.message ? e.message : "Could not reach upstream rewards service.",
-    });
-  }
+  const result = await handleShellSnagCheck(body);
+  return res.status(result.status).json(result.json);
 };

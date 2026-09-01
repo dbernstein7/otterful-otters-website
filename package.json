@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "description": "Static Otterful Otters dashboard with Vercel serverless APIs",
   "scripts": {
-    "deploy:firebase-storage": "firebase deploy --only storage"
+    "deploy:firebase-storage": "firebase deploy --only storage",
+    "test": "node --experimental-test-module-mocks --test test/*.test.js"
   },
   "dependencies": {
     "@gltf-transform/core": "^3.10.1",

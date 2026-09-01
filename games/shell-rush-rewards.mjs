@@ -5,6 +5,7 @@
 
 const MAX_SHELLS_PER_CLAIM = 50000;
 const WALLET_STORAGE_KEY = "otterShellRushWallet";
+const OTTERFUL_WALLET_KEY = "otterfulWallet";
 
 /** @type {string | null} */
 let connectedWallet = null;
@@ -12,8 +13,22 @@ let connectedWallet = null;
 export function getConnectedWallet() {
   if (connectedWallet) return connectedWallet;
   try {
+    const shared = localStorage.getItem(OTTERFUL_WALLET_KEY);
+    if (shared && isEthAddress(shared)) {
+      setConnectedWallet(shared.trim().toLowerCase());
+      return connectedWallet;
+    }
     const s = localStorage.getItem(WALLET_STORAGE_KEY);
-    if (s && isEthAddress(s)) return s;
+    if (s && isEthAddress(s)) {
+      const normalized = s.trim().toLowerCase();
+      connectedWallet = normalized;
+      try {
+        localStorage.setItem(OTTERFUL_WALLET_KEY, normalized);
+      } catch {
+        // ignore
+      }
+      return normalized;
+    }
   } catch {
     // ignore
   }
@@ -21,10 +36,14 @@ export function getConnectedWallet() {
 }
 
 function setConnectedWallet(addr) {
-  connectedWallet = addr;
+  connectedWallet = addr ? String(addr).trim().toLowerCase() : null;
   try {
-    if (addr) localStorage.setItem(WALLET_STORAGE_KEY, addr);
-    else localStorage.removeItem(WALLET_STORAGE_KEY);
+    if (connectedWallet) {
+      localStorage.setItem(WALLET_STORAGE_KEY, connectedWallet);
+      localStorage.setItem(OTTERFUL_WALLET_KEY, connectedWallet);
+    } else {
+      localStorage.removeItem(WALLET_STORAGE_KEY);
+    }
   } catch {
     // ignore
   }

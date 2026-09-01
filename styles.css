@@ -5208,3 +5208,223 @@ body.asset-inspector-open {
         justify-content: flex-start;
     }
 }
+
+/* Profile page */
+.profile-section {
+    margin: 24px auto 80px;
+    max-width: 920px;
+    width: 100%;
+}
+
+.profile-title {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(2.4rem, 6vw, 3.5rem);
+    letter-spacing: 0.04em;
+    text-align: center;
+    margin: 0 0 20px;
+    color: var(--text-primary);
+}
+
+.profile-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.profile-status {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    margin: 24px 0;
+}
+
+.profile-status--error {
+    color: #ff8a8a;
+}
+
+.profile-disconnected,
+.profile-content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.profile-lead {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin: 32px 0;
+}
+
+.profile-card {
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid var(--border-glow);
+    border-radius: 20px;
+    padding: 20px 22px;
+    backdrop-filter: blur(10px);
+}
+
+.profile-card--clams {
+    text-align: center;
+}
+
+.profile-card-title {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.06em;
+    margin: 0 0 12px;
+    color: var(--text-primary);
+}
+
+.profile-wallet {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1rem;
+    word-break: break-all;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.profile-clams {
+    font-family: "Bebas Neue", sans-serif;
+    font-size: clamp(2.5rem, 8vw, 3.75rem);
+    line-height: 1;
+    margin: 0;
+    color: #7dffc4;
+}
+
+.profile-empty {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.98rem;
+}
+
+.profile-otters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 14px;
+}
+
+.profile-otter-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 16px;
+    border: 1px solid rgba(79, 214, 165, 0.25);
+    background: rgba(79, 214, 165, 0.06);
+    text-decoration: none;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.profile-otter-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(79, 214, 165, 0.55);
+}
+
+.profile-otter-card img {
+    width: 100%;
+    max-width: 140px;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+}
+
+.profile-otter-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.profile-activity-list,
+.profile-games-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.profile-activity-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(79, 214, 165, 0.08);
+    border: 1px solid rgba(79, 214, 165, 0.18);
+}
+
+.profile-activity-amount {
+    font-weight: 700;
+    color: #7dffc4;
+    white-space: nowrap;
+}
+
+.profile-activity-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
+}
+
+.profile-activity-game {
+    color: var(--text-primary);
+    font-size: 0.98rem;
+}
+
+.profile-activity-date {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.profile-games-item {
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+}
+
+.profile-games-empty {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.profile-actions .action-btn {
+    text-decoration: none;
+    min-width: 180px;
+    justify-content: center;
+}
+
+@media (max-width: 640px) {
+    .profile-section {
+        margin-bottom: 48px;
+    }
+
+    .profile-activity-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .profile-activity-meta {
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .profile-actions .action-btn {
+        width: 100%;
+    }
+}

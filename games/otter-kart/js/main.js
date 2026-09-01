@@ -927,10 +927,12 @@ async function handleClaimShells() {
   if (btnClaim) btnClaim.textContent = "Claiming…";
   if (btnClaim) btnClaim.disabled = true;
   try {
-    const result = await claimSessionShells(shells, undefined, shells);
+    const runId = game.ensureClaimSessionRunId?.() ?? game.claimSessionRunId ?? undefined;
+    const result = await claimSessionShells(shells, runId, shells);
     showStartWalletToast(result.text, result.ok);
     if (result.ok) {
       game.totalShellsSession = 0;
+      game.claimSessionRunId = null;
       game.updateHomeShellsUI();
     }
   } catch {

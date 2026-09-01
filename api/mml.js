@@ -587,6 +587,18 @@ module.exports = async (req, res) => {
 
   const sockets = defaultSockets();
 
+  const attachment = (getQueryParam(req, 'attachment') || '').trim().toLowerCase();
+  if (attachment === 'hat' || attachment === 'hats') {
+    if (!urls.hat) {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      return res.status(204).end();
+    }
+    const xml =
+      `<m-model socket="${escAttr(sockets.hat)}" src="${escAttr(urls.hat)}"${wearableExtraAttrs('MML_HAT')}></m-model>\n`;
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    return res.status(200).send(xml);
+  }
+
   const html = buildHtml({ id, traits, urls, sockets, documentUrl });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

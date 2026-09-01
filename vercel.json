@@ -9,6 +9,39 @@
     },
     "api/otter-kart/leaderboard.js": {
       "includeFiles": "lib/**"
+    },
+    "api/clams/balance.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/clams/history.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/clams/record.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/clams/sync.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/rewards/check.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/rewards/award.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/profile.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/wallet-otters.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/session/nonce.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/session/verify.js": {
+      "includeFiles": "lib/**"
+    },
+    "api/session/validate.js": {
+      "includeFiles": "lib/**"
     }
   },
   "env": {

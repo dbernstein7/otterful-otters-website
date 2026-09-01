@@ -2232,6 +2232,7 @@ export class Game {
     this.trackId = "meadow-oval";
     this.gpResults = [];
     this.totalShellsSession = 0;
+    this.claimSessionRunId = null;
     this._sessionShellsCountedThisRace = false;
     this.smoke = [];
     this.skids = [];
@@ -2629,6 +2630,14 @@ export class Game {
     this.lbList = lbList;
     this.lbLabel = lbLabel;
     this.lbSub = lbSub ?? null;
+  }
+
+  ensureClaimSessionRunId() {
+    const existing = typeof this.claimSessionRunId === "string" ? this.claimSessionRunId.trim() : "";
+    if (existing) return existing;
+    const id = `otterkart-session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+    this.claimSessionRunId = id;
+    return id;
   }
 
   updateHomeShellsUI() {
@@ -3048,6 +3057,7 @@ export class Game {
     const pickupShells = this.kart.shells;
     const shells = pickupShells;
     if (this.mode !== "admin" && !this._sessionShellsCountedThisRace) {
+      this.ensureClaimSessionRunId();
       this.totalShellsSession = (this.totalShellsSession ?? 0) + (pickupShells ?? 0);
       this._sessionShellsCountedThisRace = true;
       this.updateHomeShellsUI?.();
@@ -3103,6 +3113,7 @@ export class Game {
         this.gpSeriesPayout = payout;
         this.gpTotalShells = (this.gpTotalShells ?? 0) + payout;
         if (!this._sessionShellsCountedGpPayout && payout > 0) {
+          this.ensureClaimSessionRunId();
           this.totalShellsSession = (this.totalShellsSession ?? 0) + payout;
           this._sessionShellsCountedGpPayout = true;
           this.updateHomeShellsUI?.();

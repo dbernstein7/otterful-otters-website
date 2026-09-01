@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://esm.sh https://cdn.jsdelivr.net https://cdn.skypack.dev https://*.unpkg.com https://*.esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https: wss:; frame-src 'self' https:; worker-src 'self' blob:;">
+    <title>My Profile • Otterful Otters</title>
+    <link rel="icon" type="image/png" href="fishy-log.png.png">
+    <link rel="shortcut icon" type="image/png" href="fishy-log.png.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="embed-page profile-page">
+    <div class="stars"></div>
+
+    <button type="button" class="nav-menu-btn" aria-label="Open menu" aria-expanded="false">
+        <span class="nav-menu-btn-icon"></span>
+    </button>
+    <div class="nav-drawer-overlay" id="navDrawerOverlay" aria-hidden="true"></div>
+    <nav class="top-nav" id="topNav">
+        <a href="index.html#home" class="nav-pill">Home</a>
+        <a href="index.html#analytics" class="nav-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-pill">Collection</a>
+        <a href="index.html#explore" class="nav-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-pill">Otherside Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-pill">Nifty Island Gallery</a>
+        <a href="3d-builder.html" class="nav-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-pill">Otter Bros</a>
+        <a href="shop.html" class="nav-pill">Shop</a>
+        <a href="shell-snag.html" class="nav-pill">Shell Snag</a>
+        <a href="otter-kart.html" class="nav-pill">OtterKart</a>
+        <a href="leaderboard.html" class="nav-pill">Leaderboard</a>
+        <a href="profile.html" class="nav-pill active" aria-current="page">My Profile</a>
+        <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-pill">Team</a>
+    </nav>
+    <aside class="nav-drawer" id="navDrawer" aria-hidden="true">
+        <a href="index.html#home" class="nav-drawer-pill">Home</a>
+        <a href="index.html#analytics" class="nav-drawer-pill">Analytics</a>
+        <a href="index.html#collection" class="nav-drawer-pill">Collection</a>
+        <a href="index.html#explore" class="nav-drawer-pill">Explore</a>
+        <a href="otherside-gallery.html" class="nav-drawer-pill">Otherside Gallery</a>
+        <a href="nifty-island-gallery.html" class="nav-drawer-pill">Nifty Island Gallery</a>
+        <a href="3d-builder.html" class="nav-drawer-pill">3D Builder</a>
+        <a href="otter-bros.html" class="nav-drawer-pill">Otter Bros</a>
+        <a href="shop.html" class="nav-drawer-pill">Shop</a>
+        <a href="shell-snag.html" class="nav-drawer-pill">Shell Snag</a>
+        <a href="otter-kart.html" class="nav-drawer-pill">OtterKart</a>
+        <a href="leaderboard.html" class="nav-drawer-pill">Leaderboard</a>
+        <a href="profile.html" class="nav-drawer-pill active" aria-current="page">My Profile</a>
+        <a href="https://othersidecalendar.apechain.com/" target="_blank" rel="noopener noreferrer" class="nav-drawer-pill">Otherside Events</a>
+        <a href="index.html#team" class="nav-drawer-pill">Team</a>
+    </aside>
+
+    <div class="top-right-icons">
+        <a href="https://opensea.io/collection/otterful-otters" target="_blank" class="opensea-icon">
+            <img src="os icon.png" alt="OpenSea" class="os-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://x.com/OtterfulOtters" target="_blank" class="x-icon">
+            <img src="x icon.png" alt="X (Twitter)" class="x-icon-img" loading="eager" fetchpriority="high">
+        </a>
+        <a href="https://discord.com/invite/F4Qma57R7t" target="_blank" class="discord-icon">
+            <img src="discord icon.png" alt="Discord" class="discord-icon-img" loading="eager" fetchpriority="high">
+        </a>
+    </div>
+
+    <div class="container">
+        <header class="header-section">
+            <img src="otterre.png" alt="Otterful Otters" class="header-logo" loading="eager" fetchpriority="high">
+            <img src="apechain.png" alt="ApeChain NFT Collection" class="subtitle-image" loading="eager" fetchpriority="high">
+        </header>
+
+        <section class="profile-section">
+            <h1 class="profile-title">My Otterful Profile</h1>
+
+            <div class="profile-toolbar">
+                <button type="button" class="action-btn primary" id="profileConnectBtn">Connect Wallet</button>
+                <button type="button" class="action-btn secondary" id="profileRefreshBtn" hidden>Refresh</button>
+                <button type="button" class="action-btn secondary" id="profileDisconnectBtn" hidden>Disconnect</button>
+            </div>
+
+            <p class="profile-status" id="profileLoading" hidden>Loading profile…</p>
+            <p class="profile-status profile-status--error" id="profileError" hidden>Unable to load your profile. Please try again.</p>
+
+            <div class="profile-disconnected" id="profileDisconnected">
+                <p class="profile-lead">Connect your wallet to view your Otterful profile.</p>
+            </div>
+
+            <div class="profile-content" id="profileContent" hidden>
+                <div class="profile-card">
+                    <h2 class="profile-card-title">Wallet</h2>
+                    <p class="profile-wallet" id="profileWallet">0x…</p>
+                </div>
+
+                <div class="profile-card profile-card--clams">
+                    <h2 class="profile-card-title">🐚 Clams</h2>
+                    <p class="profile-clams" id="profileClams">0</p>
+                </div>
+
+                <div class="profile-card">
+                    <h2 class="profile-card-title">🦦 My Otters</h2>
+                    <p class="profile-empty" id="profileOttersEmpty" hidden>You don't currently hold an Otterful Otter.</p>
+                    <div class="profile-otters-grid" id="profileOttersGrid"></div>
+                </div>
+
+                <div class="profile-card">
+                    <h2 class="profile-card-title">🎮 Recent Activity</h2>
+                    <p class="profile-empty" id="profileActivityEmpty" hidden>No Clam activity yet. Play Shell Snag or OtterKart to earn Clams.</p>
+                    <ul class="profile-activity-list" id="profileActivityList"></ul>
+                </div>
+
+                <div class="profile-card">
+                    <h2 class="profile-card-title">Games Played</h2>
+                    <ul class="profile-games-list" id="profileGamesList"></ul>
+                </div>
+
+                <div class="profile-actions">
+                    <button type="button" class="action-btn primary" id="launchShellSnag">Play Shell Snag</button>
+                    <button type="button" class="action-btn secondary" id="launchOtterKart">Play OtterKart</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div id="wallet-connect-modal" class="wallet-modal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="wallet-modal-title">
+        <div class="wallet-modal-backdrop" data-wallet-backdrop aria-hidden="true"></div>
+        <div class="wallet-modal-dialog" role="document">
+            <button type="button" class="wallet-modal-close" data-wallet-close aria-label="Close">×</button>
+            <div class="wallet-modal-columns">
+                <div class="wallet-modal-wallets">
+                    <h2 id="wallet-modal-title" class="wallet-modal-heading">Connect a Wallet</h2>
+                    <div id="wallet-section-installed" class="wallet-modal-section wallet-modal-section--installed" hidden>
+                        <h3 class="wallet-modal-section-title">Installed</h3>
+                        <div id="wallet-list-installed" class="wallet-modal-list" role="list"></div>
+                    </div>
+                    <div class="wallet-modal-section wallet-modal-section--popular">
+                        <h3 class="wallet-modal-section-title wallet-modal-section-title--muted">Popular</h3>
+                        <div id="wallet-list-popular" class="wallet-modal-list" role="list"></div>
+                    </div>
+                </div>
+                <aside class="wallet-modal-about" aria-label="About wallets">
+                    <h2 class="wallet-modal-heading wallet-modal-heading--about">What is a Wallet?</h2>
+                    <div class="wallet-about-block">
+                        <div class="wallet-about-icon wallet-about-icon--assets" aria-hidden="true">
+                            <span class="wallet-about-tile wallet-about-tile--a"></span>
+                            <span class="wallet-about-tile wallet-about-tile--b"></span>
+                            <span class="wallet-about-tile wallet-about-tile--c"></span>
+                            <span class="wallet-about-tile wallet-about-tile--d"></span>
+                        </div>
+                        <div>
+                            <h3 class="wallet-about-title">A Home for your Digital Assets</h3>
+                            <p class="wallet-about-text">Wallets are used to send, receive, store, and display digital assets like Ethereum and NFTs.</p>
+                        </div>
+                    </div>
+                    <div class="wallet-about-block">
+                        <div class="wallet-about-icon wallet-about-icon--login" aria-hidden="true"></div>
+                        <div>
+                            <h3 class="wallet-about-title">A New Way to Log In</h3>
+                            <p class="wallet-about-text">Instead of creating new accounts and passwords on every website, just connect your wallet.</p>
+                        </div>
+                    </div>
+                    <a href="https://ethereum.org/en/wallets/" target="_blank" rel="noopener noreferrer" class="wallet-modal-cta">Get a Wallet</a>
+                    <a href="https://ethereum.org/en/wallets/find-wallet/" target="_blank" rel="noopener noreferrer" class="wallet-modal-learn">Learn More</a>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="profile.js"></script>
+</body>
+</html>

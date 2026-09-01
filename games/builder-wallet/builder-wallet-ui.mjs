@@ -84,7 +84,13 @@ export function initBuilderWalletUI() {
     const connected = !!connectedAddress;
     const label = shortAddr(connectedAddress);
 
-    stage.classList.toggle('builder-wallet-stage--connected', connected);
+    try {
+      if (connectedAddress) localStorage.setItem("otterfulWallet", connectedAddress);
+    } catch {
+      /* ignore */
+    }
+
+    stage.classList.toggle("builder-wallet-stage--connected", connected);
     connectPanel.hidden = connected;
 
     if (tabsWallet) tabsWallet.hidden = !connected;
