@@ -33,6 +33,7 @@ desktop.ini
 
 # Local-only working folders
 _otter-bros-repo3/
+builder/
 
 # Python
 __pycache__/
