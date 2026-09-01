@@ -94,13 +94,34 @@
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"
-                    src="/games/otter-kart/index.html?v=2026-06-03-drift-hud-v2"
                     title="OtterKart"
                     loading="eager"
                     referrerpolicy="no-referrer"
                     allow="autoplay; clipboard-read; clipboard-write; fullscreen"
                     tabindex="0"
                 ></iframe>
+                <script type="module">
+                  import { getStoredWallet } from "/otterful-wallet.mjs";
+                  import { ensureRewardSessionReady } from "/games/otterful-auto-claim.mjs";
+                  import { gameIframeSrc } from "/otterful-game-launch.mjs";
+
+                  const frame = document.getElementById("otterKartFrame");
+                  if (!frame) throw new Error("Missing OtterKart iframe");
+
+                  const wallet = getStoredWallet();
+                  if (wallet) {
+                    try {
+                      await ensureRewardSessionReady();
+                    } catch {
+                      // game still loads; manual claim remains available without session
+                    }
+                  }
+
+                  frame.src = gameIframeSrc(
+                    "games/otter-kart/index.html?v=2026-06-03-drift-hud-v2",
+                    wallet,
+                  );
+                </script>
             </div>
             <div class="page-embed-note page-embed-note--centered">
                 <button type="button" class="action-btn primary" id="otterKartFullscreenBtn">Full Screen</button>
@@ -275,7 +296,9 @@
     </script>
     <script type="module">
       import { initEmbedLaunchBridge } from "/otterful-game-launch.mjs";
-      initEmbedLaunchBridge("otterKartFrame");
+      initEmbedLaunchBridge("otterKartFrame", {
+        gamePath: "games/otter-kart/index.html?v=2026-06-03-drift-hud-v2",
+      });
     </script>
     <script type="module">
       import { initLiveLeaderboard } from "/games/otter-kart/js/live-leaderboard.js";

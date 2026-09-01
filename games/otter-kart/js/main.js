@@ -2036,4 +2036,16 @@ window.addEventListener("otterkart-race-finished", (event) => {
   void autoClaimRaceShells(shells);
 });
 
+function tryAutoClaimPendingSessionShells() {
+  const shells = Math.floor(game.totalShellsSession ?? 0);
+  if (shells > 0) void autoClaimRaceShells(shells);
+}
+
+window.addEventListener("otterful:session-ready", tryAutoClaimPendingSessionShells);
+window.addEventListener("storage", (event) => {
+  if (event.key === "otterfulSessionToken" && event.newValue) {
+    tryAutoClaimPendingSessionShells();
+  }
+});
+
 window.__otterKartBooted = true;

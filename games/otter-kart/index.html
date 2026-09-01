@@ -68,12 +68,23 @@
     <script>
       (function () {
         try {
+          var params = new URLSearchParams(window.location.search);
+          var account = params.get("account");
+          if (account && /^0x[a-fA-F0-9]{40}$/i.test(account)) {
+            account = account.trim().toLowerCase();
+            localStorage.setItem("otterfulWallet", account);
+            localStorage.setItem("otterKartWallet", account);
+            window.__otterfulConnectedWallet = account;
+          }
           var w =
+            window.__otterfulConnectedWallet ||
             localStorage.getItem("otterfulWallet") ||
             localStorage.getItem("otterKartWallet");
           if (w && /^0x[a-fA-F0-9]{40}$/i.test(w)) {
             w = w.trim().toLowerCase();
             window.__otterfulConnectedWallet = w;
+            localStorage.setItem("otterfulWallet", w);
+            localStorage.setItem("otterKartWallet", w);
             if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
               window.ethereum = window.top.ethereum;
             }
