@@ -190,8 +190,8 @@ describe("otterful launch message trust", () => {
   });
 });
 
-describe("reward gates still require signatures (session is not a reward bypass)", () => {
-  test("OtterKart award gate still rejects without valid reward signature", async () => {
+describe("reward gates accept Otterful session or signature", () => {
+  test("OtterKart award gate rejects bad signature when no session token", async () => {
     mock.module("../lib/otter-kart-rewards/verify.js", {
       cache: false,
       namedExports: {
@@ -217,7 +217,35 @@ describe("reward gates still require signatures (session is not a reward bypass)
     assert.equal(gated.status, 403);
   });
 
-  test("Shell Snag award gate still rejects without valid reward signature", async () => {
+  test("OtterKart award gate accepts valid session token without signature", async () => {
+    const nonce = await issueNonce(WALLET_A);
+    const session = await createSessionFromSignature({
+      wallet: WALLET_A,
+      nonce: nonce.nonce,
+      issuedAtSec: nonce.issuedAtSec,
+      signature: "0x" + "11".repeat(65),
+    });
+    assert.equal(session.ok, true);
+
+    const { gateAwardPost: kartGate } = require("../lib/otter-kart-rewards/gate.js");
+    const gated = await kartGate({
+      body: {
+        game: "otter-kart",
+        wallet: WALLET_A,
+        shells: 10,
+        runId: "run-session-test",
+        sessionToken: session.sessionToken,
+      },
+      env: { OTTER_KART_REWARDS_ALLOW_UNSIGNED_DEV: "0" },
+      mode: "production",
+      nowSec: Math.floor(Date.now() / 1000),
+    });
+    assert.equal(gated.ok, true);
+    assert.equal(gated.authMethod, "session");
+    assert.equal(gated.effectivePoints, 10);
+  });
+
+  test("Shell Snag award gate rejects bad signature when no session token", async () => {
     mock.module("../lib/shell-rush-rewards/verify.js", {
       cache: false,
       namedExports: {
@@ -242,5 +270,32 @@ describe("reward gates still require signatures (session is not a reward bypass)
     });
     assert.equal(gated.ok, false);
     assert.equal(gated.status, 403);
+  });
+
+  test("Shell Snag award gate accepts valid session token without signature", async () => {
+    const nonce = await issueNonce(WALLET_A);
+    const session = await createSessionFromSignature({
+      wallet: WALLET_A,
+      nonce: nonce.nonce,
+      issuedAtSec: nonce.issuedAtSec,
+      signature: "0x" + "11".repeat(65),
+    });
+    assert.equal(session.ok, true);
+
+    const { gateAwardPost: snagGate } = require("../lib/shell-rush-rewards/gate.js");
+    const gated = await snagGate({
+      body: {
+        wallet: WALLET_A,
+        shells: 12,
+        runId: "run-session-snag",
+        sessionToken: session.sessionToken,
+      },
+      env: { SHELL_RUSH_REWARDS_ALLOW_UNSIGNED_DEV: "0" },
+      mode: "production",
+      nowSec: Math.floor(Date.now() / 1000),
+    });
+    assert.equal(gated.ok, true);
+    assert.equal(gated.authMethod, "session");
+    assert.equal(gated.effectiveShells, 12);
   });
 });

@@ -6,6 +6,7 @@ import {
   ensureAuthenticatedSession,
   getStoredSessionToken,
   validateStoredSession,
+  bootstrapWalletSession,
 } from "./otterful-session.mjs";
 
 export const LAUNCH_MESSAGE_TYPE = "OTTERFUL_LAUNCH_SESSION";
@@ -58,6 +59,21 @@ export function gameLaunchUrl(path) {
   return path;
 }
 
+/** Shell Snag reads ?account= for multiplayer + rewards identity. */
+export function gameIframeSrc(path, wallet) {
+  const w = wallet || getStoredWallet();
+  const base = String(path || "").replace(/^\//, "");
+  if (!w) return base;
+  return `${base}?account=${encodeURIComponent(w)}`;
+}
+
+export function applyGameIframeSrc(iframeId, path, wallet) {
+  const iframe = document.getElementById(iframeId);
+  if (!iframe) return null;
+  iframe.src = gameIframeSrc(path, wallet);
+  return iframe.src;
+}
+
 /**
  * Parent embed page: validate session and postMessage token to iframe.
  */
@@ -91,11 +107,30 @@ export async function deliverLaunchSessionToIframe(iframe, opts = {}) {
   return { ok: true, wallet: validated.wallet };
 }
 
-export function initEmbedLaunchBridge(iframeId) {
+export function initEmbedLaunchBridge(iframeId, opts = {}) {
   const iframe = document.getElementById(iframeId);
   if (!iframe) return;
 
   const targetOrigin = window.location.origin;
+  const gamePath = opts.gamePath;
+
+  const wallet = getStoredWallet();
+  if (wallet) syncWalletToAllGameKeys(wallet);
+
+  void bootstrapWalletSession(wallet);
+
+  if (gamePath && !iframe.getAttribute("src")) {
+    iframe.src = gameIframeSrc(gamePath, wallet);
+  } else if (gamePath && wallet) {
+    try {
+      const current = new URL(iframe.src, window.location.origin);
+      if (!current.searchParams.get("account")) {
+        iframe.src = gameIframeSrc(gamePath, wallet);
+      }
+    } catch {
+      iframe.src = gameIframeSrc(gamePath, wallet);
+    }
+  }
 
   async function deliver() {
     await deliverLaunchSessionToIframe(iframe, { targetOrigin });
@@ -104,10 +139,10 @@ export function initEmbedLaunchBridge(iframeId) {
   iframe.addEventListener("load", () => {
     deliver().catch(() => {});
     setTimeout(() => deliver().catch(() => {}), 300);
+    setTimeout(() => deliver().catch(() => {}), 1200);
   });
 
-  const wallet = getStoredWallet();
-  if (wallet) syncWalletToAllGameKeys(wallet);
+  deliver().catch(() => {});
 }
 
 /**

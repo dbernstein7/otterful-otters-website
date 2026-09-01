@@ -2,6 +2,12 @@
  * Shell Rush / Snag Drip rewards — wallet connect, status check, and claim.
  * Matches the embedded Shell Snag game API (/api/rewards/check, /api/rewards/award).
  */
+import { getStoredSessionToken } from "/otterful-session.mjs";
+import {
+  applySessionToRewardBody,
+  formatClamCreditMessage,
+  hasOtterfulRewardSession,
+} from "/games/otterful-rewards-client.mjs";
 
 const MAX_SHELLS_PER_CLAIM = 50000;
 const WALLET_STORAGE_KEY = "otterShellRushWallet";
@@ -109,10 +115,14 @@ function checkMessage(wallet, issuedAtSec) {
   ].join("\n");
 }
 
-async function resolveActiveWallet(preferred) {
+async function resolveActiveWallet(preferred, opts = {}) {
+  const skipAccountRequest = !!opts.skipAccountRequest;
   let wallet = typeof preferred === "string" ? preferred.trim() : "";
-  const accounts = await requestWalletAccounts();
-  if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  if (!wallet) wallet = getConnectedWallet() || "";
+  if (!skipAccountRequest) {
+    const accounts = await requestWalletAccounts();
+    if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  }
   if (wallet && isEthAddress(wallet)) {
     setConnectedWallet(wallet);
     return wallet;
@@ -134,7 +144,9 @@ export async function connectAndCheckRewards(preferredWallet) {
     };
   }
 
-  const wallet = await resolveActiveWallet(preferredWallet || getConnectedWallet() || "");
+  const wallet = await resolveActiveWallet(preferredWallet || getConnectedWallet() || "", {
+    skipAccountRequest: !!getConnectedWallet() || hasOtterfulRewardSession(),
+  });
   if (!wallet) {
     return {
       ok: false,
@@ -143,7 +155,7 @@ export async function connectAndCheckRewards(preferredWallet) {
     };
   }
 
-  const check = await checkRewardsStatus(wallet);
+  const check = await checkRewardsStatus(wallet, { skipAccountRequest: true });
   const msg = formatCheckResult(check);
   return {
     ok: check.kind === "ok",
@@ -163,22 +175,31 @@ export async function connectAndCheckRewards(preferredWallet) {
  *   | { kind: 'error', message: string }
  * >}
  */
-export async function checkRewardsStatus(preferredWallet) {
+export async function checkRewardsStatus(preferredWallet, opts = {}) {
+  const skipAccountRequest = !!opts.skipAccountRequest;
   const walletRaw = typeof preferredWallet === "string" ? preferredWallet.trim() : "";
   if (!walletRaw) return { kind: "no_identity" };
 
   const issuedAtSec = Math.floor(Date.now() / 1000);
   let wallet = walletRaw;
-  const accounts = await requestWalletAccounts();
-  if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  const session = getStoredSessionToken();
+  if (!skipAccountRequest && !session?.sessionToken) {
+    const accounts = await requestWalletAccounts();
+    if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  }
 
   if (!wallet || !isEthAddress(wallet)) return { kind: "no_signature" };
 
-  const message = checkMessage(wallet, issuedAtSec);
-  const signature = await personalSign(message, wallet);
-  if (!signature) return { kind: "no_signature" };
+  let body = { wallet, issuedAtSec };
+  if (session?.sessionToken) {
+    body = applySessionToRewardBody(body);
+  } else {
+    const message = checkMessage(wallet, issuedAtSec);
+    const signature = await personalSign(message, wallet);
+    if (!signature) return { kind: "no_signature" };
+    body.signature = signature;
+  }
 
-  const body = { wallet, issuedAtSec, signature };
   const res = await fetch("/api/rewards/check", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -257,12 +278,16 @@ export function formatCheckResult(result) {
  * @param {number} [score]
  */
 export async function claimSessionShells(shells, runId, score) {
-  const wallet = getConnectedWallet() || (await resolveActiveWallet(""));
+  const wallet =
+    getConnectedWallet() ||
+    (await resolveActiveWallet("", {
+      skipAccountRequest: !!getConnectedWallet() || hasOtterfulRewardSession(),
+    }));
   if (!wallet) {
     return {
       ok: false,
       tone: "warn",
-      text: "Connect your wallet on the start screen first, then claim.",
+      text: "Connect your wallet on the profile page first.",
     };
   }
 
@@ -279,21 +304,27 @@ export async function claimSessionShells(shells, runId, score) {
   const id =
     typeof runId === "string" && runId.trim()
       ? runId.trim()
-      : `otterkart-${issuedAtSec}-${Math.random().toString(36).slice(2, 10)}`;
+      : `shellrush-${issuedAtSec}-${Math.random().toString(36).slice(2, 10)}`;
 
-  const message = attestationMessage(wallet, capped, id, issuedAtSec);
-  const signature = await personalSign(message, wallet);
-  if (!signature) {
-    return {
-      ok: false,
-      tone: "warn",
-      text: "No wallet signature detected. Unlock your wallet and try again.",
-    };
-  }
-
-  const body = { wallet, shells: capped, runId: id, issuedAtSec, signature };
+  const session = getStoredSessionToken();
+  let body = { wallet, shells: capped, runId: id, issuedAtSec };
   if (typeof score === "number" && Number.isFinite(score)) {
     body.score = Math.max(0, Math.floor(score));
+  }
+
+  if (session?.sessionToken) {
+    body = applySessionToRewardBody(body);
+  } else {
+    const message = attestationMessage(wallet, capped, id, issuedAtSec);
+    const signature = await personalSign(message, wallet);
+    if (!signature) {
+      return {
+        ok: false,
+        tone: "warn",
+        text: "No wallet signature detected. Unlock your wallet and try again.",
+      };
+    }
+    body.signature = signature;
   }
 
   const res = await fetch("/api/rewards/award", {
@@ -329,9 +360,19 @@ export async function claimSessionShells(shells, runId, score) {
     return {
       ok: true,
       tone: "ok",
-      text: `Claimed ${capped} shells. New drip points balance: ${data.balance}.`,
+      text: formatClamCreditMessage(capped, data),
       balance: data.balance,
       dripId: data.dripId,
+      clamBalance: data.clamBalance,
+      shells: capped,
+    };
+  }
+  if (data?.ok === true && typeof data.clamBalance === "number") {
+    return {
+      ok: true,
+      tone: "ok",
+      text: formatClamCreditMessage(capped, data),
+      clamBalance: data.clamBalance,
       shells: capped,
     };
   }

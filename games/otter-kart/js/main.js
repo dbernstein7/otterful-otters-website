@@ -45,6 +45,7 @@ import {
   getConnectedWallet,
   shortWallet,
 } from "../../otter-kart-rewards.mjs";
+import { getStoredSessionToken } from "/otterful-session.mjs";
 
 const canvas = document.getElementById("game");
 const countdownEl = document.getElementById("countdown");
@@ -898,6 +899,16 @@ function showStartWalletToast(text, opts) {
 
 let walletConnectBusy = false;
 
+function bootstrapEmbedWallet() {
+  if (!isEmbedded()) return;
+  const w = getConnectedWallet();
+  if (!w) return;
+  showStartWalletToast(
+    `${shortWallet(w)} linked from Otterful — tap Wallet to verify rewards.`,
+    { durationMs: 10000 },
+  );
+}
+
 async function handleWalletConnectHotspot() {
   if (walletConnectBusy) return;
   walletConnectBusy = true;
@@ -914,7 +925,41 @@ async function handleWalletConnectHotspot() {
   }
 }
 
+bootstrapEmbedWallet();
+window.addEventListener("otterful:wallet-ready", () => bootstrapEmbedWallet());
+window.addEventListener("storage", (event) => {
+  if (event.key === "otterfulWallet" || event.key === "otterKartWallet") {
+    bootstrapEmbedWallet();
+  }
+});
+
 let claimBusy = false;
+
+async function autoClaimRaceShells(shells) {
+  const amount = Math.max(0, Math.floor(shells));
+  if (amount <= 0 || claimBusy) return;
+  if (!getStoredSessionToken()?.sessionToken && !getConnectedWallet()) return;
+
+  claimBusy = true;
+  try {
+    const runId = game.ensureClaimSessionRunId?.() ?? game.claimSessionRunId ?? undefined;
+    const result = await claimSessionShells(amount, runId, amount);
+    if (result.ok) {
+      game.totalShellsSession = Math.max(
+        0,
+        Math.floor(game.totalShellsSession ?? 0) - amount,
+      );
+      game.claimSessionRunId = null;
+      game.updateHomeShellsUI?.();
+      showStartWalletToast(result.text, { durationMs: 12000 });
+    }
+  } catch {
+    // silent — manual claim remains available on the map
+  } finally {
+    claimBusy = false;
+  }
+}
+
 async function handleClaimShells() {
   if (claimBusy) return;
   const shells = Math.floor(game.totalShellsSession ?? 0);
@@ -1980,5 +2025,15 @@ initTouchControls(game);
 applyHudViewportVars();
 installLiveLeaderboardRaceHook();
 initLiveLeaderboardOverlay({ limit: 10, pollMs: 30000 });
+
+window.addEventListener("otterkart-race-finished", (event) => {
+  const detail = event?.detail || {};
+  if (detail.mode === "admin") return;
+  let shells = Math.max(0, Math.floor(detail.shells ?? 0));
+  if (detail.gpSeriesComplete) {
+    shells += Math.max(0, Math.floor(detail.gpShellBonus ?? 0));
+  }
+  void autoClaimRaceShells(shells);
+});
 
 window.__otterKartBooted = true;

@@ -1,8 +1,9 @@
 /**
- * Client-side Otterful authenticated session (short-lived, signed once).
+ * Client-side Otterful authenticated session (persists with connected wallet).
  */
 export const SESSION_TOKEN_KEY = "otterfulSessionToken";
 export const SESSION_EXPIRES_KEY = "otterfulSessionExpires";
+export const SESSION_WALLET_KEY = "otterfulSessionWallet";
 
 function getEthereum() {
   const eth = typeof window !== "undefined" ? window.ethereum : null;
@@ -22,21 +23,30 @@ async function personalSign(message, address) {
   return sig;
 }
 
-export function getStoredSessionToken() {
+function readWalletFromStorage() {
   try {
-    const token = sessionStorage.getItem(SESSION_TOKEN_KEY);
-    const expires = Number(sessionStorage.getItem(SESSION_EXPIRES_KEY) || 0);
-    if (!token || !Number.isFinite(expires) || expires <= Date.now()) {
-      return null;
-    }
-    return { sessionToken: token, expiresAt: expires };
+    const w =
+      localStorage.getItem("otterfulWallet") ||
+      localStorage.getItem("otterKartWallet") ||
+      localStorage.getItem("otterShellRushWallet");
+    if (!w || !/^0x[a-fA-F0-9]{40}$/.test(w.trim())) return null;
+    return w.trim().toLowerCase();
   } catch {
     return null;
   }
 }
 
-export function clearStoredSession() {
+function migrateLegacySessionStorage() {
   try {
+    const legacyToken = sessionStorage.getItem(SESSION_TOKEN_KEY);
+    const legacyExpires = sessionStorage.getItem(SESSION_EXPIRES_KEY);
+    if (!legacyToken || !legacyExpires) return;
+    if (!localStorage.getItem(SESSION_TOKEN_KEY)) {
+      localStorage.setItem(SESSION_TOKEN_KEY, legacyToken);
+      localStorage.setItem(SESSION_EXPIRES_KEY, legacyExpires);
+      const w = readWalletFromStorage();
+      if (w) localStorage.setItem(SESSION_WALLET_KEY, w);
+    }
     sessionStorage.removeItem(SESSION_TOKEN_KEY);
     sessionStorage.removeItem(SESSION_EXPIRES_KEY);
   } catch {
@@ -44,10 +54,51 @@ export function clearStoredSession() {
   }
 }
 
-export function storeSession(sessionToken, expiresAt) {
+function readStoredSessionRecord() {
+  migrateLegacySessionStorage();
   try {
-    sessionStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
-    sessionStorage.setItem(SESSION_EXPIRES_KEY, String(expiresAt));
+    const token = localStorage.getItem(SESSION_TOKEN_KEY);
+    const expires = Number(localStorage.getItem(SESSION_EXPIRES_KEY) || 0);
+    const sessionWallet = (localStorage.getItem(SESSION_WALLET_KEY) || "").trim().toLowerCase();
+    const activeWallet = readWalletFromStorage();
+    if (!token || !Number.isFinite(expires) || expires <= Date.now()) {
+      return null;
+    }
+    if (sessionWallet && activeWallet && sessionWallet !== activeWallet) {
+      return null;
+    }
+    return { sessionToken: token, expiresAt: expires, wallet: sessionWallet || activeWallet };
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredSessionToken() {
+  const record = readStoredSessionRecord();
+  if (!record) return null;
+  return { sessionToken: record.sessionToken, expiresAt: record.expiresAt };
+}
+
+export function clearStoredSession() {
+  try {
+    localStorage.removeItem(SESSION_TOKEN_KEY);
+    localStorage.removeItem(SESSION_EXPIRES_KEY);
+    localStorage.removeItem(SESSION_WALLET_KEY);
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_EXPIRES_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function storeSession(sessionToken, expiresAt, wallet) {
+  try {
+    localStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+    localStorage.setItem(SESSION_EXPIRES_KEY, String(expiresAt));
+    const w = wallet ? String(wallet).trim().toLowerCase() : readWalletFromStorage();
+    if (w) localStorage.setItem(SESSION_WALLET_KEY, w);
+    sessionStorage.removeItem(SESSION_TOKEN_KEY);
+    sessionStorage.removeItem(SESSION_EXPIRES_KEY);
   } catch {
     // ignore
   }
@@ -68,7 +119,23 @@ export async function validateStoredSession() {
     clearStoredSession();
     return null;
   }
+  if (typeof data.expiresAt === "number" && data.expiresAt > Date.now()) {
+    storeSession(stored.sessionToken, data.expiresAt, data.wallet);
+  }
   return data;
+}
+
+/**
+ * Restore or create a session for the stored wallet (silent when still valid).
+ */
+export async function bootstrapWalletSession(wallet) {
+  const w = String(wallet || readWalletFromStorage() || "").trim().toLowerCase();
+  if (!/^0x[a-f0-9]{40}$/.test(w)) return null;
+  try {
+    return await ensureAuthenticatedSession(w);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -116,6 +183,6 @@ export async function ensureAuthenticatedSession(wallet) {
     throw new Error(verifyData?.message || "Wallet session verification failed.");
   }
 
-  storeSession(verifyData.sessionToken, verifyData.expiresAt);
+  storeSession(verifyData.sessionToken, verifyData.expiresAt, w);
   return verifyData;
 }

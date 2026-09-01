@@ -5,6 +5,7 @@ import {
   clearStoredWallet,
 } from "./otterful-wallet.mjs";
 import { prepareGameLaunch, gameLaunchUrl } from "./otterful-game-launch.mjs";
+import { bootstrapWalletSession } from "./otterful-session.mjs";
 
 const OTTER_CONTRACT = "0x4e5913922b7ddf916c8d27d1016827f799687e66";
 const OPENSEA_ASSET_BASE = `https://opensea.io/assets/ape_chain/${OTTER_CONTRACT}`;
@@ -204,6 +205,14 @@ async function loadProfile(wallet) {
 async function onWalletReady(wallet) {
   activeWallet = wallet;
   if (els.wallet) els.wallet.textContent = shortWallet(wallet);
+  try {
+    await bootstrapWalletSession(wallet);
+  } catch (err) {
+    if (els.error) {
+      els.error.textContent = err?.message || "Could not start wallet session.";
+      els.error.hidden = false;
+    }
+  }
   await loadProfile(wallet);
 }
 

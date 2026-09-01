@@ -74,6 +74,20 @@
 
         <div class="page-embed">
             <div id="otterKartEmbedShell" class="otter-kart-embed-shell">
+                <script>
+                  (function () {
+                    var w =
+                      localStorage.getItem("otterfulWallet") ||
+                      localStorage.getItem("otterKartWallet");
+                    if (w && /^0x[a-fA-F0-9]{40}$/i.test(w)) {
+                      w = w.trim().toLowerCase();
+                      try {
+                        localStorage.setItem("otterfulWallet", w);
+                        localStorage.setItem("otterKartWallet", w);
+                      } catch (e) {}
+                    }
+                  })();
+                </script>
                 <iframe
                     id="otterKartFrame"
                     class="page-embed-frame page-embed-frame--otter-kart"

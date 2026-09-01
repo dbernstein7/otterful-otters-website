@@ -4,7 +4,7 @@
  */
 import { initWalletModal } from "./games/builder-wallet/wallet-modal.mjs";
 import { disconnectWallet } from "./games/builder-wallet/connect.mjs";
-import { clearStoredSession } from "./otterful-session.mjs";
+import { clearStoredSession, ensureAuthenticatedSession, SESSION_WALLET_KEY } from "./otterful-session.mjs";
 
 export const OTTERFUL_WALLET_KEY = "otterfulWallet";
 
@@ -44,6 +44,10 @@ export function setStoredWallet(addr) {
   const normalized = addr ? String(addr).trim().toLowerCase() : "";
   try {
     if (normalized && isEthAddress(normalized)) {
+      const prevSessionWallet = (localStorage.getItem(SESSION_WALLET_KEY) || "").trim().toLowerCase();
+      if (prevSessionWallet && prevSessionWallet !== normalized) {
+        clearStoredSession();
+      }
       localStorage.setItem(OTTERFUL_WALLET_KEY, normalized);
       return normalized;
     }
@@ -65,8 +69,15 @@ export function initOtterfulWallet(opts = {}) {
   const modal = initWalletModal({
     onConnected: async ({ address }) => {
       const wallet = setStoredWallet(address);
-      if (wallet && opts.onConnected) {
-        await opts.onConnected(wallet);
+      if (wallet) {
+        try {
+          await ensureAuthenticatedSession(wallet);
+        } catch {
+          // profile / game pages can surface errors separately
+        }
+        if (opts.onConnected) {
+          await opts.onConnected(wallet);
+        }
       }
     },
     onError: (err) => {

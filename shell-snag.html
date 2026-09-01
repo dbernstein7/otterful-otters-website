@@ -76,12 +76,24 @@
             <iframe
                 id="shellSnagFrame"
                 class="page-embed-frame"
-                src="games/shell-snag/index.html"
                 title="Shell Snag"
                 loading="eager"
                 referrerpolicy="no-referrer"
                 allow="clipboard-read; clipboard-write; fullscreen; pointer-lock"
             ></iframe>
+            <script>
+              (function () {
+                var w =
+                  localStorage.getItem("otterfulWallet") ||
+                  localStorage.getItem("otterShellRushWallet");
+                var src = "games/shell-snag/index.html";
+                if (w && /^0x[a-fA-F0-9]{40}$/i.test(w)) {
+                  src += "?account=" + encodeURIComponent(w.trim().toLowerCase());
+                }
+                var frame = document.getElementById("shellSnagFrame");
+                if (frame) frame.src = src;
+              })();
+            </script>
             <div class="page-embed-note">
                 If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
                 <strong>Controller:</strong> press any face button once so the browser sees the pad. After <strong>Start run</strong>, click the game for pointer lock. Full layout: use the <strong>gear</strong> in the bottom-left of the game frame <strong>before</strong> you start a run (it hides once you’re playing).
@@ -194,7 +206,7 @@
     </script>
     <script type="module">
       import { initEmbedLaunchBridge } from "/otterful-game-launch.mjs";
-      initEmbedLaunchBridge("shellSnagFrame");
+      initEmbedLaunchBridge("shellSnagFrame", { gamePath: "games/shell-snag/index.html" });
     </script>
     <script>
       (function () {

@@ -68,10 +68,31 @@
     <script>
       (function () {
         try {
-          if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
+          var w =
+            localStorage.getItem("otterfulWallet") ||
+            localStorage.getItem("otterKartWallet");
+          if (w && /^0x[a-fA-F0-9]{40}$/i.test(w)) {
+            w = w.trim().toLowerCase();
+            window.__otterfulConnectedWallet = w;
+            if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
+              window.ethereum = window.top.ethereum;
+            }
+            var eth = window.ethereum;
+            if (eth && eth.request && !eth.__otterfulShimmed) {
+              var orig = eth.request.bind(eth);
+              eth.request = function (args) {
+                var m = args && typeof args === "object" ? args.method : args;
+                if (m === "eth_requestAccounts" || m === "eth_accounts") {
+                  return Promise.resolve([w]);
+                }
+                return orig(args);
+              };
+              eth.__otterfulShimmed = true;
+            }
+          } else if (!window.ethereum && window.top && window.top !== window && window.top.ethereum) {
             window.ethereum = window.top.ethereum;
           }
-        } catch {}
+        } catch (e) {}
       })();
     </script>
   </head>

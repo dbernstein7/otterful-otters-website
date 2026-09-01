@@ -2,6 +2,12 @@
  * Otter Kart — wallet connect, Drip rewards check, and shell claim.
  * Server: /api/otter-kart/rewards/* (separate from Shell Rush /api/rewards/*).
  */
+import { getStoredSessionToken } from "/otterful-session.mjs";
+import {
+  applySessionToRewardBody,
+  formatClamCreditMessage,
+  hasOtterfulRewardSession,
+} from "/games/otterful-rewards-client.mjs";
 
 const MAX_SHELLS_PER_CLAIM = 50000;
 const WALLET_STORAGE_KEY = "otterKartWallet";
@@ -112,10 +118,14 @@ function checkMessage(wallet, issuedAtSec) {
   ].join("\n");
 }
 
-async function resolveActiveWallet(preferred) {
+async function resolveActiveWallet(preferred, opts = {}) {
+  const skipAccountRequest = !!opts.skipAccountRequest;
   let wallet = typeof preferred === "string" ? preferred.trim() : "";
-  const accounts = await requestWalletAccounts();
-  if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  if (!wallet) wallet = getConnectedWallet() || "";
+  if (!skipAccountRequest) {
+    const accounts = await requestWalletAccounts();
+    if (accounts?.length) wallet = String(accounts[0] || "").trim();
+  }
   if (wallet && isEthAddress(wallet)) {
     setConnectedWallet(wallet);
     return wallet;
@@ -133,7 +143,9 @@ export async function connectAndCheckRewards(preferredWallet) {
     };
   }
 
-  const wallet = await resolveActiveWallet(preferredWallet || getConnectedWallet() || "");
+  const wallet = await resolveActiveWallet(preferredWallet || getConnectedWallet() || "", {
+    skipAccountRequest: !!getConnectedWallet() || hasOtterfulRewardSession(),
+  });
   if (!wallet) {
     return {
       ok: false,
@@ -159,18 +171,24 @@ export async function checkRewardsStatus(preferredWallet, opts = {}) {
 
   const issuedAtSec = Math.floor(Date.now() / 1000);
   let wallet = walletRaw;
-  if (!skipAccountRequest) {
+  const session = getStoredSessionToken();
+  if (!skipAccountRequest && !session?.sessionToken) {
     const accounts = await requestWalletAccounts();
     if (accounts?.length) wallet = String(accounts[0] || "").trim();
   }
 
   if (!wallet || !isEthAddress(wallet)) return { kind: "no_signature" };
 
-  const message = checkMessage(wallet, issuedAtSec);
-  const signature = await personalSign(message, wallet);
-  if (!signature) return { kind: "no_signature" };
+  let body = { game: GAME_ID, wallet, issuedAtSec };
+  if (session?.sessionToken) {
+    body = applySessionToRewardBody(body);
+  } else {
+    const message = checkMessage(wallet, issuedAtSec);
+    const signature = await personalSign(message, wallet);
+    if (!signature) return { kind: "no_signature" };
+    body.signature = signature;
+  }
 
-  const body = { game: GAME_ID, wallet, issuedAtSec, signature };
   const res = await fetch(CHECK_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -245,12 +263,16 @@ export function formatCheckResult(result) {
 }
 
 export async function claimSessionShells(shells, runId, score) {
-  const wallet = getConnectedWallet() || (await resolveActiveWallet(""));
+  const wallet =
+    getConnectedWallet() ||
+    (await resolveActiveWallet("", {
+      skipAccountRequest: !!getConnectedWallet() || hasOtterfulRewardSession(),
+    }));
   if (!wallet) {
     return {
       ok: false,
       tone: "warn",
-      text: "Connect your wallet on the start screen first, then claim.",
+      text: "Connect your wallet on the profile page first.",
     };
   }
 
@@ -269,19 +291,25 @@ export async function claimSessionShells(shells, runId, score) {
       ? runId.trim()
       : `otterkart-${issuedAtSec}-${Math.random().toString(36).slice(2, 10)}`;
 
-  const message = attestationMessage(wallet, capped, id, issuedAtSec);
-  const signature = await personalSign(message, wallet);
-  if (!signature) {
-    return {
-      ok: false,
-      tone: "warn",
-      text: "No wallet signature detected. Unlock your wallet and try again.",
-    };
-  }
-
-  const body = { game: GAME_ID, wallet, shells: capped, runId: id, issuedAtSec, signature };
+  const session = getStoredSessionToken();
+  let body = { game: GAME_ID, wallet, shells: capped, runId: id, issuedAtSec };
   if (typeof score === "number" && Number.isFinite(score)) {
     body.score = Math.max(0, Math.floor(score));
+  }
+
+  if (session?.sessionToken) {
+    body = applySessionToRewardBody(body);
+  } else {
+    const message = attestationMessage(wallet, capped, id, issuedAtSec);
+    const signature = await personalSign(message, wallet);
+    if (!signature) {
+      return {
+        ok: false,
+        tone: "warn",
+        text: "No wallet signature detected. Unlock your wallet and try again.",
+      };
+    }
+    body.signature = signature;
   }
 
   const res = await fetch(AWARD_URL, {
@@ -324,7 +352,7 @@ export async function claimSessionShells(shells, runId, score) {
     return {
       ok: true,
       tone: "ok",
-      text: `Already credited for this session. Clam balance: ${data.clamBalance}.`,
+      text: formatClamCreditMessage(capped, data),
       clamBalance: data.clamBalance,
       clamTxId: data.clamTxId,
       shells: capped,
@@ -332,16 +360,22 @@ export async function claimSessionShells(shells, runId, score) {
     };
   }
   if (data?.ok === true && typeof data.dripId === "string" && typeof data.balance === "number") {
-    let text = `Claimed ${capped} shells. New drip points balance: ${data.balance}.`;
-    if (typeof data.clamBalance === "number") {
-      text += ` Clam balance: ${data.clamBalance}.`;
-    }
     return {
       ok: true,
       tone: "ok",
-      text,
+      text: formatClamCreditMessage(capped, data),
       balance: data.balance,
       dripId: data.dripId,
+      clamBalance: data.clamBalance,
+      clamTxId: data.clamTxId,
+      shells: capped,
+    };
+  }
+  if (data?.ok === true && typeof data.clamBalance === "number") {
+    return {
+      ok: true,
+      tone: "ok",
+      text: formatClamCreditMessage(capped, data),
       clamBalance: data.clamBalance,
       clamTxId: data.clamTxId,
       shells: capped,
