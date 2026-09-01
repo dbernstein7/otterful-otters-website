@@ -84,18 +84,24 @@
                 referrerpolicy="no-referrer"
                 allow="clipboard-read; clipboard-write; fullscreen; pointer-lock"
             ></iframe>
-            <script>
-              (function () {
-                var w =
-                  localStorage.getItem("otterfulWallet") ||
-                  localStorage.getItem("otterShellRushWallet");
-                var src = "games/shell-snag/index.html";
-                if (w && /^0x[a-fA-F0-9]{40}$/i.test(w)) {
-                  src += "?account=" + encodeURIComponent(w.trim().toLowerCase());
+            <script type="module">
+              import { getStoredWallet } from "/otterful-wallet.mjs";
+              import { ensureRewardSessionReady } from "/games/otterful-auto-claim.mjs";
+              import { gameIframeSrc } from "/otterful-game-launch.mjs";
+
+              const frame = document.getElementById("shellSnagFrame");
+              if (!frame) throw new Error("Missing Shell Snag iframe");
+
+              const wallet = getStoredWallet();
+              if (wallet) {
+                try {
+                  await ensureRewardSessionReady();
+                } catch {
+                  // game still loads; manual claim remains available without session
                 }
-                var frame = document.getElementById("shellSnagFrame");
-                if (frame) frame.src = src;
-              })();
+              }
+
+              frame.src = gameIframeSrc("games/shell-snag/index.html", wallet);
             </script>
             <div class="page-embed-note">
                 If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.

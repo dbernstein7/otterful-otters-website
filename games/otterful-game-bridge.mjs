@@ -8,8 +8,8 @@ import {
 } from "/otterful-game-launch.mjs";
 import { getStoredWallet, OTTERFUL_WALLET_KEY } from "/otterful-wallet.mjs";
 import { applyOtterfulWalletShim } from "/games/otterful-wallet-shim.mjs";
-import { initOtterfulAutoClaim } from "/games/otterful-auto-claim.mjs";
-import { storeSession, bootstrapWalletSession } from "/otterful-session.mjs";
+import { initOtterfulAutoClaim, ensureRewardSessionReady } from "/games/otterful-auto-claim.mjs";
+import { storeSession } from "/otterful-session.mjs";
 
 async function applySessionToken(sessionToken) {
   const res = await fetch("/api/session/validate", {
@@ -40,13 +40,15 @@ function bootstrapFromSharedStorage() {
 export function initOtterfulGameBridge() {
   bootstrapFromSharedStorage();
   initOtterfulAutoClaim();
-  void bootstrapWalletSession();
+  void ensureRewardSessionReady();
 
   const allowedOrigin = window.location.origin;
 
   window.addEventListener("message", (event) => {
     if (!isTrustedLaunchMessage(event, allowedOrigin)) return;
-    applySessionToken(event.data.sessionToken).catch(() => {});
+    applySessionToken(event.data.sessionToken)
+      .then(() => ensureRewardSessionReady())
+      .catch(() => {});
   });
 
   window.addEventListener("storage", (event) => {
