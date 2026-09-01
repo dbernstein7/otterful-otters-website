@@ -4,7 +4,7 @@
 class ElectricBorder {
   constructor(container, options = {}) {
     this.container = container;
-    this.color = options.color || '#95feb4';
+    this.color = options.color || '#60a5fa';
     this.speed = options.speed || 1;
     this.chaos = options.chaos || 0.08;
     this.borderRadius = options.borderRadius || 999; // Circle for team image
