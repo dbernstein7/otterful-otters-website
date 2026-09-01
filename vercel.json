@@ -4,28 +4,15 @@
   "functions": {
     "api/mml-wearable.js": {
       "maxDuration": 30,
-      "memory": 2048,
       "includeFiles": "lib/**"
     },
     "api/otter-kart/leaderboard.js": {
       "includeFiles": "lib/**"
     },
-    "api/clams/balance.js": {
+    "api/clams/[action].js": {
       "includeFiles": "lib/**"
     },
-    "api/clams/history.js": {
-      "includeFiles": "lib/**"
-    },
-    "api/clams/record.js": {
-      "includeFiles": "lib/**"
-    },
-    "api/clams/sync.js": {
-      "includeFiles": "lib/**"
-    },
-    "api/rewards/check.js": {
-      "includeFiles": "lib/**"
-    },
-    "api/rewards/award.js": {
+    "api/rewards/[action].js": {
       "includeFiles": "lib/**"
     },
     "api/profile.js": {
@@ -34,13 +21,10 @@
     "api/wallet-otters.js": {
       "includeFiles": "lib/**"
     },
-    "api/session/nonce.js": {
+    "api/session/[action].js": {
       "includeFiles": "lib/**"
     },
-    "api/session/verify.js": {
-      "includeFiles": "lib/**"
-    },
-    "api/session/validate.js": {
+    "api/gallery-manifest/[gallery].js": {
       "includeFiles": "lib/**"
     }
   },
@@ -97,6 +81,14 @@
     {
       "src": "^/mml/(\\d+)\\.mml$",
       "dest": "/api/mml?id=$1"
+    },
+    {
+      "src": "/api/nifty-manifest",
+      "dest": "/api/gallery-manifest/nifty"
+    },
+    {
+      "src": "/api/otherside-manifest",
+      "dest": "/api/gallery-manifest/otherside"
     },
     {
       "src": "/games/otter-kart$",

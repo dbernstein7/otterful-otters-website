@@ -53,8 +53,11 @@ const {
   validateSessionToken,
   TOKEN_PREFIX,
 } = require("../lib/otterful-session/handlers.js");
-const nonceHandler = require("../api/session/nonce.js");
-const validateHandler = require("../api/session/validate.js");
+const sessionHandler = require("../api/session/[action].js");
+
+function mockReq(method, action, body = {}, headers = {}) {
+  return { method, query: { action }, body, headers };
+}
 
 const WALLET_A = "0x1234567890123456789012345678901234567890";
 const WALLET_B = "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd";
@@ -147,7 +150,7 @@ describe("otterful session", () => {
         return this;
       },
     };
-    await validateHandler({ method: "POST", body: {}, headers: {} }, res);
+    await sessionHandler(mockReq("POST", "validate", {}, {}), res);
     assert.equal(res.statusCode, 400);
   });
 
@@ -164,7 +167,7 @@ describe("otterful session", () => {
         return this;
       },
     };
-    await nonceHandler({ method: "GET" }, res);
+    await sessionHandler(mockReq("GET", "nonce"), res);
     assert.equal(res.statusCode, 405);
   });
 });
