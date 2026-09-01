@@ -5294,6 +5294,12 @@ body.asset-inspector-open {
     color: #7dffc4;
 }
 
+.profile-urnz-balance {
+    margin: 0.5rem 0 0;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
 .profile-empty {
     margin: 0;
     color: var(--text-muted);

@@ -334,6 +334,7 @@ describe("admin sync endpoints", () => {
 describe("profile reads central ledger not URNZ", () => {
   beforeEach(() => {
     backendRef.current = createMemoryKv();
+    process.env.OTTERFUL_REWARDS_PROVIDER = "drip";
   });
 
   test("profile clams come from central ledger", async () => {

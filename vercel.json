@@ -24,10 +24,14 @@
     "api/session/[action].js": {
       "includeFiles": "lib/**"
     },
-    "api/gallery-manifest/[gallery].js": {
-      "includeFiles": "lib/**"
+    "api/gallery-manifest.js": {
+      "includeFiles": "{Nifty Photos,Nifty Photos_thumbnails,Otherside Otter Photos_thumbnails}/**"
     }
   },
+  "rewrites": [
+    { "source": "/api/nifty-manifest", "destination": "/api/gallery-manifest?gallery=nifty" },
+    { "source": "/api/otherside-manifest", "destination": "/api/gallery-manifest?gallery=otherside" }
+  ],
   "env": {
     "MML_RAW_WEARABLE_GLBS": "0",
     "MML_BONE_SCHEME": "unreal",
@@ -83,14 +87,6 @@
       "dest": "/api/mml?id=$1"
     },
     {
-      "src": "/api/nifty-manifest",
-      "dest": "/api/gallery-manifest/nifty"
-    },
-    {
-      "src": "/api/otherside-manifest",
-      "dest": "/api/gallery-manifest/otherside"
-    },
-    {
       "src": "/games/otter-kart$",
       "dest": "/games/otter-kart/index.html"
     },
@@ -111,7 +107,7 @@
       "dest": "/games/shell-snag/$1"
     },
     {
-      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/).*)",
+      "src": "/((?!api)(?!mml/)(?!AvatarBuilder/)(?!metadata/)(?!games/)(?!images_compressed/).*)",
       "dest": "/index.html"
     }
   ]

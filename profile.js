@@ -22,6 +22,7 @@ const els = {
   content: document.getElementById("profileContent"),
   wallet: document.getElementById("profileWallet"),
   clams: document.getElementById("profileClams"),
+  urnzBalance: document.getElementById("profileUrnzBalance"),
   ottersGrid: document.getElementById("profileOttersGrid"),
   ottersEmpty: document.getElementById("profileOttersEmpty"),
   activityList: document.getElementById("profileActivityList"),
@@ -160,6 +161,17 @@ function renderGames(games) {
 function renderProfile(data) {
   if (els.wallet) els.wallet.textContent = data.wallet;
   if (els.clams) els.clams.textContent = formatClams(data.clams);
+
+  if (els.urnzBalance) {
+    if (typeof data.urnzBalance === "number") {
+      els.urnzBalance.hidden = false;
+      els.urnzBalance.textContent = `URNZ balance: ${formatClams(data.urnzBalance)}`;
+    } else {
+      els.urnzBalance.hidden = true;
+      els.urnzBalance.textContent = "";
+    }
+  }
+
   renderOtters(Array.isArray(data.otters) ? data.otters : []);
   renderActivity(Array.isArray(data.activity) ? data.activity : []);
   renderGames(Array.isArray(data.games) ? data.games : []);
