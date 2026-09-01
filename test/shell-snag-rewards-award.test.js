@@ -59,6 +59,7 @@ const upstreamCalls = { award: [], check: [] };
 const zaddCalls = [];
 let verifyAwardResult = true;
 let verifyCheckResult = true;
+let authorizeSessionOk = false;
 let upstreamAwardResponse = {
   ok: true,
   dripId: "drip_shell_test",
@@ -105,6 +106,16 @@ mock.module("../lib/otter-kart-leaderboard/kv.js", {
 });
 
 mockVerifyModule();
+
+mock.module("../lib/otterful-session/reward-auth.js", {
+  cache: false,
+  namedExports: {
+    authorizeRewardSession: async ({ wallet }) =>
+      authorizeSessionOk
+        ? { ok: true, wallet: String(wallet || "").trim().toLowerCase(), authMethod: "session" }
+        : { ok: false, authMethod: null },
+  },
+});
 
 global.fetch = async (url, init) => {
   const body = init?.body ? JSON.parse(init.body) : {};
@@ -159,6 +170,7 @@ describe("shell-snag award → central clam ledger", () => {
     zaddCalls.length = 0;
     verifyAwardResult = true;
     verifyCheckResult = true;
+    authorizeSessionOk = false;
     upstreamAwardResponse = {
       ok: true,
       dripId: "drip_shell_test",
@@ -289,11 +301,40 @@ describe("shell-snag award → central clam ledger", () => {
     assert.equal(pointsCall?.[1], 5000);
     assert.equal(shellsCall?.[1], 30);
   });
+
+  test("session-authenticated award credits Clams and skips upstream Drip proxy", async () => {
+    authorizeSessionOk = true;
+    delete require.cache[require.resolve("../lib/shell-rush-rewards/gate.js")];
+    delete require.cache[require.resolve("../lib/shell-rush-rewards/handlers.js")];
+    const { handleShellSnagAward: awardWithSession } = require("../lib/shell-rush-rewards/handlers.js");
+
+    const result = await awardWithSession({
+      wallet: WALLET,
+      shells: 33,
+      runId: "shell-snag-session-run",
+      sessionToken: "test-session-token",
+      score: 900,
+    });
+
+    assert.equal(result.status, 200);
+    assert.equal(result.json.ok, true);
+    assert.equal(result.json.skipped, "upstream_session_auth");
+    assert.equal(result.json.clamCredited, true);
+    assert.equal(typeof result.json.clamBalance, "number");
+    assert.equal(upstreamCalls.award.length, 0);
+    assert.equal((await getClamBalance(WALLET)).balance, 33);
+
+    authorizeSessionOk = false;
+    delete require.cache[require.resolve("../lib/shell-rush-rewards/gate.js")];
+    delete require.cache[require.resolve("../lib/shell-rush-rewards/handlers.js")];
+    require("../lib/shell-rush-rewards/handlers.js");
+  });
 });
 
 describe("shell-snag check gate", () => {
   beforeEach(() => {
     verifyCheckResult = true;
+    authorizeSessionOk = false;
     upstreamCalls.check = [];
     process.env.SHELL_RUSH_REWARDS_ALLOW_UNSIGNED_DEV = "0";
   });

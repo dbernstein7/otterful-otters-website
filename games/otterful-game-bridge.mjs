@@ -27,6 +27,7 @@ async function applySessionToken(sessionToken) {
     storeSession(sessionToken, Date.now() + 604800000, data.wallet);
   }
   applyOtterfulWalletShim();
+  notifySessionReady();
   return data.wallet;
 }
 

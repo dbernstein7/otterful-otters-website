@@ -2,7 +2,7 @@
  * Auto-credit rewards on run end when an Otterful session exists.
  * Shell Snag: session-aware fetch/sign patches + direct claim on end screen.
  */
-import { bootstrapWalletSession, getStoredSessionToken } from "/otterful-session.mjs";
+import { bootstrapWalletSession, getStoredSessionToken, OTTERFUL_SESSION_READY_EVENT } from "/otterful-session.mjs";
 import { applySessionToRewardBody, formatClamCreditMessage } from "/games/otterful-rewards-client.mjs";
 import { applyOtterfulWalletShim, resolveOtterfulWallet } from "/games/otterful-wallet-shim.mjs";
 import { claimSessionShells } from "/games/shell-rush-rewards.mjs";
@@ -55,7 +55,14 @@ function patchEthereumForSession() {
 }
 
 function handleRewardAwardSuccess(data, shellsHint) {
-  if (!data || data.ok !== true) return;
+  const hasClam =
+    typeof data?.clamBalance === "number" &&
+    (data.ok === true ||
+      data.clamCredited === true ||
+      data.alreadyCredited === true ||
+      data.clamStatus === "credited" ||
+      data.clamStatus === "duplicate");
+  if (!hasClam && data?.ok !== true) return;
   const shells =
     typeof shellsHint === "number" && shellsHint > 0
       ? shellsHint
@@ -239,8 +246,17 @@ function tryAutoClickShellSnagButtons() {
   }
 }
 
+function isShellSnagEndScreenVisible(root = document) {
+  if (!root) return false;
+  for (const span of root.querySelectorAll("span")) {
+    if ((span.textContent || "").trim() === "Shells collected") return true;
+  }
+  return false;
+}
+
 async function tryDirectShellSnagAutoCredit() {
-  if (!hasActiveRewardSession() || shellSnagState.inFlight) return;
+  if (shellSnagState.inFlight) return;
+  if (!isShellSnagEndScreenVisible()) return;
 
   const stats = parseShellSnagEndScreen();
   if (!stats || stats.shells <= 0) return;
@@ -248,11 +264,10 @@ async function tryDirectShellSnagAutoCredit() {
   const key = `${stats.shells}:${stats.score}`;
   if (shellSnagState.lastKey === key) return;
 
-  const claimBtn = [...document.querySelectorAll("button")].find((btn) => {
-    const label = (btn.textContent || "").trim();
-    return /claim rewards \(\+\d+\)/i.test(label) && !btn.disabled;
-  });
-  if (!claimBtn) return;
+  if (!hasActiveRewardSession()) {
+    const ready = await ensureRewardSessionReady();
+    if (!ready) return;
+  }
 
   shellSnagState.inFlight = true;
   try {
@@ -271,31 +286,47 @@ async function tryDirectShellSnagAutoCredit() {
     shellSnagState.inFlight = false;
   }
 
-  tryAutoClickShellSnagButtons();
+  if (hasActiveRewardSession()) {
+    tryAutoClickShellSnagButtons();
+  }
 }
 
 function scheduleShellSnagAutoCredit() {
-  if (!hasActiveRewardSession()) return;
   void tryDirectShellSnagAutoCredit();
 }
 
 function initShellSnagAutoClaim() {
   if (typeof document === "undefined") return;
 
+  const observer = new MutationObserver(() => scheduleShellSnagAutoCredit());
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["disabled", "class"],
+  });
+
+  for (const delay of [300, 900, 1800, 3500, 6000, 10000]) {
+    window.setTimeout(scheduleShellSnagAutoCredit, delay);
+  }
+
   void ensureRewardSessionReady().then((ready) => {
-    if (!ready) return;
+    if (ready) scheduleShellSnagAutoCredit();
+  });
 
-    const observer = new MutationObserver(() => scheduleShellSnagAutoCredit());
-    observer.observe(document.documentElement, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["disabled", "class"],
-    });
-
-    for (const delay of [300, 900, 1800, 3500]) {
-      window.setTimeout(scheduleShellSnagAutoCredit, delay);
+  window.addEventListener("storage", (event) => {
+    if (
+      event.key === "otterfulSessionToken" ||
+      event.key === "otterfulSessionExpires" ||
+      event.key === "otterfulWallet"
+    ) {
+      void ensureRewardSessionReady().then(() => scheduleShellSnagAutoCredit());
     }
+  });
+
+  window.addEventListener(OTTERFUL_SESSION_READY_EVENT, () => {
+    patchEthereumForSession();
+    scheduleShellSnagAutoCredit();
   });
 }
 

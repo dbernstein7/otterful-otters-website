@@ -8,6 +8,7 @@ import {
   formatClamCreditMessage,
   hasOtterfulRewardSession,
 } from "/games/otterful-rewards-client.mjs";
+import { resolveOtterfulWallet } from "/games/otterful-wallet-shim.mjs";
 
 const MAX_SHELLS_PER_CLAIM = 50000;
 const WALLET_STORAGE_KEY = "otterShellRushWallet";
@@ -18,6 +19,11 @@ let connectedWallet = null;
 
 export function getConnectedWallet() {
   if (connectedWallet) return connectedWallet;
+  const resolved = resolveOtterfulWallet();
+  if (resolved) {
+    setConnectedWallet(resolved);
+    return connectedWallet;
+  }
   try {
     const shared = localStorage.getItem(OTTERFUL_WALLET_KEY);
     if (shared && isEthAddress(shared)) {
@@ -233,6 +239,29 @@ export async function checkRewardsStatus(preferredWallet, opts = {}) {
   return { kind: "error", message: "Unexpected response from rewards check." };
 }
 
+function isClamAwardSuccess(data) {
+  if (!data || typeof data.clamBalance !== "number") return false;
+  return (
+    data.ok === true ||
+    data.clamCredited === true ||
+    data.alreadyCredited === true ||
+    data.clamStatus === "credited" ||
+    data.clamStatus === "duplicate"
+  );
+}
+
+function buildClaimSuccess(capped, data) {
+  return {
+    ok: true,
+    tone: "ok",
+    text: formatClamCreditMessage(capped, data),
+    balance: typeof data.balance === "number" ? data.balance : undefined,
+    dripId: typeof data.dripId === "string" ? data.dripId : undefined,
+    clamBalance: data.clamBalance,
+    shells: capped,
+  };
+}
+
 /** @param {ReturnType<typeof checkRewardsStatus> extends Promise<infer T> ? T : never} result */
 export function formatCheckResult(result) {
   switch (result.kind) {
@@ -334,6 +363,10 @@ export async function claimSessionShells(shells, runId, score) {
   });
   const data = await res.json().catch(() => ({}));
 
+  if (isClamAwardSuccess(data)) {
+    return buildClaimSuccess(capped, data);
+  }
+
   if (!res.ok) {
     return {
       ok: false,
@@ -357,24 +390,10 @@ export async function claimSessionShells(shells, runId, score) {
     };
   }
   if (data?.ok === true && typeof data.dripId === "string" && typeof data.balance === "number") {
-    return {
-      ok: true,
-      tone: "ok",
-      text: formatClamCreditMessage(capped, data),
-      balance: data.balance,
-      dripId: data.dripId,
-      clamBalance: data.clamBalance,
-      shells: capped,
-    };
+    return buildClaimSuccess(capped, data);
   }
   if (data?.ok === true && typeof data.clamBalance === "number") {
-    return {
-      ok: true,
-      tone: "ok",
-      text: formatClamCreditMessage(capped, data),
-      clamBalance: data.clamBalance,
-      shells: capped,
-    };
+    return buildClaimSuccess(capped, data);
   }
   if (data?.ok === false && typeof data.code === "string") {
     return {

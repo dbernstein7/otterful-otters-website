@@ -7,6 +7,34 @@ import { GAME_WALLET_KEYS } from "/otterful-game-launch.mjs";
 
 export const OTTERFUL_WALLET_READY_EVENT = "otterful:wallet-ready";
 
+function isEthAddress(addr) {
+  return /^0x[a-fA-F0-9]{40}$/.test(String(addr || "").trim());
+}
+
+function readAccountFromUrl() {
+  try {
+    const account = new URLSearchParams(window.location.search).get("account");
+    if (account && isEthAddress(account)) {
+      return account.trim().toLowerCase();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function readInjectedWallet() {
+  try {
+    const w = window.__otterfulConnectedWallet;
+    if (w && isEthAddress(w)) {
+      return String(w).trim().toLowerCase();
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
 function readLegacyWallet() {
   try {
     for (const key of Object.values(GAME_WALLET_KEYS)) {
@@ -22,13 +50,29 @@ function readLegacyWallet() {
 }
 
 export function resolveOtterfulWallet() {
-  return getStoredWallet() || readLegacyWallet();
+  return getStoredWallet() || readLegacyWallet() || readInjectedWallet() || readAccountFromUrl();
+}
+
+/** Persist embed / URL wallet into shared Otterful storage keys. */
+export function syncEmbedWallet(wallet) {
+  const w = wallet ? String(wallet).trim().toLowerCase() : resolveOtterfulWallet();
+  if (!w || !isEthAddress(w)) return null;
+  try {
+    localStorage.setItem(OTTERFUL_WALLET_KEY, w);
+    for (const key of Object.values(GAME_WALLET_KEYS)) {
+      localStorage.setItem(key, w);
+    }
+    window.__otterfulConnectedWallet = w;
+  } catch {
+    // ignore
+  }
+  return w;
 }
 
 let shimApplied = false;
 
 export function applyOtterfulWalletShim() {
-  const wallet = resolveOtterfulWallet();
+  const wallet = syncEmbedWallet() || resolveOtterfulWallet();
   if (!wallet) return null;
 
   try {

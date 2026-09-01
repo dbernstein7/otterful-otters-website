@@ -4,6 +4,15 @@
 export const SESSION_TOKEN_KEY = "otterfulSessionToken";
 export const SESSION_EXPIRES_KEY = "otterfulSessionExpires";
 export const SESSION_WALLET_KEY = "otterfulSessionWallet";
+export const OTTERFUL_SESSION_READY_EVENT = "otterful:session-ready";
+
+function notifySessionReady() {
+  try {
+    window.dispatchEvent(new CustomEvent(OTTERFUL_SESSION_READY_EVENT));
+  } catch {
+    // ignore
+  }
+}
 
 function getEthereum() {
   const eth = typeof window !== "undefined" ? window.ethereum : null;
@@ -99,6 +108,7 @@ export function storeSession(sessionToken, expiresAt, wallet) {
     if (w) localStorage.setItem(SESSION_WALLET_KEY, w);
     sessionStorage.removeItem(SESSION_TOKEN_KEY);
     sessionStorage.removeItem(SESSION_EXPIRES_KEY);
+    notifySessionReady();
   } catch {
     // ignore
   }
