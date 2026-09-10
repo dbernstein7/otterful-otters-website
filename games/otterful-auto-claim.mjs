@@ -39,19 +39,10 @@ export async function ensureRewardSessionReady() {
 }
 
 function patchEthereumForSession() {
+  // Do not stub personal_sign with a fake signature — that produces
+  // invalid_signature when a claim races ahead of session injection.
+  // Session awards go through fetch patch / claimSessionShells instead.
   applyOtterfulWalletShim();
-  const eth = typeof window !== "undefined" ? window.ethereum : null;
-  if (!eth || eth.__otterfulSessionSignShimmed || typeof eth.request !== "function") return;
-
-  const originalRequest = eth.request.bind(eth);
-  eth.request = async (args) => {
-    const method = args && typeof args === "object" ? args.method : args;
-    if (method === "personal_sign" && hasActiveRewardSession()) {
-      return "0x" + "00".repeat(65);
-    }
-    return originalRequest(args);
-  };
-  eth.__otterfulSessionSignShimmed = true;
 }
 
 function handleRewardAwardSuccess(data, shellsHint) {

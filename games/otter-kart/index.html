@@ -76,6 +76,13 @@
             localStorage.setItem("otterKartWallet", account);
             window.__otterfulConnectedWallet = account;
           }
+          var session =
+            params.get("session") ||
+            params.get("sessionToken") ||
+            params.get("otterfulSession");
+          if (session && String(session).trim()) {
+            window.__otterfulLaunchSession = String(session).trim();
+          }
           var w =
             window.__otterfulConnectedWallet ||
             localStorage.getItem("otterfulWallet") ||

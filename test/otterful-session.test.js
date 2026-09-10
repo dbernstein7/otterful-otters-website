@@ -174,7 +174,9 @@ describe("otterful session", () => {
 
 describe("otterful launch message trust", () => {
   test("unknown origin cannot inject a wallet launch message", async () => {
-    const { isTrustedLaunchMessage } = await import("../otterful-game-launch.mjs");
+    const { isTrustedLaunchMessage, getTrustedEmbedOrigins } = await import(
+      "../otterful-game-launch.mjs"
+    );
     const trustedOrigin = "https://otterfulotters.xyz";
     const badEvent = {
       origin: "https://evil.example",
@@ -184,9 +186,15 @@ describe("otterful launch message trust", () => {
       origin: trustedOrigin,
       data: { type: "OTTERFUL_LAUNCH_SESSION", v: 1, sessionToken: "abc" },
     };
+    const gtoEvent = {
+      origin: "https://grand-theft-otter.vercel.app",
+      data: { type: "OTTERFUL_LAUNCH_SESSION", v: 1, sessionToken: "abc" },
+    };
 
     assert.equal(isTrustedLaunchMessage(badEvent, trustedOrigin), false);
     assert.equal(isTrustedLaunchMessage(goodEvent, trustedOrigin), true);
+    assert.equal(isTrustedLaunchMessage(gtoEvent, getTrustedEmbedOrigins(trustedOrigin)), true);
+    assert.equal(isTrustedLaunchMessage(badEvent, getTrustedEmbedOrigins(trustedOrigin)), false);
   });
 });
 

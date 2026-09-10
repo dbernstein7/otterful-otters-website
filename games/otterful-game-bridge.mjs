@@ -3,8 +3,10 @@
  */
 import {
   LAUNCH_MESSAGE_TYPE,
+  REQUEST_LAUNCH_MESSAGE_TYPE,
   syncWalletToAllGameKeys,
   isTrustedLaunchMessage,
+  getTrustedEmbedOrigins,
 } from "/otterful-game-launch.mjs";
 import { getStoredWallet, OTTERFUL_WALLET_KEY } from "/otterful-wallet.mjs";
 import { applyOtterfulWalletShim } from "/games/otterful-wallet-shim.mjs";
@@ -27,8 +29,24 @@ async function applySessionToken(sessionToken) {
     storeSession(sessionToken, Date.now() + 604800000, data.wallet);
   }
   applyOtterfulWalletShim();
-  notifySessionReady();
   return data.wallet;
+}
+
+function readSessionFromUrl() {
+  try {
+    if (typeof window.__otterfulLaunchSession === "string" && window.__otterfulLaunchSession.trim()) {
+      return window.__otterfulLaunchSession.trim();
+    }
+    const params = new URLSearchParams(window.location.search);
+    const token =
+      params.get("session") ||
+      params.get("sessionToken") ||
+      params.get("otterfulSession");
+    if (typeof token === "string" && token.trim()) return token.trim();
+  } catch {
+    // ignore
+  }
+  return null;
 }
 
 function bootstrapFromSharedStorage() {
@@ -38,19 +56,44 @@ function bootstrapFromSharedStorage() {
   return wallet;
 }
 
+function requestSessionFromParent() {
+  try {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: REQUEST_LAUNCH_MESSAGE_TYPE, v: 1 }, "*");
+    }
+  } catch {
+    // ignore cross-origin access errors
+  }
+}
+
 export function initOtterfulGameBridge() {
   bootstrapFromSharedStorage();
   initOtterfulAutoClaim();
-  void ensureRewardSessionReady();
 
-  const allowedOrigin = window.location.origin;
+  const urlSession = readSessionFromUrl();
+  if (urlSession) {
+    applySessionToken(urlSession)
+      .then(() => ensureRewardSessionReady())
+      .catch(() => {
+        void ensureRewardSessionReady();
+      });
+  } else {
+    void ensureRewardSessionReady();
+  }
+
+  const allowedOrigins = getTrustedEmbedOrigins(window.location.origin);
 
   window.addEventListener("message", (event) => {
-    if (!isTrustedLaunchMessage(event, allowedOrigin)) return;
+    if (!isTrustedLaunchMessage(event, allowedOrigins)) return;
     applySessionToken(event.data.sessionToken)
       .then(() => ensureRewardSessionReady())
       .catch(() => {});
   });
+
+  requestSessionFromParent();
+  for (const delay of [400, 1500, 3500]) {
+    window.setTimeout(requestSessionFromParent, delay);
+  }
 
   window.addEventListener("storage", (event) => {
     if (
