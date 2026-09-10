@@ -181,6 +181,13 @@ describe("shell-snag award → central clam ledger", () => {
     delete process.env.SHELL_RUSH_REWARDS_MAX_SHELLS_PER_CLAIM;
   });
 
+  test("numeric respawnNonce runId from Shell Snag bundle is accepted", async () => {
+    const result = await handleShellSnagAward(awardBody({ runId: 3, shells: 79, score: 329 }));
+    assert.equal(result.status, 200);
+    assert.equal(result.json.ok, true);
+    assert.equal((await getClamBalance(WALLET)).balance, 79);
+  });
+
   test("valid Shell Snag signature → Clam credited once and Drip upstream called", async () => {
     const result = await handleShellSnagAward(awardBody());
     assert.equal(result.status, 200);
