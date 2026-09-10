@@ -33,6 +33,7 @@
     { "source": "/api/otherside-manifest", "destination": "/api/gallery-manifest?gallery=otherside" }
   ],
   "env": {
+    "OTTERFUL_REWARDS_PROVIDER": "urnz",
     "MML_RAW_WEARABLE_GLBS": "0",
     "MML_BONE_SCHEME": "unreal",
     "FIREBASE_STORAGE_BUCKET": "otterful-otters.firebasestorage.app",

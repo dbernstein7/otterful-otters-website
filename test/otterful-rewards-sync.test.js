@@ -160,11 +160,11 @@ describe("URNZ adapter", () => {
 });
 
 describe("provider configuration", () => {
-  test("defaults to drip provider", () => {
+  test("defaults to urnz provider", () => {
     const cfg = getRewardsProviderConfig({});
-    assert.equal(cfg.provider, "drip");
-    assert.equal(cfg.useDrip, true);
-    assert.equal(cfg.useUrnz, false);
+    assert.equal(cfg.provider, "urnz");
+    assert.equal(cfg.useUrnz, true);
+    assert.equal(cfg.useDrip, false);
   });
 
   test("urnz provider enables URNZ only", () => {
