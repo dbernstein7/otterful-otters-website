@@ -118,6 +118,20 @@ mock.module("../lib/otter-kart-rewards/verify.js", {
   },
 });
 
+mock.module("../lib/shell-rush-rewards/verify.js", {
+  cache: false,
+  namedExports: {
+    verifyAwardSignature: async () => true,
+    verifyCheckSignature: async () => true,
+  },
+});
+mock.module("../lib/otterful-session/reward-auth.js", {
+  cache: false,
+  namedExports: {
+    authorizeRewardSession: async ({body,wallet}) => body.sessionToken === "test-profile-session"
+      ? {ok:true,wallet,authMethod:"session"} : {ok:false,authMethod:null},
+  },
+});
 const { recordClamReward, getClamBalance } = require("../lib/otterful-rewards/ledger.js");
 const {
   syncClamToUrnz,
@@ -366,5 +380,45 @@ describe("Drip provider still works when configured", () => {
     assert.equal(result.json.dripId, "drip_test");
     assert.equal(result.json.syncStatus, undefined);
     assert.equal(urnzCalls.award.length, 0);
+  });
+});
+
+describe("Shell Snag profile session to Urnz", () => {
+  beforeEach(() => {
+    backendRef.current = createMemoryKv();
+    urnzCalls.award = []; urnzCalls.getBalance = [];
+    urnzAwardBehavior = "success";
+    process.env.OTTERFUL_REWARDS_PROVIDER = "urnz";
+  });
+  const body = () => ({game:"shell-snag", wallet:WALLET, shells:13, score:73,
+    runId:"shellsnag-profile-run", issuedAtSec:Math.floor(Date.now()/1000), sessionToken:"test-profile-session"});
+  test("automatically awards profile wallet once; replay does not pay twice", async () => {
+    const {handleShellSnagAward} = require("../lib/shell-rush-rewards/handlers.js");
+    const first = await handleShellSnagAward(body());
+    const second = await handleShellSnagAward(body());
+    assert.equal(first.json.syncStatus,"synced");
+    assert.equal(second.json.clamTxId,first.json.clamTxId);
+    assert.equal(urnzCalls.award.length,1);
+    assert.equal(urnzCalls.award[0].wallet,WALLET);
+    assert.equal(urnzCalls.award[0].amount,13);
+  });
+  test("failed Urnz delivery is retried with the same transaction", async () => {
+    const {handleShellSnagAward} = require("../lib/shell-rush-rewards/handlers.js");
+    urnzAwardBehavior="fail";
+    const first=await handleShellSnagAward(body());
+    assert.equal(first.json.syncStatus,"failed");
+    urnzAwardBehavior="success";
+    const second=await handleShellSnagAward(body());
+    assert.equal(second.json.syncStatus,"synced");
+    assert.equal(first.json.clamTxId,second.json.clamTxId);
+    assert.equal(urnzCalls.award[0].transaction.txId,urnzCalls.award[1].transaction.txId);
+    assert.equal((await getClamBalance(WALLET)).balance,13);
+  });
+  test("status checks Urnz using the same wallet as profile", async () => {
+    const {handleShellSnagCheck} = require("../lib/shell-rush-rewards/handlers.js");
+    const result=await handleShellSnagCheck(body());
+    assert.equal(result.json.provider,"urnz");
+    assert.equal(result.json.balance,500);
+    assert.deepEqual(urnzCalls.getBalance,[WALLET]);
   });
 });

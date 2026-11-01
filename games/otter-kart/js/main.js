@@ -911,7 +911,13 @@ function bootstrapEmbedWallet() {
 }
 
 async function handleWalletConnectHotspot() {
-  showStartWalletToast("Sign in on your Otterful profile to earn automatically.", { durationMs: 10000 });
+  const profileUrl = new URL("/profile.html", window.location.origin).href;
+  // Leave the game iframe so the full profile page opens in the current tab.
+  try {
+    window.top.location.assign(profileUrl);
+  } catch {
+    window.location.assign(profileUrl);
+  }
 }
 
 bootstrapEmbedWallet();

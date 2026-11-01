@@ -151,6 +151,7 @@ export function hideManualRewardsUi(root = document) {
 
 export function showAutoCreditNotice(text) {
   if (!text || typeof document === "undefined") return;
+  window.dispatchEvent(new CustomEvent("otterful:reward-status", { detail: { text } }));
   const existing = document.getElementById("otterful-auto-credit-notice");
   if (existing) {
     if (existing.textContent !== text) existing.textContent = text;
@@ -211,6 +212,7 @@ async function tryDirectShellSnagAutoCredit() {
     if (outbox) await outbox.flush();
     return;
   }
+  if (window.__otterfulShellRunEvents) { if (outbox) await outbox.flush(); return; }
   const stats = parseShellSnagEndScreen();
   if (!stats) return;
   if (!outbox) {
@@ -230,12 +232,35 @@ async function tryDirectShellSnagAutoCredit() {
   } finally { shellSnagState.inFlight = false; }
 }
 
+export function installShellSnagProfileLink(root = document) {
+  const start = [...root.querySelectorAll("button")].find((button) => /^start run$/i.test(button.textContent.trim()));
+  if (!start || [...root.querySelectorAll("button")].some((button) => /^profile sign-in$/i.test(button.textContent.trim()))) return;
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Profile sign-in";
+  button.style.cssText = "pointer-events:auto;margin-top:16px;padding:12px 28px;border:1px solid #22d3ee;border-radius:12px;background:#10263b;color:#b8ffdf;font-weight:bold;cursor:pointer";
+  button.addEventListener("click", () => {
+    const url = new URL("/profile.html", window.location.origin).href;
+    try { window.top.location.assign(url); } catch { window.location.assign(url); }
+  });
+  start.insertAdjacentElement("afterend", button);
+}
+
 function scheduleShellSnagAutoCredit() {
+  if (window.location.pathname.includes("/shell-snag")) installShellSnagProfileLink();
   void tryDirectShellSnagAutoCredit();
 }
 
 function initShellSnagAutoClaim() {
   if (typeof document === "undefined") return;
+  window.addEventListener("shellsnag-run-finished", (event) => {
+    const item = event.detail;
+    if (!item?.runId || !Number.isFinite(item.shells) || item.shells <= 0) return;
+    const outbox = shellOutbox();
+    if (!outbox) { showAutoCreditNotice("Sign in on your profile to earn automatic Clams."); return; }
+    try { outbox.enqueue(item); void outbox.flush(); }
+    catch { showAutoCreditNotice("Unable to save reward. Allow browser storage and keep the game open."); }
+  });
 
   window.setInterval(scheduleShellSnagAutoCredit, 30000);
   window.addEventListener("online", scheduleShellSnagAutoCredit);
