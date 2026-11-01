@@ -414,6 +414,14 @@ describe("Shell Snag profile session to Urnz", () => {
     assert.equal(urnzCalls.award[0].transaction.txId,urnzCalls.award[1].transaction.txId);
     assert.equal((await getClamBalance(WALLET)).balance,13);
   });
+  test("Endless full-run total is paid once even if the end event is retried", async () => {
+    const {handleShellSnagAward}=require("../lib/shell-rush-rewards/handlers.js");
+    const run={...body(),runId:"endless-full-run",shells:450,score:900};
+    const first=await handleShellSnagAward(run);const replay=await handleShellSnagAward(run);
+    assert.equal(first.json.clamTxId,replay.json.clamTxId);
+    assert.deepEqual(urnzCalls.award.map(call=>call.amount),[450]);
+    assert.equal((await getClamBalance(WALLET)).balance,450);
+  });
   test("status checks Urnz using the same wallet as profile", async () => {
     const {handleShellSnagCheck} = require("../lib/shell-rush-rewards/handlers.js");
     const result=await handleShellSnagCheck(body());

@@ -37,3 +37,13 @@ test("race arriving during a request is preserved", async () => {
   state.box.enqueue({runId:"race-2",amount:7});release();await flushing;
   assert.deepEqual(state.items().map(x=>x.runId),["race-2"]);
 });
+
+test("full-run total survives offline recovery as one payout", async () => {
+  const calls=[];let online=false;
+  const state=await setup(async item=>{calls.push({...item});return {ok:true,syncStatus:"synced"};},()=>online);
+  state.box.enqueue({runId:"endless-full-run",shells:450,batchId:"run"});
+  await state.box.flush();assert.equal(calls.length,0);assert.equal(state.items().length,1);
+  online=true;await state.make().flush();
+  assert.deepEqual(calls.map(item=>[item.runId,item.shells]),[["endless-full-run",450]]);
+  assert.equal(state.items().length,0);
+});

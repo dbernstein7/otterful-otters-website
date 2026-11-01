@@ -258,7 +258,17 @@ function initShellSnagAutoClaim() {
     if (!item?.runId || !Number.isFinite(item.shells) || item.shells <= 0) return;
     const outbox = shellOutbox();
     if (!outbox) { showAutoCreditNotice("Sign in on your profile to earn automatic Clams."); return; }
-    try { outbox.enqueue(item); void outbox.flush(); }
+    if (item.wallet && item.wallet.toLowerCase() !== resolveOtterfulWallet()?.toLowerCase()) {
+      showAutoCreditNotice("Return to the profile account that started this run to receive its Clams.");
+      return;
+    }
+    try {
+      const { onQueued, ...batch } = item;
+      outbox.enqueue(batch);
+      showAutoCreditNotice(`+${item.shells} Clams pending delivery to Urnz.`);
+      if (typeof onQueued === "function") onQueued();
+      void outbox.flush();
+    }
     catch { showAutoCreditNotice("Unable to save reward. Allow browser storage and keep the game open."); }
   });
 
