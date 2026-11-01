@@ -14,12 +14,12 @@ export function applySessionToRewardBody(body) {
 }
 
 export function formatClamCreditMessage(shells, data) {
-  const n = Math.max(0, Math.floor(shells));
+  const n = Math.max(0, Math.floor(data?.awardedAmount ?? shells));
+  if (data?.syncStatus === "synced") {
+    return data.alreadyCredited ? "Reward delivered to your Urnz account." : `+${n} Clams delivered to your Urnz account.`;
+  }
   if (typeof data?.clamBalance === "number") {
-    if (data?.alreadyCredited) {
-      return `Run already credited. Clam balance: ${data.clamBalance}.`;
-    }
-    return `+${n} Clams added. Balance: ${data.clamBalance}.`;
+    return `+${n} Clams recorded. Urnz delivery pending; we’ll retry automatically while the game is open.`;
   }
   if (typeof data?.balance === "number") {
     return `+${n} shells credited. Points balance: ${data.balance}.`;

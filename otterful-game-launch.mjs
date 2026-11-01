@@ -142,7 +142,7 @@ export function initEmbedLaunchBridge(iframeId, opts = {}) {
   const wallet = getStoredWallet();
   if (wallet) syncWalletToAllGameKeys(wallet);
 
-  void bootstrapWalletSession(wallet);
+  // Games use the profile session; authentication prompts belong on the profile.
 
   const sessionToken = getStoredSessionToken()?.sessionToken || "";
 

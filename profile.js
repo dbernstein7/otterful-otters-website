@@ -161,12 +161,12 @@ function renderGames(games) {
 
 function renderProfile(data) {
   if (els.wallet) els.wallet.textContent = data.wallet;
-  if (els.clams) els.clams.textContent = formatClams(data.clams);
+  if (els.clams) els.clams.textContent = typeof data.urnzBalance === "number" ? formatClams(data.urnzBalance) : "Unavailable";
 
   if (els.urnzBalance) {
     if (typeof data.urnzBalance === "number") {
       els.urnzBalance.hidden = false;
-      els.urnzBalance.textContent = `URNZ balance: ${formatClams(data.urnzBalance)}`;
+      els.urnzBalance.textContent = "Urnz balance · shared with Discord";
     } else {
       els.urnzBalance.hidden = true;
       els.urnzBalance.textContent = "";

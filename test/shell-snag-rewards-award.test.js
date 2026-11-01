@@ -176,6 +176,7 @@ describe("shell-snag award → central clam ledger", () => {
       dripId: "drip_shell_test",
       balance: 292,
     };
+    process.env.OTTERFUL_REWARDS_PROVIDER = "drip";
     process.env.SHELL_RUSH_REWARDS_ALLOW_UNSIGNED_DEV = "0";
     delete process.env.SHELL_RUSH_DRIP_MAX_AWARD_PER_RUN;
     delete process.env.SHELL_RUSH_REWARDS_MAX_SHELLS_PER_CLAIM;
@@ -343,6 +344,7 @@ describe("shell-snag check gate", () => {
     verifyCheckResult = true;
     authorizeSessionOk = false;
     upstreamCalls.check = [];
+    process.env.OTTERFUL_REWARDS_PROVIDER = "drip";
     process.env.SHELL_RUSH_REWARDS_ALLOW_UNSIGNED_DEV = "0";
   });
 

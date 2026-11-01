@@ -113,6 +113,7 @@ describe("otter-kart award → central clam ledger", () => {
     backendRef.current = createMemoryKv();
     dripCalls.award = [];
     verifyAwardResult = true;
+    process.env.OTTERFUL_REWARDS_PROVIDER = "drip";
     process.env.OTTER_KART_DRIP_API_KEY = "test-drip-key";
     process.env.OTTER_KART_REWARDS_ALLOW_UNSIGNED_DEV = "0";
     delete process.env.OTTER_KART_DRIP_MAX_AWARD_PER_RUN;

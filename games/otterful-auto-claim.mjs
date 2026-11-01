@@ -1,14 +1,14 @@
+import { createRewardOutbox } from "/games/reward-outbox.mjs";
 /**
  * Auto-credit rewards on run end when an Otterful session exists.
  * Shell Snag: session-aware fetch/sign patches + direct claim on end screen.
  */
-import { bootstrapWalletSession, getStoredSessionToken, OTTERFUL_SESSION_READY_EVENT } from "/otterful-session.mjs";
+import { getStoredSessionToken, OTTERFUL_SESSION_READY_EVENT } from "/otterful-session.mjs";
 import { applySessionToRewardBody, formatClamCreditMessage } from "/games/otterful-rewards-client.mjs";
 import { applyOtterfulWalletShim, resolveOtterfulWallet } from "/games/otterful-wallet-shim.mjs";
 import { claimSessionShells } from "/games/shell-rush-rewards.mjs";
 
 const REWARD_API_PATTERN = /\/api\/rewards\/(award|check)(?:\?|$)/;
-const AUTO_UI_CLICKED = new WeakSet();
 
 /** @type {{ lastKey: string | null, inFlight: boolean, noticeShown: boolean }} */
 const shellSnagState = {
@@ -25,17 +25,7 @@ export async function ensureRewardSessionReady() {
   patchEthereumForSession();
   if (hasActiveRewardSession()) return true;
 
-  const wallet = resolveOtterfulWallet();
-  if (!wallet) return false;
-
-  try {
-    await bootstrapWalletSession(wallet);
-  } catch {
-    return false;
-  }
-
-  patchEthereumForSession();
-  return hasActiveRewardSession();
+  return false; // Sign in on the profile page; games only consume that session.
 }
 
 function patchEthereumForSession() {
@@ -163,7 +153,7 @@ export function showAutoCreditNotice(text) {
   if (!text || typeof document === "undefined") return;
   const existing = document.getElementById("otterful-auto-credit-notice");
   if (existing) {
-    existing.textContent = text;
+    if (existing.textContent !== text) existing.textContent = text;
     return;
   }
 
@@ -190,52 +180,6 @@ export function showAutoCreditNotice(text) {
   }
 }
 
-function tryAutoClickShellSnagButtons() {
-  if (!hasActiveRewardSession()) return;
-
-  const buttons = document.querySelectorAll("button");
-  let clickedCheck = false;
-
-  for (const btn of buttons) {
-    if (!(btn instanceof HTMLButtonElement)) continue;
-    if (AUTO_UI_CLICKED.has(btn) || btn.disabled) continue;
-    const label = (btn.textContent || "").trim();
-
-    if (/check rewards status/i.test(label)) {
-      AUTO_UI_CLICKED.add(btn);
-      clickedCheck = true;
-      window.setTimeout(() => {
-        try {
-          btn.click();
-        } catch {
-          // ignore
-        }
-      }, 80);
-      break;
-    }
-  }
-
-  for (const btn of buttons) {
-    if (!(btn instanceof HTMLButtonElement)) continue;
-    if (AUTO_UI_CLICKED.has(btn) || btn.disabled) continue;
-    const label = (btn.textContent || "").trim();
-    if (!/claim rewards \(\+\d+\)/i.test(label)) continue;
-    if (/^claimed$/i.test(label)) continue;
-
-    AUTO_UI_CLICKED.add(btn);
-    window.setTimeout(
-      () => {
-        try {
-          btn.click();
-        } catch {
-          // ignore
-        }
-      },
-      clickedCheck ? 900 : 120,
-    );
-    break;
-  }
-}
 
 function isShellSnagEndScreenVisible(root = document) {
   if (!root) return false;
@@ -245,41 +189,45 @@ function isShellSnagEndScreenVisible(root = document) {
   return false;
 }
 
+let shellRun = null;
+const shellOutboxes = new Map();
+function shellOutbox() {
+  const wallet = resolveOtterfulWallet()?.toLowerCase();
+  if (!wallet || !hasActiveRewardSession()) return null;
+  if (!shellOutboxes.has(wallet)) shellOutboxes.set(wallet, createRewardOutbox({
+    storage: localStorage,
+    key: `otterful:rewards:shell-snag:${wallet}`,
+    ready: () => resolveOtterfulWallet()?.toLowerCase() === wallet && hasActiveRewardSession(),
+    send: (item) => claimSessionShells(item.shells, item.runId, item.score),
+    notify: showAutoCreditNotice,
+  }));
+  return shellOutboxes.get(wallet);
+}
 async function tryDirectShellSnagAutoCredit() {
   if (shellSnagState.inFlight) return;
-  if (!isShellSnagEndScreenVisible()) return;
-
-  const stats = parseShellSnagEndScreen();
-  if (!stats || stats.shells <= 0) return;
-
-  const key = `${stats.shells}:${stats.score}`;
-  if (shellSnagState.lastKey === key) return;
-
-  if (!hasActiveRewardSession()) {
-    const ready = await ensureRewardSessionReady();
-    if (!ready) return;
+  const outbox = shellOutbox();
+  if (!isShellSnagEndScreenVisible()) {
+    shellRun = null;
+    if (outbox) await outbox.flush();
+    return;
   }
-
+  const stats = parseShellSnagEndScreen();
+  if (!stats) return;
+  if (!outbox) {
+    showAutoCreditNotice("Sign in on your profile to earn automatic Clams.");
+    return;
+  }
   shellSnagState.inFlight = true;
   try {
-    const runId = `shellrush-${Date.now()}-${stats.shells}-${stats.score}`;
-    const result = await claimSessionShells(stats.shells, runId, stats.score);
-    if (result.ok) {
-      shellSnagState.lastKey = key;
-      hideManualRewardsUi();
-      showAutoCreditNotice(result.text);
-      shellSnagState.noticeShown = true;
-      return;
+    if (!shellRun) {
+      const item = { ...stats, runId: `shellrush-${crypto.randomUUID()}` };
+      outbox.enqueue(item);
+      shellRun = item;
     }
+    await outbox.flush();
   } catch {
-    // fall through to button auto-click
-  } finally {
-    shellSnagState.inFlight = false;
-  }
-
-  if (hasActiveRewardSession()) {
-    tryAutoClickShellSnagButtons();
-  }
+    showAutoCreditNotice("Could not save your reward. Keep the game open and allow browser storage.");
+  } finally { shellSnagState.inFlight = false; }
 }
 
 function scheduleShellSnagAutoCredit() {
@@ -289,7 +237,9 @@ function scheduleShellSnagAutoCredit() {
 function initShellSnagAutoClaim() {
   if (typeof document === "undefined") return;
 
-  const observer = new MutationObserver(() => scheduleShellSnagAutoCredit());
+  window.setInterval(scheduleShellSnagAutoCredit, 30000);
+  window.addEventListener("online", scheduleShellSnagAutoCredit);
+  const observer = new MutationObserver(() => { hideManualRewardsUi(); scheduleShellSnagAutoCredit(); });
   observer.observe(document.documentElement, {
     subtree: true,
     childList: true,
@@ -324,6 +274,7 @@ function initShellSnagAutoClaim() {
 export function initOtterfulAutoClaim() {
   patchEthereumForSession();
   patchFetchForSession();
+  hideManualRewardsUi();
 
   const path = String(window.location.pathname || "");
   if (path.includes("/shell-snag")) {

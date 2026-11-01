@@ -18,6 +18,7 @@ const OTTERFUL_WALLET_KEY = "otterfulWallet";
 let connectedWallet = null;
 
 export function getConnectedWallet() {
+  connectedWallet = resolveOtterfulWallet();
   if (connectedWallet) return connectedWallet;
   const resolved = resolveOtterfulWallet();
   if (resolved) {
@@ -258,6 +259,7 @@ function buildClaimSuccess(capped, data) {
     balance: typeof data.balance === "number" ? data.balance : undefined,
     dripId: typeof data.dripId === "string" ? data.dripId : undefined,
     clamBalance: data.clamBalance,
+    syncStatus: data.syncStatus,
     shells: capped,
   };
 }
@@ -307,6 +309,9 @@ export function formatCheckResult(result) {
  * @param {number} [score]
  */
 export async function claimSessionShells(shells, runId, score) {
+  if (!getStoredSessionToken()?.sessionToken) {
+    return { ok: false, text: "Sign in on your profile to earn automatic Clams." };
+  }
   const wallet =
     getConnectedWallet() ||
     (await resolveActiveWallet("", {

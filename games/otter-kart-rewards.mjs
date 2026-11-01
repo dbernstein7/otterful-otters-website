@@ -21,6 +21,7 @@ const GAME_ID = "otter-kart";
 let connectedWallet = null;
 
 export function getConnectedWallet() {
+  connectedWallet = resolveOtterfulWallet();
   if (connectedWallet) return connectedWallet;
   const resolved = resolveOtterfulWallet();
   if (resolved) {
@@ -288,12 +289,16 @@ function buildClaimSuccess(capped, data) {
     dripId: typeof data.dripId === "string" ? data.dripId : undefined,
     clamBalance: data.clamBalance,
     clamTxId: data.clamTxId,
+    syncStatus: data.syncStatus,
     shells: capped,
     alreadyCredited: data.alreadyCredited === true,
   };
 }
 
 export async function claimSessionShells(shells, runId, score) {
+  if (!getStoredSessionToken()?.sessionToken) {
+    return { ok: false, text: "Sign in on your profile to earn automatic Clams." };
+  }
   const wallet =
     getConnectedWallet() ||
     (await resolveActiveWallet("", {

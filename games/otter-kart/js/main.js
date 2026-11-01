@@ -45,6 +45,7 @@ import {
   getConnectedWallet,
   shortWallet,
 } from "../../otter-kart-rewards.mjs";
+import { createRewardOutbox } from "../../reward-outbox.mjs";
 import { getStoredSessionToken } from "/otterful-session.mjs";
 
 const canvas = document.getElementById("game");
@@ -904,25 +905,13 @@ function bootstrapEmbedWallet() {
   const w = getConnectedWallet();
   if (!w) return;
   showStartWalletToast(
-    `${shortWallet(w)} linked from Otterful — tap Wallet to verify rewards.`,
+    `${shortWallet(w)} signed in from your profile — rewards are automatic.`,
     { durationMs: 10000 },
   );
 }
 
 async function handleWalletConnectHotspot() {
-  if (walletConnectBusy) return;
-  walletConnectBusy = true;
-  showStartWalletToast("Connecting wallet…", true);
-  try {
-    const result = await connectAndCheckRewards(getConnectedWallet());
-    const short = result.wallet ? shortWallet(result.wallet) : "";
-    const prefix = short ? `${short} — ` : "";
-    showStartWalletToast(`${prefix}${result.text}`, { durationMs: 15000 });
-  } catch {
-    showStartWalletToast("Wallet check failed. Try again.", false);
-  } finally {
-    walletConnectBusy = false;
-  }
+  showStartWalletToast("Sign in on your Otterful profile to earn automatically.", { durationMs: 10000 });
 }
 
 bootstrapEmbedWallet();
@@ -933,63 +922,43 @@ window.addEventListener("storage", (event) => {
   }
 });
 
-let claimBusy = false;
+const rewardOutboxes = new Map();
+function currentRewardOutbox() {
+  const wallet = getConnectedWallet()?.toLowerCase();
+  if (!wallet || !getStoredSessionToken()?.sessionToken) return null;
+  if (!rewardOutboxes.has(wallet)) {
+    rewardOutboxes.set(wallet, createRewardOutbox({
+      storage: localStorage,
+      key: `otterful:rewards:otter-kart:${wallet}`,
+      ready: () => getConnectedWallet()?.toLowerCase() === wallet && !!getStoredSessionToken()?.sessionToken,
+      send: (item) => claimSessionShells(item.amount, item.runId, item.amount),
+      notify: (text) => showStartWalletToast(text, { durationMs: 12000 }),
+    }));
+  }
+  return rewardOutboxes.get(wallet);
+}
 
 async function autoClaimRaceShells(shells) {
   const amount = Math.max(0, Math.floor(shells));
-  if (amount <= 0 || claimBusy) return;
-  if (!getStoredSessionToken()?.sessionToken && !getConnectedWallet()) return;
-
-  claimBusy = true;
-  try {
-    const runId = game.ensureClaimSessionRunId?.() ?? game.claimSessionRunId ?? undefined;
-    const result = await claimSessionShells(amount, runId, amount);
-    if (result.ok) {
-      game.totalShellsSession = Math.max(
-        0,
-        Math.floor(game.totalShellsSession ?? 0) - amount,
-      );
-      game.claimSessionRunId = null;
-      game.updateHomeShellsUI?.();
-      showStartWalletToast(result.text, { durationMs: 12000 });
-    }
-  } catch {
-    // silent — manual claim remains available on the map
-  } finally {
-    claimBusy = false;
-  }
-}
-
-async function handleClaimShells() {
-  if (claimBusy) return;
-  const shells = Math.floor(game.totalShellsSession ?? 0);
-  if (shells <= 0) {
-    showStartWalletToast("No session shells to claim yet.", false);
+  if (amount <= 0) return;
+  const outbox = currentRewardOutbox();
+  if (!outbox) {
+    showStartWalletToast("Sign in on your profile to receive automatic Clams.", { durationMs: 12000 });
     return;
   }
-  claimBusy = true;
-  const prevLabel = btnClaim?.textContent;
-  if (btnClaim) btnClaim.textContent = "Claiming…";
-  if (btnClaim) btnClaim.disabled = true;
   try {
-    const runId = game.ensureClaimSessionRunId?.() ?? game.claimSessionRunId ?? undefined;
-    const result = await claimSessionShells(shells, runId, shells);
-    showStartWalletToast(result.text, result.ok);
-    if (result.ok) {
-      game.totalShellsSession = 0;
-      game.claimSessionRunId = null;
-      game.updateHomeShellsUI();
-    }
+    const runId = game.ensureClaimSessionRunId();
+    outbox.enqueue({ amount, runId });
+    game.totalShellsSession = Math.max(0, Math.floor(game.totalShellsSession ?? 0) - amount);
+    game.claimSessionRunId = null;
+    game.updateHomeShellsUI?.();
+    await outbox.flush();
   } catch {
-    showStartWalletToast("Claim failed. Try again.", false);
-  } finally {
-    claimBusy = false;
-    if (btnClaim) {
-      btnClaim.disabled = false;
-      btnClaim.textContent = prevLabel || "Claim";
-    }
+    showStartWalletToast("Could not save your reward. Keep this game open and allow browser storage.", true);
   }
 }
+
+function handleClaimShells() { void currentRewardOutbox()?.flush(); }
 
 function hideMapClaimBar() {
   if (!(mapClaimBar instanceof HTMLElement)) return;
@@ -2039,6 +2008,7 @@ window.addEventListener("otterkart-race-finished", (event) => {
 function tryAutoClaimPendingSessionShells() {
   const shells = Math.floor(game.totalShellsSession ?? 0);
   if (shells > 0) void autoClaimRaceShells(shells);
+  void currentRewardOutbox()?.flush();
 }
 
 window.addEventListener("otterful:session-ready", tryAutoClaimPendingSessionShells);
@@ -2048,4 +2018,7 @@ window.addEventListener("storage", (event) => {
   }
 });
 
+window.addEventListener("online", tryAutoClaimPendingSessionShells);
+window.setInterval(tryAutoClaimPendingSessionShells, 30000);
+void currentRewardOutbox()?.flush();
 window.__otterKartBooted = true;
