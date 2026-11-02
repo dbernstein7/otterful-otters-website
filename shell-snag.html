@@ -12,6 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="/shell-leaderboards.css">
+    <link rel="stylesheet" href="/shell-game-guide.css">
 </head>
 <body class="embed-page">
     <div class="stars"></div>
@@ -77,6 +78,7 @@
         </header>
 
         <div class="page-embed">
+            <div id="shellSnagViewport" class="shell-game-viewport">
             <iframe
                 id="shellSnagFrame"
                 class="page-embed-frame"
@@ -85,6 +87,8 @@
                 referrerpolicy="no-referrer"
                 allow="clipboard-read; clipboard-write; fullscreen; pointer-lock"
             ></iframe>
+                <button type="button" class="shell-game-exit-fullscreen" id="shellSnagExitFullscreen">Exit full screen</button>
+            </div>
             <script type="module">
               import { getStoredWallet } from "/otterful-wallet.mjs";
               import { ensureRewardSessionReady } from "/games/otterful-auto-claim.mjs";
@@ -98,18 +102,36 @@
                 try {
                   await ensureRewardSessionReady();
                 } catch {
-                  // game still loads; manual claim remains available without session
+                  // The game loads; sign-in and automatic rewards are handled through the profile.
                 }
               }
 
               frame.src = gameIframeSrc("games/shell-snag/index.html", wallet);
             </script>
-            <div class="page-embed-note">
-                If the game doesn’t load, try a hard refresh (Ctrl+F5). If it still won’t load, use the button below.
-                <strong>Controller:</strong> press any face button once so the browser sees the pad. After <strong>Start run</strong>, click the game for pointer lock. Full layout: use the <strong>gear</strong> in the bottom-left of the game frame <strong>before</strong> you start a run (it hides once you’re playing).
-                <strong>Music:</strong> press <strong>M</strong> inside the game.
-                <a class="action-btn primary page-embed-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open Shell Snag</a>
-            </div>
+            <section class="shell-game-guide" aria-labelledby="shellGuideTitle">
+                <div class="shell-guide-header">
+                    <div><p class="shell-guide-eyebrow">Collect. Survive. Outrun the crabs.</p><h2 id="shellGuideTitle">How to play</h2></div>
+                    <button type="button" class="shell-fullscreen-btn" id="shellSnagFullscreen">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5"/></svg>
+                        Full screen
+                    </button>
+                </div>
+                <div class="shell-guide-modes">
+                    <article><span class="shell-guide-tag">3-Minute Run</span><p>Collect shells and chase your best score before the timer ends.</p></article>
+                    <article><span class="shell-guide-tag">Endless</span><p>Survive harder waves every minute. Fresh shells, +10 health, then 10 seconds before crabs arrive.</p></article>
+                </div>
+                <div class="shell-guide-unlocks"><span><strong>100 score</strong> Sneakers unlock</span><span><strong>200 score</strong> Sword unlocks</span><p>Return to the spawn platform to collect your equipment.</p></div>
+                <details class="shell-guide-controls">
+                    <summary>Controls &amp; tips <span aria-hidden="true">+</span></summary>
+                    <div class="shell-guide-control-grid">
+                        <div><h3>Keyboard &amp; mouse</h3><p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move · <kbd>Shift</kbd> Sprint</p><p><kbd>Space</kbd> Jump · <kbd>F</kbd> / click Attack</p><p><kbd>Q</kbd> Sword swipe · <kbd>M</kbd> Music</p></div>
+                        <div><h3>Controller &amp; touch</h3><p>Press a controller face button once to connect it. On mobile, use the on-screen controls.</p><p>Click the game to capture your mouse. Press <kbd>Esc</kbd> to release it or leave full screen.</p></div>
+                    </div>
+                </details>
+                <p class="shell-guide-rewards"><a href="profile.html">Sign in on your profile</a> to earn automatically. Each collected shell earns one Clam; shell colors give different game scores. Your full-run Clams are paid when the run ends.</p>
+                <p id="shellFullscreenStatus" class="shell-fullscreen-status" role="status" hidden></p>
+                <a id="shellSnagStandalone" class="shell-standalone-link" href="games/shell-snag/index.html" target="_blank" rel="noopener noreferrer">Open game in a new tab ↗</a>
+            </section>
         </div>
 
         <section data-shell-leaderboard></section>
@@ -196,6 +218,7 @@
     </script>
 
     <script type="module" src="/shell-snag-leaderboard.mjs"></script>
+    <script type="module" src="/shell-game-guide.mjs"></script>
 </body>
 </html>
 
