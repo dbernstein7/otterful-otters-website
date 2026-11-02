@@ -5502,3 +5502,28 @@ body.asset-inspector-open {
         width: 100%;
     }
 }
+
+/* Shell Snag stays highlighted beside Home on every page. */
+.top-nav .nav-pill.nav-shell-snag,
+.nav-drawer .nav-drawer-pill.nav-shell-snag {
+    background:#facc15;
+    border-color:#fde047;
+    color:#162033;
+    font-weight:800;
+    text-shadow:none;
+    box-shadow:0 3px 14px rgba(250,204,21,.16);
+}
+.top-nav .nav-pill.nav-shell-snag:hover,
+.top-nav .nav-pill.nav-shell-snag.active,
+.nav-drawer .nav-drawer-pill.nav-shell-snag:hover,
+.nav-drawer .nav-drawer-pill.nav-shell-snag.active {
+    background:#fde047;
+    border-color:#fef08a;
+    color:#0b1424;
+    box-shadow:0 3px 18px rgba(250,204,21,.28);
+}
+.top-nav .nav-pill.nav-shell-snag:focus-visible,
+.nav-drawer .nav-drawer-pill.nav-shell-snag:focus-visible {
+    outline:3px solid #fef9c3;
+    outline-offset:3px;
+}
