@@ -18,12 +18,12 @@ export function createRewardOutbox({ storage, key, send, ready, notify = () => {
           attempted.set(item.runId, Date.now());
           try {
             const result = await send(item);
-            notify(result.text);
+            notify(result.text, { ...result, runId: item.runId });
             if (result.ok && result.syncStatus === "synced") {
               save(read().filter((x) => x.runId !== item.runId));
             }
           } catch {
-            notify("Reward pending. We’ll retry automatically while the game is open.");
+            notify("Reward pending. We’ll retry automatically while the game is open.", { runId: item.runId, syncStatus: "pending" });
           }
         }
       } finally { busy = false; }

@@ -149,9 +149,10 @@ export function hideManualRewardsUi(root = document) {
   }
 }
 
-export function showAutoCreditNotice(text) {
+export function showAutoCreditNotice(text, details = {}) {
   if (!text || typeof document === "undefined") return;
-  window.dispatchEvent(new CustomEvent("otterful:reward-status", { detail: { text } }));
+  window.dispatchEvent(new CustomEvent("otterful:reward-status", { detail: { ...details, text } }));
+  if (window.__otterfulShellRunEvents) return;
   const existing = document.getElementById("otterful-auto-credit-notice");
   if (existing) {
     if (existing.textContent !== text) existing.textContent = text;
@@ -257,19 +258,19 @@ function initShellSnagAutoClaim() {
     const item = event.detail;
     if (!item?.runId || !Number.isFinite(item.shells) || item.shells <= 0) return;
     const outbox = shellOutbox();
-    if (!outbox) { showAutoCreditNotice("Sign in on your profile to earn automatic Clams."); return; }
+    if (!outbox) { showAutoCreditNotice("Sign in on your profile to earn automatic Clams.", { runId: item.runId, ok: false }); return; }
     if (item.wallet && item.wallet.toLowerCase() !== resolveOtterfulWallet()?.toLowerCase()) {
-      showAutoCreditNotice("Return to the profile account that started this run to receive its Clams.");
+      showAutoCreditNotice("Return to the profile account that started this run to receive its Clams.", { runId: item.runId, ok: false });
       return;
     }
     try {
       const { onQueued, ...batch } = item;
       outbox.enqueue(batch);
-      showAutoCreditNotice(`+${item.shells} Clams pending delivery to Urnz.`);
+      showAutoCreditNotice(`+${item.shells} Clams pending delivery to Urnz.`, { runId: item.runId, syncStatus: "pending" });
       if (typeof onQueued === "function") onQueued();
       void outbox.flush();
     }
-    catch { showAutoCreditNotice("Unable to save reward. Allow browser storage and keep the game open."); }
+    catch { showAutoCreditNotice("Unable to save reward. Allow browser storage and keep the game open.", { runId: item.runId, ok: false }); }
   });
 
   window.setInterval(scheduleShellSnagAutoCredit, 30000);
