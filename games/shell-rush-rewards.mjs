@@ -260,6 +260,7 @@ function buildClaimSuccess(capped, data) {
     dripId: typeof data.dripId === "string" ? data.dripId : undefined,
     clamBalance: data.clamBalance,
     syncStatus: data.syncStatus,
+    leaderboardStatus: data.leaderboardStatus,
     shells: capped,
   };
 }
@@ -308,7 +309,7 @@ export function formatCheckResult(result) {
  * @param {string} [runId]
  * @param {number} [score]
  */
-export async function claimSessionShells(shells, runId, score) {
+export async function claimSessionShells(shells, runId, score, mode) {
   if (!getStoredSessionToken()?.sessionToken) {
     return { ok: false, text: "Sign in on your profile to earn automatic Clams." };
   }
@@ -342,6 +343,7 @@ export async function claimSessionShells(shells, runId, score) {
 
   const session = getStoredSessionToken();
   let body = { wallet, shells: capped, runId: id, issuedAtSec };
+  if (mode === "timed" || mode === "endless") body.mode = mode;
   if (typeof score === "number" && Number.isFinite(score)) {
     body.score = Math.max(0, Math.floor(score));
   }

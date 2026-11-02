@@ -19,7 +19,7 @@ export function createRewardOutbox({ storage, key, send, ready, notify = () => {
           try {
             const result = await send(item);
             notify(result.text, { ...result, runId: item.runId });
-            if (result.ok && result.syncStatus === "synced") {
+            if (result.ok && result.syncStatus === "synced" && result.leaderboardStatus !== "failed") {
               save(read().filter((x) => x.runId !== item.runId));
             }
           } catch {

@@ -200,7 +200,7 @@ function shellOutbox() {
     storage: localStorage,
     key: `otterful:rewards:shell-snag:${wallet}`,
     ready: () => resolveOtterfulWallet()?.toLowerCase() === wallet && hasActiveRewardSession(),
-    send: (item) => claimSessionShells(item.shells, item.runId, item.score),
+    send: (item) => claimSessionShells(item.shells, item.runId, item.score, item.mode),
     notify: showAutoCreditNotice,
   }));
   return shellOutboxes.get(wallet);

@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/shell-leaderboards.css">
 </head>
 <body class="embed-page">
     <div class="stars"></div>
@@ -112,6 +113,7 @@
                 </ul>
             </div>
         </section>
+        <section data-shell-leaderboard></section>
     </div>
 
     <script>
@@ -183,7 +185,7 @@
             if (h) {
               var addrEl = document.getElementById('holder-' + r + '-address');
               var countEl = document.getElementById('holder-' + r + '-count');
-              if (addrEl) addrEl.textContent = h.address || '—';
+              if (addrEl) addrEl.textContent = h.addressFull || h.address || '—';
               if (countEl) countEl.textContent = h.count != null ? h.count : '—';
             }
           });
@@ -195,7 +197,7 @@
               li.className = 'leaderboard-list-item';
               li.innerHTML =
                 '<span class="leaderboard-list-rank">' + (h.rank || '') + '</span>' +
-                '<span class="leaderboard-list-address">' + (h.address || '—') + '</span>' +
+                '<span class="leaderboard-list-address">' + (h.addressFull || h.address || '—') + '</span>' +
                 '<span class="leaderboard-list-count">' + (h.count != null ? h.count : '—') + ' <span class="leaderboard-list-label">Otters</span></span>';
               listEl.appendChild(li);
             });
@@ -260,5 +262,6 @@
           });
       })();
     </script>
+    <script type="module" src="/shell-snag-leaderboard.mjs"></script>
 </body>
 </html>

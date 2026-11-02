@@ -35,6 +35,7 @@ function createMemoryKv() {
       if (!zsets.has(key)) zsets.set(key, new Map());
       zsets.get(key).set(String(member), Number(score));
     },
+    async zscore(key, member) { return zsets.get(key)?.get(String(member)) ?? null; },
     async zrevrangeWithScores(key, limit) {
       const bucket = zsets.get(key);
       if (!bucket) return [];
@@ -62,6 +63,7 @@ mock.module("../lib/otter-kart-leaderboard/kv.js", {
     kvIncrBy: (...args) => backendRef.current.kvIncrBy(...args),
     kvDel: (...args) => backendRef.current.kvDel(...args),
     zadd: (...args) => backendRef.current.zadd(...args),
+    zscore: (...args) => backendRef.current.zscore(...args),
     zrevrangeWithScores: (...args) => backendRef.current.zrevrangeWithScores(...args),
   },
 });
@@ -421,6 +423,30 @@ describe("Shell Snag profile session to Urnz", () => {
     assert.equal(first.json.clamTxId,replay.json.clamTxId);
     assert.deepEqual(urnzCalls.award.map(call=>call.amount),[450]);
     assert.equal((await getClamBalance(WALLET)).balance,450);
+  });
+  test("timed and Endless rankings stay separate and return full wallets", async () => {
+    const {handleShellSnagAward}=require("../lib/shell-rush-rewards/handlers.js");
+    const {handleRewardsLeaderboardGet}=require("../lib/shell-rush-rewards/leaderboard-api.js");
+    const timed=await handleShellSnagAward({...body(),runId:"timed-ranking",mode:"timed",shells:20,score:300});
+    const endless=await handleShellSnagAward({...body(),runId:"endless-ranking",mode:"endless",shells:80,score:1500});
+    assert.equal(timed.json.leaderboardStatus,"recorded");assert.equal(endless.json.leaderboardStatus,"recorded");
+    const a=await handleRewardsLeaderboardGet({mode:"timed"});const b=await handleRewardsLeaderboardGet({mode:"endless"});
+    assert.deepEqual(a.json.rows,[{wallet:WALLET,walletShort:WALLET,points:300,shells:20}]);
+    assert.deepEqual(b.json.rows,[{wallet:WALLET,walletShort:WALLET,points:1500,shells:80}]);
+  });
+  test("replayed run cannot change its original leaderboard mode or score", async () => {
+    const {handleShellSnagAward}=require("../lib/shell-rush-rewards/handlers.js");
+    const {handleRewardsLeaderboardGet}=require("../lib/shell-rush-rewards/leaderboard-api.js");
+    await handleShellSnagAward({...body(),mode:"timed",score:300});
+    await handleShellSnagAward({...body(),mode:"endless",score:99999});
+    const a=await handleRewardsLeaderboardGet({mode:"timed"});const b=await handleRewardsLeaderboardGet({mode:"endless"});
+    assert.equal(a.json.rows[0].points,300);assert.equal(b.json.rows.length,0);assert.equal(urnzCalls.award.length,1);
+  });
+  test("unknown mode is rejected rather than mixed into either category", async () => {
+    const {handleShellSnagAward}=require("../lib/shell-rush-rewards/handlers.js");
+    const {handleRewardsLeaderboardGet}=require("../lib/shell-rush-rewards/leaderboard-api.js");
+    assert.equal((await handleShellSnagAward({...body(),mode:"other"})).status,400);
+    assert.equal((await handleRewardsLeaderboardGet({mode:"other"})).status,400);
   });
   test("status checks Urnz using the same wallet as profile", async () => {
     const {handleShellSnagCheck} = require("../lib/shell-rush-rewards/handlers.js");
